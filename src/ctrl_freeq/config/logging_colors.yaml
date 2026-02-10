@@ -1,0 +1,33 @@
+# CtrlFreeQ Logging Color Configuration
+# This file allows customization of log message colors for different log levels
+# Colors are specified using ANSI color codes or color names
+
+# Available colors: black, red, green, yellow, blue, magenta, cyan, white
+# Available styles: normal, bold, dim, underline
+# You can also use ANSI codes directly (e.g., '\033[31m' for red)
+
+colors:
+  DEBUG:
+    color: cyan
+    style: dim
+  INFO:
+    color: green
+    style: normal
+  WARNING:
+    color: yellow
+    style: bold
+  ERROR:
+    color: red
+    style: bold
+  CRITICAL:
+    color: magenta
+    style: bold
+
+# Console output settings
+console:
+  enable_colors: true
+  use_background: false  # Set to true for colored backgrounds
+  
+# File output settings (colors disabled by default for file logs)
+file:
+  enable_colors: false

@@ -1,0 +1,57 @@
+site_name: ctrl-freeq Documentation
+site_description: Documentation for ctrl-freeq - Quantum Control Framework
+site_url: https://mforoozandeh.github.io/ctrl-freeq/
+
+repo_name: ctrl-freeq
+repo_url: https://github.com/mforoozandeh/ctrl-freeq
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - API: api.md
+  - GUI: gui.md
+  - Optimization:
+    - Overview: optimization/index.md
+    - Algorithms: optimization/algorithms.md
+    - Parameters: optimization/parameters.md
+    - Compute (CPU/GPU): optimization/compute.md
+  - Dashboard: dashboard.md
+

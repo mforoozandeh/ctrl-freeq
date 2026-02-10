@@ -1,0 +1,70 @@
+name: Cut (beta/stable/patch)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        type: choice
+        description: "beta | stable | patch"
+        required: true
+        options: [beta, stable, patch]
+        default: beta
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.nv.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: python -m pip install --upgrade pip tbump
+      - name: Compute next version
+        id: nv
+        shell: bash
+        run: |
+          KIND="${{ github.event.inputs.kind }}"
+          if [ -z "$KIND" ]; then KIND="beta"; fi
+          TAGS=$(git tag --list 'v*' | sort -V || true)
+          LAST_STABLE=$(printf '%s\n' "$TAGS" | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | tail -n1)
+          if [ -z "$LAST_STABLE" ]; then M=0; m=0; p=0; else
+            V=${LAST_STABLE#v}
+            IFS='.' read -r M m p <<< "$V"
+          fi
+          if [ "$KIND" = "patch" ]; then
+            NEW="$M.$m.$((p+1))"
+          elif [ "$KIND" = "stable" ]; then
+            NEW="$M.$((m+1)).0"
+          else
+            BASE="$M.$((m+1)).0"
+            N=$(printf '%s\n' "$TAGS" | { grep -E "^v${BASE}b[0-9]+$" || true; } | sed -E 's/^v.*b([0-9]+)$/\1/' | sort -n | tail -n1)
+            if [ -z "$N" ]; then N=0; fi
+            NEW="${BASE}b$((N+1))"
+          fi
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+      - name: tbump & tag
+        run: |
+          V="${{ steps.nv.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          tbump --non-interactive --no-push "$V"
+          git push
+          git push --tags
+
+  release:
+    needs: cut
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    # Inherit secrets so the called workflow has PYPI/TestPyPI tokens. This avoids
+    # falling back to Trusted Publishing (OIDC), which is unsupported for reusable workflows.
+    secrets: inherit
+    with:
+      version: ${{ needs.cut.outputs.version }}
+

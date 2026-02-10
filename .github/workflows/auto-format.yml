@@ -1,0 +1,33 @@
+name: Auto-Format and Fix
+
+on: [push]
+
+jobs:
+  lint-and-fix:
+    runs-on: ubuntu-latest
+    # specific permissions required to push changes back to the repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Run Ruff Format
+        # Uses the ruff version specified in your [dependency-groups] tools
+        run: uv run --group tools ruff format .
+
+      - name: Run Ruff Check (Fix)
+        # Uses the ruff version specified in your [dependency-groups] tools
+        run: uv run --group tools ruff check --fix .
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-fixes by ruff"
+          branch: ${{ github.head_ref }}

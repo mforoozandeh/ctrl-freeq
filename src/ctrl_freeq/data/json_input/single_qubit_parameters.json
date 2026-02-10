@@ -1,0 +1,83 @@
+{
+    "qubits": [
+        "q1"
+    ],
+    "parameters": {
+        "Delta": [
+            10000000.0
+        ],
+        "sigma_Delta": [
+            0.0
+        ],
+        "Omega_R_max": [
+            40000000.0
+        ],
+        "pulse_duration": [
+            2e-07
+        ],
+        "point_in_pulse": [
+            100
+        ],
+        "wf_type": [
+            "cheb"
+        ],
+        "wf_mode": [
+            "cart"
+        ],
+        "amplitude_envelope": [
+            "gn"
+        ],
+        "amplitude_order": [
+            1
+        ],
+        "coverage": [
+            "broadband"
+        ],
+        "sw": [
+            5000000.0
+        ],
+        "pulse_offset": [
+            0.0
+        ],
+        "pulse_bandwidth": [
+            500000.0
+        ],
+        "ratio_factor": [
+            0.5
+        ],
+        "sigma_Omega_R_max": [
+            0.0
+        ],
+        "profile_order": [
+            2
+        ],
+        "n_para": [
+            16
+        ],
+        "J": [
+            [
+                0.0
+            ]
+        ]
+    },
+    "initial_states": [
+        [
+            "Z"
+        ]
+    ],
+    "target_states": {
+        "Axis": [
+            [
+                "-Z"
+            ]
+        ]
+    },
+    "optimization": {
+        "space": "hilbert",
+        "H0_snapshots": 100,
+        "Omega_R_snapshots": 1,
+        "algorithm": "qiskit-cobyla",
+        "max_iter": 1000,
+        "targ_fid": 0.999
+    }
+}

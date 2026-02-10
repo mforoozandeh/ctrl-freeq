@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ctrl-freeq"
+version = "0.1.0"
+description = "Gate design with optimal control"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.13"
+authors = [{ name = "Mohammadali Foroozandeh", email = "mforoozandeh@gmail.com" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "numpy>=2.3.4",
+    "matplotlib>=3.10.7",
+    "torch>=2.9.0",
+    "pytorch-minimize>=0.0.2",
+    "plotly==6.5.0",
+    "scipy==1.16.3",
+    "qiskit>=1.4,<1.5",
+    "qiskit-algorithms==0.4.0",
+    "tqdm>=3.8.0",
+    "kaleido==1.2.0",
+    "panel>=1.8.2",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "jupyter>=1.1.1",
+    "notebook>=7.4.7",
+    "tbump>=6.11.0"
+]
+
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+]
+
+tools = [
+    "ruff>=0.14.1",
+    "pip>=25.2",
+    "pre-commit>=4.3.0",
+]
+
+[project.scripts]
+freeq-gui = "ctrl_freeq.cli:main"
+
+[tool.tbump]
+
+[tool.tbump.version]
+current = "0.1.0"
+regex = '''
+^
+ (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
+ (?:
+   (?P<prerel>a|b|rc)(?P<prerel_n>\d+)
+ )?
+ (?:
+   \.?(?P<devtag>dev)(?P<dev_n>\d+)?
+ )?
+$
+'''
+
+[tool.tbump.git]
+message_template = "Bump version: {new_version}"
+tag_template = "v{new_version}"
+push = true
+
+[[tool.tbump.file]]
+src = "src/ctrl_freeq/__init__.py"
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+search = 'version = "{current_version}"'
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ctrl_freeq*"]

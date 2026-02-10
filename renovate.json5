@@ -1,0 +1,88 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':semanticCommitsDisabled'
+  ],
+  gitAuthor: 'Renovate Bot <bot@renovateapp.com>',
+  dependencyDashboard: true,
+  rebaseWhen: 'conflicted',
+  timezone: 'Europe/Zurich',
+  schedule: [
+    '* 0-3 * * 1'
+  ],
+  recreateWhen: 'always',
+  constraints: {
+    python: '3.13.7'
+  },
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: [
+      '* 0-3 * * 1'
+    ],
+    commitMessageAction: 'Update',
+    commitMessageTopic: 'versions in lock file(s) to the latest available',
+    commitMessageExtra: null,
+    automerge: false,
+    prBodyNotes: [
+      'Weekly lockfile refresh for latest compatible resolutions.'
+    ]
+  },
+  major: {
+    dependencyDashboardApproval: true
+  },
+  packageRules: [
+    {
+      matchDatasources: [
+        'docker'
+      ],
+      matchPackageNames: [
+        'ghcr.io/astral-sh/uv'
+      ],
+      groupName: 'devDependencies',
+      recreateWhen: 'always',
+      schedule: [
+        '* 0-3 * * 1'
+      ]
+    },
+    {
+      matchJsonata: [
+        "(depType = 'dependency-groups') and (managerData.depGroup = 'dev')",
+        "(depType = 'dependency-groups') and (managerData.depGroup = 'tools')"
+      ],
+      groupName: 'devDependencies',
+      rangeStrategy: 'bump',
+      minimumReleaseAge: '60 days',
+      recreateWhen: 'always',
+      schedule: [
+        '* 0-3 * * 1'
+      ]
+    },
+    {
+      matchManagers: [
+        'pre-commit'
+      ],
+      groupName: 'devDependencies',
+      recreateWhen: 'always',
+      schedule: [
+        '* 0-3 * * 1'
+      ]
+    }
+  ],
+  'pre-commit': {
+    enabled: true,
+    groupName: 'devDependencies'
+  },
+  poetry: {
+    enabled: false
+  },
+  reviewers: [
+    'mforoozandeh'
+  ],
+  labels: [
+    'dependencies',
+    'renovate'
+  ],
+  prConcurrentLimit: 5,
+  separateMinorPatch: false
+}

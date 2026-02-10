@@ -1,0 +1,55 @@
+name: Renovate
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+    inputs:
+      log-level:
+        description: Log level (debug/info/warn/error)
+        default: info
+      ignore-schedule:
+        description: Bypass Renovate schedule for this run
+        type: boolean
+        default: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: renovate-${{ github.repository }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      LOG_LEVEL: ${{ github.event.inputs.log-level }}
+      RENOVATE_REPOSITORIES: ${{ github.repository }}
+      RENOVATE_BINARY_SOURCE: install
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Only for manual runs when "ignore-schedule" is true:
+      - name: Bypass Renovate schedule (manual runs)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ignore-schedule == 'true' }}
+        run: |
+          echo 'RENOVATE_CONFIG={"force":{"schedule":["at any time"]}}' >> "$GITHUB_ENV"
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@v43.0.20
+        with:
+          configurationFile: renovate.json5
+          renovate-version: latest
+          token: ${{ secrets.RENOVATE_TOKEN }}   # PAT with repo scope

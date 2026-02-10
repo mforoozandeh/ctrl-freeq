@@ -1,0 +1,107 @@
+{
+    "qubits": [
+        "q1",
+        "q2"
+    ],
+    "parameters": {
+        "Delta": [
+            10000000.0,
+            10000000.0
+        ],
+        "sigma_Delta": [
+            0.0,
+            0.0
+        ],
+        "Omega_R_max": [
+            40000000.0,
+            40000000.0
+        ],
+        "pulse_duration": [
+            2e-07,
+            2e-07
+        ],
+        "point_in_pulse": [
+            100,
+            100
+        ],
+        "wf_type": [
+            "cheb",
+            "cheb"
+        ],
+        "wf_mode": [
+            "cart",
+            "cart"
+        ],
+        "amplitude_envelope": [
+            "gn",
+            "gn"
+        ],
+        "amplitude_order": [
+            1,
+            1
+        ],
+        "coverage": [
+            "single",
+            "single"
+        ],
+        "sw": [
+            5000000.0,
+            5000000.0
+        ],
+        "pulse_offset": [
+            0.0,
+            0.0
+        ],
+        "pulse_bandwidth": [
+            500000.0,
+            500000.0
+        ],
+        "ratio_factor": [
+            0.5,
+            0.5
+        ],
+        "sigma_Omega_R_max": [
+            0.0,
+            0.0
+        ],
+        "profile_order": [
+            2,
+            2
+        ],
+        "n_para": [
+            16,
+            16
+        ],
+        "J": [
+            [
+                0.0,
+                16666666.666666668
+            ],
+            [
+                0.0,
+                0.0
+            ]
+        ],
+        "coupling_type": "XY",
+        "sigma_J": 0.0
+    },
+    "initial_states": [
+        [
+            "Z",
+            "-Z"
+        ]
+    ],
+    "target_states": {
+        "Gate": [
+            "CNOT"
+        ]
+    },
+    "optimization": {
+        "space": "hilbert",
+        "H0_snapshots": 100,
+        "Omega_R_snapshots": 1,
+        "algorithm": "newton-cg",
+        "max_iter": 1000,
+        "targ_fid": 0.999
+    }
+}
