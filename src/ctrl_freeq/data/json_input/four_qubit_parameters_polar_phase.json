@@ -1,0 +1,167 @@
+{
+    "qubits": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+    ],
+    "compute_resource": "cpu",
+    "parameters": {
+        "Delta": [
+            10000000.0,
+            0.0,
+            20000000.0,
+            30000000.0
+        ],
+        "sigma_Delta": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "Omega_R_max": [
+            40000000.0,
+            40000000.0,
+            40000000.0,
+            40000000.0
+        ],
+        "pulse_duration": [
+            2e-07,
+            2e-07,
+            2e-07,
+            2e-07
+        ],
+        "point_in_pulse": [
+            100,
+            100,
+            100,
+            100
+        ],
+        "wf_type": [
+            "cheb",
+            "cheb",
+            "cheb",
+            "cheb"
+        ],
+        "wf_mode": [
+            "cart",
+            "cart",
+            "cart",
+            "cart"
+        ],
+        "amplitude_envelope": [
+            "gn",
+            "gn",
+            "gn",
+            "gn"
+        ],
+        "amplitude_order": [
+            1,
+            1,
+            1,
+            1
+        ],
+        "coverage": [
+            "broadband",
+            "broadband",
+            "broadband",
+            "broadband"
+        ],
+        "sw": [
+            5000000.0,
+            5000000.0,
+            5000000.0,
+            5000000.0
+        ],
+        "pulse_offset": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "pulse_bandwidth": [
+            500000.0,
+            500000.0,
+            500000.0,
+            500000.0
+        ],
+        "ratio_factor": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+        ],
+        "sigma_Omega_R_max": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "profile_order": [
+            2,
+            2,
+            2,
+            2
+        ],
+        "n_para": [
+            16,
+            16,
+            16,
+            16
+        ],
+        "J": [
+            [
+                0.0,
+                16666666.666666668,
+                25000000.0,
+                33333333.333333336
+            ],
+            [
+                0.0,
+                0.0,
+                50000000.0,
+                66666666.66666667
+            ],
+            [
+                0.0,
+                0.0,
+                0.0,
+                100000000.0
+            ],
+            [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        ],
+        "coupling_type": "XY",
+        "sigma_J": 0.0
+    },
+    "initial_states": [
+        [
+            "-Z",
+            "Z",
+            "X",
+            "Z"
+        ]
+    ],
+    "target_states": {
+        "Axis": [
+            [
+                "Z",
+                "Z",
+                "Z",
+                "-Z"
+            ]
+        ]
+    },
+    "optimization": {
+        "space": "hilbert",
+        "H0_snapshots": 100,
+        "Omega_R_snapshots": 1,
+        "algorithm": "newton-cg",
+        "max_iter": 10,
+        "targ_fid": 0.999
+    }
+}

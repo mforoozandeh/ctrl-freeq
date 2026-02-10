@@ -1,0 +1,93 @@
+name: Release (on tag)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write   # for GHCR
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.version && format('refs/tags/v{0}', inputs.version) || github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+
+      - name: Build package
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build  # creates dist/*.whl and *.tar.gz
+
+      - name: Derive version & prerelease flag
+        id: ver
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then V="${{ inputs.version }}"; else V="${GITHUB_REF_NAME#v}"; fi
+          echo "version=$V" >> $GITHUB_OUTPUT
+          if [[ "$V" =~ (a|b|rc)[0-9]+ ]]; then echo "pre=true" >> $GITHUB_OUTPUT; else echo "pre=false" >> $GITHUB_OUTPUT; fi
+          echo "major=${V%%.*}" >> $GITHUB_OUTPUT
+          MINOR_PART=${V#*.}
+          echo "minor=${MINOR_PART%%.*}" >> $GITHUB_OUTPUT
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
+          prerelease: ${{ steps.ver.outputs.pre }}
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/ctrlfreeq"
+          V="${{ steps.ver.outputs.version }}"
+          docker build -t "$IMAGE:$V" .
+
+      - name: Tag channels and push
+        shell: bash
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/ctrlfreeq"
+          V="${{ steps.ver.outputs.version }}"
+          MAJOR="${V%%.*}"
+          MINOR="${{ steps.ver.outputs.minor }}"
+          docker tag "$IMAGE:$V" "$IMAGE:v$V"
+          docker push "$IMAGE:$V"
+          docker push "$IMAGE:v$V"
+          if [[ "$V" =~ (a|b|rc)[0-9]+ ]]; then
+            docker tag "$IMAGE:$V" "$IMAGE:beta"
+            docker push "$IMAGE:beta"
+          else
+            docker tag "$IMAGE:$V" "$IMAGE:$MAJOR.$MINOR"
+            docker tag "$IMAGE:$V" "$IMAGE:$MAJOR"
+            docker tag "$IMAGE:$V" "$IMAGE:latest"
+            docker push "$IMAGE:$MAJOR.$MINOR"
+            docker push "$IMAGE:$MAJOR"
+            docker push "$IMAGE:latest"
+          fi
