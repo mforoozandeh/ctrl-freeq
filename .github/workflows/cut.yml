@@ -1,17 +1,21 @@
-name: Cut (beta/stable/patch)
+name: Cut (beta/stable/patch/major)
 
 on:
   workflow_dispatch:
     inputs:
       kind:
         type: choice
-        description: "beta | stable | patch"
+        description: "beta | stable | patch | major"
         required: true
-        options: [beta, stable, patch]
+        options: [beta, stable, patch, major]
         default: beta
 
 jobs:
+  test:
+    uses: ./.github/workflows/python-tests.yml
+
   cut:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,7 +39,9 @@ jobs:
             V=${LAST_STABLE#v}
             IFS='.' read -r M m p <<< "$V"
           fi
-          if [ "$KIND" = "patch" ]; then
+          if [ "$KIND" = "major" ]; then
+            NEW="$((M+1)).0.0"
+          elif [ "$KIND" = "patch" ]; then
             NEW="$M.$m.$((p+1))"
           elif [ "$KIND" = "stable" ]; then
             NEW="$M.$((m+1)).0"
@@ -67,4 +73,3 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.cut.outputs.version }}
-
