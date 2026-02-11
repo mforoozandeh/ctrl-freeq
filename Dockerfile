@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Minimal image to build and run the src package
+# Minimal image to build and run ctrl-freeq
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -24,4 +24,4 @@ RUN python -m pip install --upgrade pip && \
 
 # Default command is non-GUI to work in headless CI environments
 # Prints installed version to verify the container runs
-CMD ["python", "-c", "import src, sys; print('src', getattr(src, '__version__', 'unknown'))"]
+CMD ["python", "-c", "import ctrl_freeq; print('ctrl_freeq', ctrl_freeq.__version__)"]
