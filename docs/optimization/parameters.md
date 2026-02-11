@@ -48,7 +48,6 @@ Parameters controlling pulse shape and timing. All are **per-qubit arrays**.
 | `sw` | Sweep Rate (Hz) | Frequency sweep rate | 5 MHz | Hz |
 | `pulse_offset` | Pulse Offset (Hz) | Frequency offset | 0 | Hz |
 | `pulse_bandwidth` | Pulse Bandwidth (Hz) | Pulse frequency bandwidth | 500 kHz | Hz |
-| `ratio_factor` | Ratio Factor | Amplitude scaling ratio | 0.5 | — |
 
 ---
 
@@ -58,7 +57,7 @@ Parameters controlling waveform basis and envelope. All are **per-qubit arrays**
 
 | Key | GUI Label | Options | Default | Description |
 |-----|-----------|---------|---------|-------------|
-| `wf_type` | Waveform Type | `cheb`, `fourier`, `poly` | `cheb` | Basis function type |
+| `wf_type` | Waveform Type | See below | `cheb` | Basis function type |
 | `wf_mode` | Waveform Mode | `cart`, `polar`, `polar_phase` | `cart` | Cartesian or polar representation |
 | `amplitude_envelope` | Amplitude Envelope | `gn`, `rect`, `sinc` | `gn` | Pulse envelope shape |
 | `amplitude_order` | Amplitude Order | Integer | 1 | Envelope order parameter |
@@ -68,8 +67,12 @@ Parameters controlling waveform basis and envelope. All are **per-qubit arrays**
 
 !!! info "Waveform Types"
     - **cheb** — Chebyshev polynomial basis (recommended for most cases)
-    - **fourier** — Fourier series basis
+    - **fou** — Fourier series basis
     - **poly** — Standard polynomial basis
+    - **leg** — Legendre polynomial basis
+    - **hermite** — Hermite polynomial basis
+    - **gegen** — Gegenbauer polynomial basis
+    - **chirp** — Chirp basis
 
 !!! info "Waveform Modes"
     - **cart** — Cartesian mode: optimizes I (in-phase) and Q (quadrature) components
