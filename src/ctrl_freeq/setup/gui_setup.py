@@ -320,6 +320,12 @@ def verify_solution_file(filename, original_solution):
 
 def run_optimisation_and_plot():
     global last_solution, last_parameters, last_timestamp
+
+    # Free memory from any previous run before allocating new objects
+    last_solution = None
+    last_parameters = None
+    last_timestamp = None
+
     data = make_data_with_arrays()
     p = Initialise(data)
     sol = run_ctrl(p)
@@ -403,6 +409,11 @@ def save_results():
 
     dashboard_path = create_dashboard(figures, last_timestamp, last_parameters)
     print(f"Dashboard saved to {dashboard_path}")
+
+    # Free the heavy Initialise object now that results are saved to disk
+    last_parameters = None
+    import gc
+    gc.collect()
 
     print("Results saved successfully!")
 

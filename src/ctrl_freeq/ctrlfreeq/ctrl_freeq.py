@@ -256,7 +256,11 @@ def simulator(H0, Hp, dt, initial_state, u_fun, state_fun):
 
 def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
     """
-    Optimized simulator that vectorizes matrix exponential computation.
+    Optimized simulator that vectorizes matrix exponential computation in chunks.
+
+    Processes time steps in chunks to cap peak memory usage at
+    ``chunk_size * batch_size * D * D`` instead of allocating the full
+    ``n_pulse * batch_size * D * D`` tensor all at once.
 
     Parameters:
     - H0: Tensor of shape (batch_size, D, D)
@@ -269,28 +273,34 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
     """
     n_pulse, batch_size, D, _ = Hp.shape
 
-    # Expand H0 to match all time steps: (n_pulse, batch_size, D, D)
-    H0_expanded = H0.unsqueeze(0).expand(n_pulse, -1, -1, -1)
+    # Chunk size balances vectorisation benefit vs. peak memory.
+    # For small problems the whole batch fits; for large problems we cap it.
+    # 32 time-steps per chunk keeps peak allocation reasonable while still
+    # benefiting from batched matrix_exp.
+    chunk_size = min(n_pulse, 32)
 
-    # Compute all Hamiltonians at once: (n_pulse, batch_size, D, D)
-    H_all = H0_expanded + Hp
-
-    # Reshape to compute all matrix exponentials in one batch
-    # (n_pulse * batch_size, D, D)
-    H_flat = H_all.reshape(n_pulse * batch_size, D, D)
-
-    # Compute all matrix exponentials at once
-    U_flat = u_fun(H_flat, dt)  # Shape: (n_pulse * batch_size, D, D)
-
-    # Reshape back to (n_pulse, batch_size, D, D)
-    U_all = U_flat.reshape(n_pulse, batch_size, D, D)
-
-    # Apply time evolution sequentially (this part still needs to be sequential)
     state = initial_state  # Shape: (batch_size, D)
 
-    for n in range(n_pulse):
-        U = U_all[n]  # Shape: (batch_size, D, D)
-        state = state_fun(U, state)
+    for start in range(0, n_pulse, chunk_size):
+        end = min(start + chunk_size, n_pulse)
+        chunk_len = end - start
+
+        # Slice the pulse Hamiltonian for this chunk: (chunk_len, batch_size, D, D)
+        Hp_chunk = Hp[start:end]
+
+        # Add H0 via broadcasting — H0 is (batch_size, D, D), Hp_chunk is
+        # (chunk_len, batch_size, D, D).  The addition broadcasts H0 over the
+        # time dimension without an explicit expand + separate allocation.
+        H_chunk = Hp_chunk + H0.unsqueeze(0)  # (chunk_len, batch_size, D, D)
+
+        # Flatten for batched matrix exponential
+        H_flat = H_chunk.reshape(chunk_len * batch_size, D, D)
+        U_flat = u_fun(H_flat, dt)  # (chunk_len * batch_size, D, D)
+        U_chunk = U_flat.reshape(chunk_len, batch_size, D, D)
+
+        # Apply time evolution for this chunk
+        for n in range(chunk_len):
+            state = state_fun(U_chunk[n], state)
 
     return state
 
