@@ -1,6 +1,3 @@
-import torch
-
-
 def h0_omega_1_iterator_torch(H0, n_rabi, initials, targets):
     """
     Generate expanded H0, initials, targets tensors for all combinations of H0 and Omega_R snapshots.
@@ -49,7 +46,9 @@ def h0_omega_1_iterator_torch(H0, n_rabi, initials, targets):
         initials_combined = initials.unsqueeze(1).expand(Q, M, N).reshape(Q * M, N)
         targets_combined = targets.unsqueeze(1).expand(Q, M, N).reshape(Q * M, N)
     else:
-        initials_combined = initials.unsqueeze(1).expand(Q, M, N, N).reshape(Q * M, N, N)
+        initials_combined = (
+            initials.unsqueeze(1).expand(Q, M, N, N).reshape(Q * M, N, N)
+        )
         targets_combined = targets.unsqueeze(1).expand(Q, M, N, N).reshape(Q * M, N, N)
 
     return H0_combined, initials_combined, targets_combined
