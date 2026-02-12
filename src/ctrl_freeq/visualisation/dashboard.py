@@ -7,6 +7,7 @@ figures (both Matplotlib and Plotly) in a presentable two-column card grid.
 
 import panel as pn
 import numpy as np
+import matplotlib.pyplot as plt
 from typing import List, Any
 
 
@@ -269,7 +270,15 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
     results_dir.mkdir(parents=True, exist_ok=True)
 
     dashboard_path = str(results_dir / f"dashboard_{timestamp}.html")
-    template.save(dashboard_path, resources="inline")
+    # Use CDN resources to avoid embedding ~5-10 MB of JS/CSS inline.
+    # Dashboards require an internet connection to load Panel/Bokeh/Plotly
+    # libraries, but the file size drops from ~8-50 MB to ~1-2 MB.
+    template.save(dashboard_path, resources="cdn")
+
+    # Close matplotlib figures to free memory now that they're saved to disk
+    for fig in figures:
+        if not hasattr(fig, "to_plotly_json"):  # matplotlib figure
+            plt.close(fig)
 
     return dashboard_path
 
