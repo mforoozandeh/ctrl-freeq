@@ -1307,13 +1307,6 @@
 <td>500 kHz</td>
 <td>Hz</td>
 </tr>
-<tr>
-<td><code>ratio_factor</code></td>
-<td>Ratio Factor</td>
-<td>Amplitude scaling ratio</td>
-<td>0.5</td>
-<td>—</td>
-</tr>
 </tbody>
 </table>
 <hr />
@@ -1333,7 +1326,7 @@
 <tr>
 <td><code>wf_type</code></td>
 <td>Waveform Type</td>
-<td><code>cheb</code>, <code>fourier</code>, <code>poly</code></td>
+<td>See below</td>
 <td><code>cheb</code></td>
 <td>Basis function type</td>
 </tr>
@@ -1385,8 +1378,12 @@
 <p class="admonition-title">Waveform Types</p>
 <ul>
 <li><strong>cheb</strong> — Chebyshev polynomial basis (recommended for most cases)</li>
-<li><strong>fourier</strong> — Fourier series basis</li>
+<li><strong>fou</strong> — Fourier series basis</li>
 <li><strong>poly</strong> — Standard polynomial basis</li>
+<li><strong>leg</strong> — Legendre polynomial basis</li>
+<li><strong>hermite</strong> — Hermite polynomial basis</li>
+<li><strong>gegen</strong> — Gegenbauer polynomial basis</li>
+<li><strong>chirp</strong> — Chirp basis</li>
 </ul>
 </div>
 <div class="admonition info">

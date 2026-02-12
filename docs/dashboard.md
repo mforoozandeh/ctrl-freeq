@@ -67,6 +67,16 @@ python -m ctrl_freeq.visualisation.dashboard
 
 ---
 
+## Example Dashboard
+
+Below is an example of the dashboard generated from a single-qubit optimization run. This is what you get when you click **Save Results** in the GUI or call `create_dashboard` via the API.
+
+[View Example Dashboard](../assets/example_dashboard.html){ .md-button .md-button--primary target="_blank" }
+
+The dashboard opens in a new tab as a standalone interactive page with Plotly figures you can zoom, pan, and hover over.
+
+---
+
 ## Dashboard Contents
 
 The dashboard typically includes:
