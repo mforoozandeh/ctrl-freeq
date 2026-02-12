@@ -413,6 +413,7 @@ def save_results():
     # Free the heavy Initialise object now that results are saved to disk
     last_parameters = None
     import gc
+
     gc.collect()
 
     print("Results saved successfully!")
