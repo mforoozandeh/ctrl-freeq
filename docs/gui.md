@@ -35,6 +35,23 @@ The GUI is organized into five sections:
 | **Coupling Controls** | Inter-qubit coupling (multi-qubit only) |
 | **Action Buttons** | Run, Save, and Reset controls |
 
+### Single-Qubit Configuration
+
+<figure markdown="span">
+  ![Single-qubit GUI](assets/gui_single_qubit.png){ width="600" }
+  <figcaption>GUI configured for a single-qubit Hadamard gate optimization.</figcaption>
+</figure>
+
+### Two-Qubit Configuration
+
+<figure markdown="span">
+  ![Two-qubit GUI](assets/gui_two_qubit.png){ width="700" }
+  <figcaption>GUI configured for a two-qubit CNOT gate optimization with XY coupling.</figcaption>
+</figure>
+
+!!! note "Coupling Controls"
+    The **Coupling Type** and **Coupling Constants** section on the right only appears when two or more qubits are configured.
+
 ---
 
 ## Configuring Parameters
