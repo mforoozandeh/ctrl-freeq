@@ -1,10 +1,12 @@
 # Optimization Parameters
 
-ctrl-freeq uses a JSON configuration with a consistent schema across API and GUI.
+Ctrl-freeq employs a JSON-based configuration schema that is shared between the programmatic API and the graphical user interface. This section provides a complete reference for all configurable parameters, organized by category.
 
 ---
 
 ## Configuration Schema
+
+The top-level structure of a configuration is as follows:
 
 ```jsonc
 {
@@ -26,7 +28,7 @@ ctrl-freeq uses a JSON configuration with a consistent schema across API and GUI
 
 ## System Parameters
 
-Physical parameters of the quantum system. All are **per-qubit arrays**.
+The system parameters define the physical properties of the quantum system under consideration. All values are specified as **per-qubit arrays**, with one entry for each qubit in the configuration.
 
 | Key | GUI Label | Description | Default | Units |
 |-----|-----------|-------------|---------|-------|
@@ -39,7 +41,7 @@ Physical parameters of the quantum system. All are **per-qubit arrays**.
 
 ## Pulse Parameters
 
-Parameters controlling pulse shape and timing. All are **per-qubit arrays**.
+The pulse parameters control the temporal characteristics of the control waveform, including its duration, discretization, and frequency properties. As with the system parameters, all values are **per-qubit arrays**.
 
 | Key | GUI Label | Description | Default | Units |
 |-----|-----------|-------------|---------|-------|
@@ -53,7 +55,7 @@ Parameters controlling pulse shape and timing. All are **per-qubit arrays**.
 
 ## Waveform Settings
 
-Parameters controlling waveform basis and envelope. All are **per-qubit arrays**.
+The waveform settings determine the basis functions and envelope used to parameterize the control pulse. The choice of basis and mode has a significant influence on the smoothness, bandwidth, and convergence properties of the optimized waveform. All values are **per-qubit arrays**.
 
 | Key | GUI Label | Options | Default | Description |
 |-----|-----------|---------|---------|-------------|
@@ -66,7 +68,9 @@ Parameters controlling waveform basis and envelope. All are **per-qubit arrays**
 | `n_para` | Number of Parameters | Integer | 16 | Optimization parameters per qubit |
 
 !!! info "Waveform Types"
-    - **cheb** — Chebyshev polynomial basis (recommended for most cases)
+    Several families of orthogonal basis functions are available for the parameterization of the control waveform:
+
+    - **cheb** — Chebyshev polynomial basis (recommended for most applications due to favourable convergence properties)
     - **fou** — Fourier series basis
     - **poly** — Standard polynomial basis
     - **leg** — Legendre polynomial basis
@@ -75,15 +79,17 @@ Parameters controlling waveform basis and envelope. All are **per-qubit arrays**
     - **chirp** — Chirp basis
 
 !!! info "Waveform Modes"
-    - **cart** — Cartesian mode: optimizes I (in-phase) and Q (quadrature) components
-    - **polar** — Polar mode: optimizes amplitude and phase directly
-    - **polar_phase** — Polar phase mode: optimizes phase with fixed amplitude profile
+    The waveform representation may be specified in one of three modes:
+
+    - **cart** — Cartesian mode, in which the in-phase (I) and quadrature (Q) components are optimized independently
+    - **polar** — Polar mode, in which the amplitude and phase are optimized directly
+    - **polar_phase** — Polar phase mode, in which only the phase is optimized while the amplitude profile remains fixed
 
 ---
 
 ## Multi-Qubit Coupling
 
-These fields are used when `len(qubits) > 1`:
+For systems comprising two or more qubits, the inter-qubit coupling parameters must be specified. These fields are used when `len(qubits) > 1`:
 
 | Key | GUI Label | Description                      | Default |
 |-----|-----------|----------------------------------|---------|
@@ -92,6 +98,8 @@ These fields are used when `len(qubits) > 1`:
 | `sigma_J` | σ J | Coupling strength uncertainty    | 0 |
 
 !!! info "Coupling Types"
+    Three coupling models are supported, corresponding to common interaction Hamiltonians encountered in quantum information processing:
+
     - **Z** — Ising-type ZZ coupling only
     - **XY** — XX + YY exchange coupling (default)
     - **XYZ** — Full Heisenberg coupling (XX + YY + ZZ)
@@ -100,7 +108,7 @@ These fields are used when `len(qubits) > 1`:
 
 ## Initial States
 
-List of initial state specifications per qubit.
+The initial state of each qubit is specified as a list of Bloch sphere axis labels. For multi-qubit systems, each entry in the outer list corresponds to a distinct initial configuration of the entire register.
 
 ```jsonc
 // Single qubit
@@ -114,11 +122,11 @@ List of initial state specifications per qubit.
 
 ## Target States
 
-Three methods for specifying target states:
+The desired final state or gate may be specified using one of three methods, each suited to different use cases.
 
 ### Axis Targets
 
-Specify target as Bloch sphere axis direction.
+The target state is specified as a Bloch sphere axis direction.
 
 ```jsonc
 { "target_states": { "Axis": [["-Z"]] } }
@@ -133,7 +141,7 @@ Specify target as Bloch sphere axis direction.
 
 ### Gate Targets
 
-Specify a target quantum gate.
+The target is specified as a quantum gate, which implicitly defines the required unitary transformation.
 
 ```jsonc
 { "target_states": { "Gate": ["X", "H", "CNOT"] } }
@@ -147,7 +155,7 @@ Specify a target quantum gate.
 
 ### Phi/Beta Targets
 
-Specify rotation angles.
+The target rotation is specified in terms of the rotation axis and angle.
 
 ```jsonc
 { "target_states": { "Phi": ["x"], "Beta": ["180"] } }
@@ -162,16 +170,11 @@ Specify rotation angles.
 
 ## Multi-State Optimization
 
-ctrl-freeq supports optimizing pulses for **multiple initial/target state pairs simultaneously**. This is essential for designing:
-
-- **Universal rotation pulses** (single qubit)
-- **Conditional gates** like CNOT, SWAP (multi-qubit)
-
-The optimizer finds a single pulse that achieves all specified state transformations.
+Ctrl-freeq supports the simultaneous optimization of pulses for multiple initial/target state pairs. This capability is essential for the design of universal rotation pulses (in the single-qubit case) and conditional gates such as CNOT or SWAP (in the multi-qubit case). The optimizer seeks a single pulse that achieves all specified state transformations concurrently.
 
 ### Single-Qubit Example: Universal Rotation
 
-To design a pulse that performs a universal rotation, specify multiple initial→target mappings:
+To design a pulse that performs a universal rotation, multiple initial-to-target state mappings are specified:
 
 ```jsonc
 {
@@ -182,7 +185,7 @@ To design a pulse that performs a universal rotation, specify multiple initial�
 }
 ```
 
-This optimizes a pulse that simultaneously achieves:
+The optimization then seeks a single pulse that simultaneously achieves the following transformations:
 
 | Initial | Target | Transformation |
 |---------|--------|----------------|
@@ -192,7 +195,7 @@ This optimizes a pulse that simultaneously achieves:
 
 ### Multi-Qubit Example: Conditional Gates
 
-For two-qubit systems, use multiple state pairs to design conditional gates:
+For two-qubit systems, multiple state pairs may be specified to design conditional gates:
 
 ```jsonc
 {
@@ -204,16 +207,16 @@ For two-qubit systems, use multiple state pairs to design conditional gates:
 ```
 
 !!! tip "State Pair Matching"
-    The number of initial states must match the number of target states. Each initial state at index `i` maps to the target state at index `i`.
+    It should be noted that the number of initial states must equal the number of target states. Each initial state at index `i` is mapped to the target state at the corresponding index.
 
 ### GUI Usage
 
-In the GUI, enter comma-separated values for multiple states:
+In the graphical interface, multiple states are entered as comma-separated values:
 
 - **Initial States**: `X, Y, Z`
 - **Target Axis**: `X, Z, -Y`
 
-For two-qubit systems, use semicolons to separate qubits within each state pair.
+For two-qubit systems, semicolons are used to separate qubits within each state pair.
 
 ### API Usage
 
@@ -235,6 +238,8 @@ Available multi-state configurations:
 ---
 
 ## Optimization Settings
+
+The following fields control the behaviour of the optimization procedure:
 
 | Key | GUI Label | Description | Default |
 |-----|-----------|-------------|---------|

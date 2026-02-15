@@ -918,14 +918,10 @@
 
 
 <h1 id="optimization-algorithms">Optimization Algorithms</h1>
-<p>ctrl-freeq supports multiple optimization algorithms through the <code>algorithm</code> configuration field.</p>
+<p>Ctrl-freeq provides access to multiple optimization algorithms through the <code>algorithm</code> configuration field. These algorithms are drawn from two distinct families, each offering complementary capabilities for the solution of quantum control problems.</p>
 <hr />
 <h2 id="algorithm-families">Algorithm Families</h2>
-<p>There are two families of algorithms:</p>
-<ol>
-<li><strong>Built-in algorithms</strong> — Gradient-based methods via <a href="https://github.com/rfeinman/pytorch-minimize">pytorch-minimize</a> (runs on PyTorch tensors, supports automatic differentiation)</li>
-<li><strong>Qiskit optimizers</strong> — Wrapped Qiskit algorithms (prefixed with <code>qiskit-</code>)</li>
-</ol>
+<p>The available algorithms are organized into two families. The first comprises gradient-based methods implemented via the <a href="https://github.com/rfeinman/pytorch-minimize">pytorch-minimize</a> library, which operates directly on PyTorch tensors and supports automatic differentiation for the computation of gradients and, where applicable, Hessians. The second family consists of wrapped Qiskit optimizers, identified by the <code>qiskit-</code> prefix, which include both gradient-based and derivative-free methods.</p>
 <hr />
 <h2 id="built-in-algorithms">Built-in Algorithms</h2>
 <table>
@@ -938,7 +934,7 @@
 <tbody>
 <tr>
 <td><code>bfgs</code></td>
-<td>Broyden–Fletcher–Goldfarb–Shanno (quasi-Newton)</td>
+<td>Broyden-Fletcher-Goldfarb-Shanno (quasi-Newton)</td>
 </tr>
 <tr>
 <td><code>l-bfgs</code></td>
@@ -976,7 +972,7 @@
 </table>
 <hr />
 <h2 id="qiskit-algorithms">Qiskit Algorithms</h2>
-<p>Qiskit optimizers are wrapped in <code>ctrl_freeq/optimizers/qiskit_optimizers.py</code>.</p>
+<p>The Qiskit optimizers are wrapped in <code>ctrl_freeq/optimizers/qiskit_optimizers.py</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1029,33 +1025,17 @@
 </table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The exact set available depends on <code>get_supported_qiskit_optimizers()</code> in your installed version.</p>
+<p>The exact set of available Qiskit optimizers is determined by the <code>get_supported_qiskit_optimizers()</code> function and may vary with the installed version.</p>
 </div>
 <hr />
 <h2 id="choosing-an-algorithm">Choosing an Algorithm</h2>
-<div class="admonition tip">
-<p class="admonition-title">General-Purpose</p>
-<p><strong><code>bfgs</code></strong> or <strong><code>l-bfgs</code></strong> — Good default choices for most problems. Use <code>l-bfgs</code> for larger parameter spaces to reduce memory usage.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Smooth Problems</p>
-<p><strong><code>newton-cg</code></strong> — Often achieves faster convergence for smooth, well-behaved cost landscapes.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Constrained Problems</p>
-<p><strong><code>qiskit-cobyla</code></strong> — Robust derivative-free method, good for constrained optimization.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Noisy Landscapes</p>
-<p><strong><code>qiskit-adam</code></strong> or <strong><code>qiskit-spsa</code></strong> — Useful for noisy or non-convex optimization landscapes.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">High-Precision</p>
-<p><strong><code>trust-exact</code></strong> or <strong><code>newton-exact</code></strong> — When you need high precision and can afford exact Hessian computation.</p>
-</div>
+<p>The selection of an appropriate optimization algorithm depends on the characteristics of the problem at hand, the dimensionality of the parameter space, and the available computational resources.</p>
+<p>For general-purpose applications, the BFGS or L-BFGS algorithms provide reliable quasi-Newton methods that are well-suited to the majority of pulse design problems; the latter is particularly advantageous when the parameter space is large, owing to its reduced memory requirements. For smooth, well-behaved cost landscapes, the Newton-CG method often exhibits faster convergence due to its use of curvature information.</p>
+<p>In cases where derivative-free optimization is preferred or the problem involves constraints, COBYLA (<code>qiskit-cobyla</code>) offers a robust alternative that does not require gradient computation. For noisy or non-convex optimization landscapes, stochastic methods such as Adam (<code>qiskit-adam</code>) or SPSA (<code>qiskit-spsa</code>) may prove more effective, as they are designed to navigate irregular objective function surfaces.</p>
+<p>When high numerical precision is required and the computational cost of exact Hessian evaluation is acceptable, the <code>trust-exact</code> or <code>newton-exact</code> algorithms should be considered, as they exploit full second-order information to achieve rapid convergence in the neighbourhood of a minimum.</p>
 <hr />
 <h2 id="convergence-parameters">Convergence Parameters</h2>
-<p>These parameters control optimization termination:</p>
+<p>The following parameters control the termination criteria of the optimization:</p>
 <table>
 <thead>
 <tr>

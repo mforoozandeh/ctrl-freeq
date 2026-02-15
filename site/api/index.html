@@ -1517,8 +1517,7 @@
 
 
 <h1 id="api-reference">API Reference</h1>
-<p>ctrl-freeq provides a high-level Python API for running quantum control optimizations programmatically.</p>
-<p>The main entry point is the <code>CtrlFreeQAPI</code> class in <code>ctrl_freeq.api</code>.</p>
+<p>A high-level Python API is provided for the programmatic execution of quantum control optimizations. The principal interface is the <code>CtrlFreeQAPI</code> class, defined in the <code>ctrl_freeq.api</code> module, which encapsulates the complete workflow from configuration loading through optimization to result retrieval.</p>
 <hr />
 <h2 id="quick-start">Quick Start</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span><span class="p">,</span> <span class="n">load_single_qubit_config</span>
@@ -1538,15 +1537,11 @@
 </code></pre></div>
 <hr />
 <h2 id="ctrlfreeqapi-class">CtrlFreeQAPI Class</h2>
-<p>The main class for interacting with ctrl-freeq.</p>
+<p>The <code>CtrlFreeQAPI</code> class serves as the primary interface for interacting with the ctrl-freeq optimization framework.</p>
 <h3 id="constructor">Constructor</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span>
 </code></pre></div>
-<p>Create an API instance from:</p>
-<ul>
-<li>A path to a JSON configuration file (string or <code>Path</code>)</li>
-<li>A dictionary containing configuration parameters</li>
-</ul>
+<p>An API instance may be created from a path to a JSON configuration file (provided as a string or <code>Path</code> object) or from a dictionary containing the configuration parameters directly.</p>
 <p><strong>Parameters:</strong></p>
 <table>
 <thead>
@@ -1610,11 +1605,11 @@
 <hr />
 <h3 id="methods">Methods</h3>
 <h4 id="run_optimization"><code>run_optimization()</code></h4>
-<p>Run the quantum control optimization with the loaded configuration.</p>
+<p>Executes the quantum control optimization with the loaded configuration.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>Returns:</strong> <code>torch.Tensor</code> — The optimized pulse parameters.</p>
-<p>After optimization completes, the following attributes are stored on <code>api.parameters</code>:</p>
+<p>Upon completion of the optimization, the following attributes are stored on <code>api.parameters</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1654,18 +1649,10 @@
 </code></pre></div>
 <hr />
 <h4 id="get_config_summary"><code>get_config_summary()</code></h4>
-<p>Get a human-readable summary of the current configuration.</p>
+<p>Returns a human-readable summary of the current configuration.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">summary</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">()</span>
 </code></pre></div>
-<p><strong>Returns:</strong> <code>str</code> — A formatted string containing:</p>
-<ul>
-<li>Number of qubits</li>
-<li>Optimization space (Hilbert/Liouville)</li>
-<li>Algorithm name</li>
-<li>Maximum iterations</li>
-<li>Target fidelity</li>
-<li>Initial and target states</li>
-</ul>
+<p><strong>Returns:</strong> <code>str</code> — A formatted string containing the number of qubits, optimization space (Hilbert/Liouville), algorithm name, maximum iterations, target fidelity, and the initial and target states.</p>
 <p><strong>Example:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_config</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
@@ -1683,7 +1670,7 @@
 </code></pre></div></p>
 <hr />
 <h4 id="update_parameterparameter_path-value"><code>update_parameter(parameter_path, value)</code></h4>
-<p>Update a specific parameter in the configuration and reinitialize.</p>
+<p>Updates a specific parameter in the configuration and reinitializes the internal state accordingly.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="n">parameter_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Parameters:</strong></p>
@@ -1779,17 +1766,17 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">raw_config</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">config</span>
 </code></pre></div>
 <h4 id="config_path"><code>config_path</code></h4>
-<p>Path to the configuration file (if loaded from file), otherwise <code>None</code>.</p>
+<p>The path to the configuration file, if the instance was created from a file; otherwise <code>None</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">path</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">config_path</span>
 </code></pre></div>
 <h4 id="parameters"><code>parameters</code></h4>
-<p>The initialized parameter object used internally.</p>
+<p>The initialized parameter object used internally by the optimization engine.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">params</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">parameters</span>
 </code></pre></div>
 <hr />
 <h2 id="helper-functions">Helper Functions</h2>
 <h3 id="run_from_configconfig"><code>run_from_config(config)</code></h3>
-<p>One-shot helper that creates a <code>CtrlFreeQAPI</code> instance and runs optimization.</p>
+<p>A convenience function that creates a <code>CtrlFreeQAPI</code> instance and executes the optimization in a single call.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_from_config</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">run_from_config</span><span class="p">(</span><span class="s2">&quot;path/to/config.json&quot;</span><span class="p">)</span>
@@ -1831,7 +1818,7 @@
 </code></pre></div>
 <hr />
 <h3 id="load_configconfig_path"><code>load_config(config_path)</code></h3>
-<p>Load a configuration file and return a <code>CtrlFreeQAPI</code> instance.</p>
+<p>Loads a JSON configuration file and returns a <code>CtrlFreeQAPI</code> instance.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;path/to/config.json&quot;</span><span class="p">)</span>
@@ -1856,55 +1843,56 @@
 <p><strong>Returns:</strong> <code>CtrlFreeQAPI</code> instance.</p>
 <hr />
 <h2 id="built-in-example-configurations">Built-in Example Configurations</h2>
-<p>ctrl-freeq includes several pre-configured examples for common use cases. These correspond to JSON files bundled with the package under <code>src/ctrl_freeq/data/json_input/</code>.</p>
+<p>Several pre-configured examples are bundled with the package for common use cases. These correspond to JSON files located under <code>src/ctrl_freeq/data/json_input/</code>.</p>
 <h3 id="single-qubit-configurations">Single-Qubit Configurations</h3>
 <h4 id="load_single_qubit_config"><code>load_single_qubit_config()</code></h4>
-<p>Basic single-qubit optimization.</p>
+<p>A basic single-qubit optimization configuration.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
 <a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
 </code></pre></div>
 <h4 id="load_single_qubit_multiple_config"><code>load_single_qubit_multiple_config()</code></h4>
-<p>Single-qubit with multiple initial/target state pairs.</p>
+<p>A single-qubit configuration with multiple initial/target state pairs for universal rotation design.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_multiple_config</span>
 <a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
 <a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_multiple_config</span><span class="p">()</span>
 </code></pre></div>
 <h4 id="load_single_qubit_polar_phase_config"><code>load_single_qubit_polar_phase_config()</code></h4>
-<p>Single-qubit using polar/phase waveform mode.</p>
+<p>A single-qubit configuration using the polar/phase waveform mode.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_polar_phase_config</span>
 <a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
 <a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_polar_phase_config</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="two-qubit-configurations">Two-Qubit Configurations</h3>
 <h4 id="load_two_qubit_config"><code>load_two_qubit_config()</code></h4>
-<p>Basic two-qubit optimization with coupling.</p>
+<p>A basic two-qubit optimization configuration with inter-qubit coupling.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_config</span>
 <a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>
 <a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_config</span><span class="p">()</span>
 </code></pre></div>
 <h4 id="load_two_qubit_multiple_config"><code>load_two_qubit_multiple_config()</code></h4>
-<p>Two-qubit with multiple initial/target state pairs.</p>
+<p>A two-qubit configuration with multiple initial/target state pairs.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_multiple_config</span>
 <a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
 <a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_multiple_config</span><span class="p">()</span>
 </code></pre></div>
 <h4 id="load_two_qubit_polar_phase_config"><code>load_two_qubit_polar_phase_config()</code></h4>
-<p>Two-qubit using polar/phase waveform mode.</p>
+<p>A two-qubit configuration using the polar/phase waveform mode.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_polar_phase_config</span>
 <a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
 <a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_polar_phase_config</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="multi-qubit-configurations">Multi-Qubit Configurations</h3>
 <h4 id="load_four_qubit_polar_phase_config"><code>load_four_qubit_polar_phase_config()</code></h4>
-<p>Four-qubit optimization using polar/phase waveform mode.</p>
+<p>A four-qubit optimization configuration using the polar/phase waveform mode.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_four_qubit_polar_phase_config</span>
 <a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
 <a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_four_qubit_polar_phase_config</span><span class="p">()</span>
 </code></pre></div>
 <hr />
 <h2 id="complete-workflow-example">Complete Workflow Example</h2>
+<p>The following example illustrates a complete optimization workflow, from configuration loading through parameter customization, optimization, and result visualization:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span><span class="p">,</span> <span class="n">load_single_qubit_config</span>
 <a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.plotter</span><span class="w"> </span><span class="kn">import</span> <span class="n">process_and_plot</span>
 <a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.dashboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_dashboard</span>
@@ -1939,7 +1927,7 @@
 </code></pre></div>
 <hr />
 <h2 id="configuration-schema">Configuration Schema</h2>
-<p>For detailed documentation of all configuration parameters, see:</p>
+<p>For a detailed treatment of all configuration parameters, the reader is referred to:</p>
 <ul>
 <li><a href="../optimization/parameters/">Optimization Parameters</a> — Full parameter reference</li>
 <li><a href="../optimization/algorithms/">Algorithms</a> — Available optimization algorithms</li>

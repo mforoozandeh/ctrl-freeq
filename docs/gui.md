@@ -1,36 +1,36 @@
 # GUI Guide
 
-ctrl-freeq includes a Tkinter-based graphical user interface for configuring and running quantum control optimizations without writing code.
+In addition to the programmatic API, ctrl-freeq provides a graphical user interface, implemented using the Tkinter framework, which allows the configuration and execution of quantum control optimizations without the need for writing Python code. The interface exposes the full set of configurable parameters and provides real-time feedback during the optimization process.
 
 ---
 
 ## Launching the GUI
 
-After installation, launch the GUI from the command line:
+The GUI may be launched from the command line after installation:
 
 ```bash
 freeq-gui
 ```
 
-Alternatively, run it as a Python module:
+Alternatively, it may be invoked as a Python module:
 
 ```bash
 python -m ctrl_freeq.cli
 ```
 
 !!! tip "First Launch"
-    On first launch, the GUI opens with a single qubit configured. Use the **Add Qubit** button to add more qubits for multi-qubit optimizations.
+    Upon first launch, the GUI opens with a single qubit configured. Additional qubits may be added using the **Add Qubit** button for multi-qubit optimizations.
 
 ---
 
 ## GUI Layout
 
-The GUI is organized into five sections:
+The interface is organized into five principal sections:
 
 | Section | Purpose |
 |---------|---------|
 | **Qubit Configuration** | Per-qubit pulse and system parameters |
-| **Target Specification** | Define the target quantum state or gate |
+| **Target Specification** | Definition of the target quantum state or gate |
 | **Optimization Settings** | Algorithm, iterations, and compute options |
 | **Coupling Controls** | Inter-qubit coupling (multi-qubit only) |
 | **Action Buttons** | Run, Save, and Reset controls |
@@ -39,36 +39,36 @@ The GUI is organized into five sections:
 
 <figure markdown="span">
   ![Single-qubit GUI](assets/gui_single_qubit.png){ width="600" }
-  <figcaption>GUI configured for a single-qubit Hadamard gate optimization.</figcaption>
+  <figcaption>The GUI configured for a single-qubit Hadamard gate optimization.</figcaption>
 </figure>
 
 ### Two-Qubit Configuration
 
 <figure markdown="span">
   ![Two-qubit GUI](assets/gui_two_qubit.png){ width="700" }
-  <figcaption>GUI configured for a two-qubit CNOT gate optimization with XY coupling.</figcaption>
+  <figcaption>The GUI configured for a two-qubit CNOT gate optimization with XY coupling.</figcaption>
 </figure>
 
 !!! note "Coupling Controls"
-    The **Coupling Type** and **Coupling Constants** section on the right only appears when two or more qubits are configured.
+    The **Coupling Type** and **Coupling Constants** section appears on the right-hand side of the interface only when two or more qubits are configured.
 
 ---
 
 ## Configuring Parameters
 
-Each qubit has its own configuration panel. Parameters are organized into:
+Each qubit is assigned its own configuration panel. The parameters within each panel are organized into three categories:
 
-- **System Parameters** — Detuning (Δ), Rabi frequency (Ω_R), and uncertainties
-- **Pulse Parameters** — Duration, discretization, sweep rate, bandwidth
+- **System Parameters** — Detuning (Δ), Rabi frequency (Ω_R), and their associated uncertainties
+- **Pulse Parameters** — Duration, discretization, sweep rate, and bandwidth
 - **Waveform Settings** — Basis type, mode, envelope, and expansion order
 
-For detailed parameter descriptions, defaults, and units, see [Optimization → Parameters](optimization/parameters.md).
+A detailed description of all parameters, including their defaults and units, is provided in [Optimization → Parameters](optimization/parameters.md).
 
 ---
 
 ## Target Specification
 
-The **Target States Method** dropdown determines how you specify the desired final state:
+The **Target States Method** dropdown determines the method by which the desired final state is specified:
 
 | Method | Description |
 |--------|-------------|
@@ -82,10 +82,10 @@ The **Target States Method** dropdown determines how you specify the desired fin
 - Target Method: `Axis`
 - Target Axis: `-Z`
 
-For complete target specification options, see [Optimization → Parameters → Target States](optimization/parameters.md#target-states).
+A complete description of all target specification options is provided in [Optimization → Parameters → Target States](optimization/parameters.md#target-states).
 
 !!! info "Multi-State Optimization"
-    To design universal rotations or conditional gates, you can specify multiple initial/target state pairs. Enter comma-separated values (e.g., Initial: `X, Y, Z`, Target: `X, Z, -Y`). See [Multi-State Optimization](optimization/parameters.md#multi-state-optimization) for details.
+    For the design of universal rotations or conditional gates, multiple initial/target state pairs may be specified. Comma-separated values are entered in the respective fields (e.g., Initial: `X, Y, Z`, Target: `X, Z, -Y`). A detailed treatment of this capability is provided in [Multi-State Optimization](optimization/parameters.md#multi-state-optimization).
 
 ---
 
@@ -99,15 +99,15 @@ For complete target specification options, see [Optimization → Parameters → 
 | **Target Fidelity** | Stop when fidelity reaches this value |
 | **Compute Resource** | `cpu` or `gpu` |
 
-For algorithm selection guidance, see [Optimization → Algorithms](optimization/algorithms.md).
+For guidance on algorithm selection, the reader is referred to [Optimization → Algorithms](optimization/algorithms.md).
 
-For GPU setup, see [Optimization → Compute](optimization/compute.md).
+For GPU setup instructions, see [Optimization → Compute](optimization/compute.md).
 
 ---
 
 ## Coupling Controls (Multi-Qubit)
 
-When using two or more qubits, a coupling section appears:
+When two or more qubits are configured, a coupling section becomes available:
 
 | Control | Description |
 |---------|-------------|
@@ -115,7 +115,7 @@ When using two or more qubits, a coupling section appears:
 | **Coupling Type** | `Z` (Ising), `XY` (exchange), or `XYZ` (Heisenberg) |
 | **σ J** | Coupling uncertainty |
 
-For coupling parameter details, see [Optimization → Parameters → Multi-Qubit Coupling](optimization/parameters.md#multi-qubit-coupling).
+For a detailed description of the coupling parameters, see [Optimization → Parameters → Multi-Qubit Coupling](optimization/parameters.md#multi-qubit-coupling).
 
 ---
 
@@ -123,24 +123,20 @@ For coupling parameter details, see [Optimization → Parameters → Multi-Qubit
 
 ### Run
 
-Executes the optimization with current settings. Progress is displayed in the console, and results are shown in plot windows.
+Initiates the optimization with the current settings. Progress information is displayed in the console, and the resulting plots are presented upon completion.
 
 ### Save
 
-Saves the current configuration to a JSON file. The file can be:
-
-- Loaded later in the GUI
-- Used with the Python API
-- Shared with collaborators
+Saves the current configuration to a JSON file. The exported file may subsequently be loaded in the GUI, used with the Python API, or shared with collaborators.
 
 ### Save Results
 
-After running an optimization:
+Upon completion of an optimization run, this button performs the following actions:
 
-1. Saves all generated plots to `results/plots/`
-2. Creates an interactive dashboard HTML file in `results/dashboards/`
+1. All generated plots are saved to `results/plots/`
+2. An interactive dashboard HTML file is created in `results/dashboards/`
 
-See [Dashboard](dashboard.md) for dashboard details.
+A detailed description of the dashboard is provided in [Dashboard](dashboard.md).
 
 ### Set Defaults
 
@@ -152,7 +148,7 @@ Resets all parameters to their default values.
 
 ### Example 1: Single-Qubit π-Pulse
 
-1. Launch GUI: `freeq-gui`
+1. Launch the GUI: `freeq-gui`
 2. Set **Initial State**: `Z`
 3. Set **Target States Method**: `Axis`
 4. Set **Target Axis**: `-Z`
@@ -161,7 +157,7 @@ Resets all parameters to their default values.
 
 ### Example 2: Two-Qubit CNOT Gate
 
-1. Launch GUI: `freeq-gui`
+1. Launch the GUI: `freeq-gui`
 2. Click **Add Qubit** to add a second qubit
 3. Set **Target States Method**: `Gate`
 4. Set **Gate**: `CNOT`
@@ -170,64 +166,64 @@ Resets all parameters to their default values.
 
 ### Example 3: Robust Pulse Design
 
-1. Configure basic pulse parameters
+1. Configure the basic pulse parameters
 2. Set **σΔ (Hz)**: `100000` (100 kHz uncertainty)
 3. Set **σΩ_R Max (Hz)**: `50000` (50 kHz uncertainty)
 4. Set **Target Fidelity**: `0.9999`
 5. Click **Run**
 
-The optimizer will find pulses robust to the specified parameter uncertainties.
+The optimizer will seek pulses that are robust to the specified parameter uncertainties.
 
 ### Example 4: Universal Rotation Pulse
 
-1. Launch GUI: `freeq-gui`
+1. Launch the GUI: `freeq-gui`
 2. Set **Initial State**: `X, Y, Z`
 3. Set **Target States Method**: `Axis`
 4. Set **Target Axis**: `X, Z, -Y`
-5. Set **Algorithm**: `qiskit-cobyla` (recommended for multi-state)
+5. Set **Algorithm**: `qiskit-cobyla` (recommended for multi-state optimization)
 6. Click **Run**
 
-This designs a single pulse that performs a universal rotation, mapping all three Bloch sphere axes to their specified targets. See [Multi-State Optimization](optimization/parameters.md#multi-state-optimization) for more details.
+This procedure designs a single pulse that performs a universal rotation, mapping all three Bloch sphere axes to their specified targets simultaneously. A detailed treatment of multi-state optimization is provided in [Multi-State Optimization](optimization/parameters.md#multi-state-optimization).
 
 ---
 
 ## Tips
 
-!!! tip "Start Simple"
-    Begin with default parameters and a simple target (like a π-pulse) to verify your setup works before attempting complex optimizations.
+!!! tip "Recommended Initial Approach"
+    It is generally advisable to begin with the default parameter values and a straightforward target configuration (such as a π-pulse) in order to verify that the setup is functioning correctly before proceeding to more complex optimization problems.
 
 !!! tip "Iteration Count"
-    Start with fewer iterations (100-500) for quick tests. Increase to 1000+ for production runs.
+    For initial testing, a moderate number of iterations (100–500) is typically sufficient. For production-quality results, the iteration count should be increased to 1000 or more.
 
 !!! warning "Memory Usage"
-    Multi-qubit systems with many time points can require significant memory. Monitor system resources for large problems.
+    Multi-qubit systems with a large number of time discretization points can require significant memory. System resources should be monitored when working with large problem sizes.
 
 ---
 
 ## Troubleshooting
 
-### GUI doesn't launch
+### GUI does not launch
 
 ```bash
-# Check Tkinter is available
+# Verify that Tkinter is available
 python -c "import tkinter; print('Tkinter OK')"
 
-# Try running directly
+# Attempt to run directly
 python -m ctrl_freeq.cli
 ```
 
-### Optimization doesn't converge
+### Optimization does not converge
 
-- Increase **Max Iterations**
-- Try a different **Algorithm** (see [Algorithms](optimization/algorithms.md#choosing-an-algorithm))
-- Reduce **Target Fidelity** initially
-- Check parameter values are physically reasonable
+- Increase the **Max Iterations** setting
+- Consider using a different **Algorithm** (see [Algorithms](optimization/algorithms.md#choosing-an-algorithm))
+- Reduce the **Target Fidelity** initially to verify convergence behaviour
+- Ensure that parameter values are physically reasonable
 
-### Plots don't appear
+### Plots do not appear
 
-- Ensure matplotlib backend is configured
-- Check console for error messages
-- Try saving results instead of viewing interactively
+- Verify that the matplotlib backend is correctly configured
+- Check the console for error messages
+- As an alternative, save the results rather than viewing them interactively
 
 ---
 

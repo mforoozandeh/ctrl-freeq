@@ -1,6 +1,6 @@
 # Installation
 
-This page covers how to install ctrl-freeq from **PyPI** (stable and beta releases) or directly from **GitHub**.
+In this section, the installation procedure for ctrl-freeq is described. The package may be obtained either from PyPI, where both stable and pre-release versions are published, or directly from the GitHub repository.
 
 ## Requirements
 
@@ -9,7 +9,7 @@ This page covers how to install ctrl-freeq from **PyPI** (stable and beta releas
 
 ### Core Dependencies
 
-ctrl-freeq automatically installs the following dependencies:
+Ctrl-freeq automatically installs the following dependencies:
 
 | Package | Purpose |
 |---------|---------|
@@ -26,7 +26,7 @@ ctrl-freeq automatically installs the following dependencies:
 | `tqdm` | Progress bars |
 
 !!! note
-    The PyPI distribution name is `ctrl-freeq`.
+    It should be noted that the PyPI distribution name is `ctrl-freeq`, which differs from the Python import path `ctrl_freeq`.
 
 ---
 
@@ -34,7 +34,7 @@ ctrl-freeq automatically installs the following dependencies:
 
 ### Stable Releases
 
-Install the latest stable version:
+The latest stable version may be installed via pip:
 
 ```bash
 pip install ctrl-freeq
@@ -42,22 +42,22 @@ pip install ctrl-freeq
 
 ### Beta (Pre-release) Versions
 
-Pre-releases follow standard Python packaging (PEP 440). They are **not** installed by default.
+Pre-releases follow standard Python packaging conventions (PEP 440) and are **not** installed by default.
 
-Install the latest available pre-release:
+The latest available pre-release may be installed as follows:
 
 ```bash
 pip install --pre ctrl-freeq
 ```
 
-Or install a specific beta version:
+A specific beta version may also be requested:
 
 ```bash
 pip install ctrl-freeq==0.1.0b4
 ```
 
 !!! tip "Finding Available Versions"
-    View all available versions on [PyPI](https://pypi.org/project/ctrl-freeq/#history).
+    All available versions may be viewed on [PyPI](https://pypi.org/project/ctrl-freeq/#history).
 
 ---
 
@@ -81,7 +81,7 @@ pip install "ctrl-freeq @ git+https://github.com/mforoozandeh/ctrl-freeq.git@v0.
 
 ### Editable/Development Install
 
-For development or contributing:
+For development or contributing purposes, the package may be installed in editable mode:
 
 ```bash
 git clone https://github.com/mforoozandeh/ctrl-freeq.git
@@ -95,13 +95,13 @@ pip install -e .
 ```
 
 !!! note "Dependency Groups"
-    Development dependencies (`pytest`, `jupyter`, etc.) are defined as [dependency groups](https://peps.python.org/pep-0735/) in `pyproject.toml`. Use `uv sync --group dev` to install them. The `pip install -e .[dev]` syntax does not support dependency groups.
+    Development dependencies (`pytest`, `jupyter`, etc.) are defined as [dependency groups](https://peps.python.org/pep-0735/) in `pyproject.toml`. These are installed via `uv sync --group dev`. It should be noted that the `pip install -e .[dev]` syntax does not support dependency groups.
 
 ---
 
 ## Using uv (Recommended Package Manager)
 
-If you prefer using [uv](https://github.com/astral-sh/uv):
+As an alternative to pip, the [uv](https://github.com/astral-sh/uv) package manager may be employed, which offers certain advantages in dependency resolution and environment management:
 
 ```bash
 # Install from PyPI
@@ -126,7 +126,7 @@ uv sync --group dev --group docs --group tools
 freeq-gui
 ```
 
-If the command is found and the window opens, the installation is complete.
+If the command is found and the graphical interface window opens successfully, the installation is complete.
 
 ### Verify in Python
 
@@ -165,9 +165,9 @@ pip install --upgrade --pre ctrl-freeq
 
 ## GPU Support (Optional)
 
-ctrl-freeq supports GPU acceleration via PyTorch CUDA. To enable GPU support:
+Ctrl-freeq supports GPU acceleration via the CUDA backend of PyTorch. To enable GPU support, the following steps should be followed:
 
-1. Ensure you have a CUDA-compatible NVIDIA GPU
+1. Ensure that a CUDA-compatible NVIDIA GPU is available
 2. Install PyTorch with CUDA support:
 
 ```bash
@@ -183,7 +183,7 @@ print(f"CUDA available: {torch.cuda.is_available()}")
 print(f"CUDA device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
 ```
 
-See [Compute (CPU/GPU)](optimization/compute.md) for configuration details.
+A detailed treatment of GPU configuration is provided in [Compute (CPU/GPU)](optimization/compute.md).
 
 ---
 
@@ -193,7 +193,7 @@ See [Compute (CPU/GPU)](optimization/compute.md) for configuration details.
 
 #### `freeq-gui` command not found
 
-Ensure the package is installed and your Python scripts directory is in your PATH:
+It should be verified that the package is installed and that the Python scripts directory is included in the system PATH:
 
 ```bash
 # Check if installed
@@ -205,7 +205,7 @@ python -m ctrl_freeq.cli
 
 #### Import errors
 
-Verify all dependencies are installed:
+All dependencies may be reinstalled by upgrading the package:
 
 ```bash
 pip install --upgrade ctrl-freeq
@@ -213,7 +213,7 @@ pip install --upgrade ctrl-freeq
 
 #### Tkinter not available
 
-The GUI requires Tkinter. On some systems, you may need to install it separately:
+The GUI requires Tkinter, which may need to be installed separately on certain systems:
 
 === "Ubuntu/Debian"
     ```bash
@@ -226,7 +226,7 @@ The GUI requires Tkinter. On some systems, you may need to install it separately
     ```
 
 === "macOS"
-    Tkinter is included with Python from python.org. If using Homebrew:
+    Tkinter is included with the Python distribution from python.org. If Homebrew is used:
     ```bash
     brew install python-tk@3.13
     ```
@@ -236,11 +236,11 @@ The GUI requires Tkinter. On some systems, you may need to install it separately
 
 #### CUDA/GPU issues
 
-If GPU mode fails:
+If GPU mode fails, the following steps may be taken:
 
-1. Verify PyTorch CUDA installation: `python -c "import torch; print(torch.cuda.is_available())"`
-2. Check CUDA driver compatibility with your PyTorch version
-3. Fall back to CPU mode by setting `compute_resource: "cpu"` in your configuration
+1. Verify the PyTorch CUDA installation: `python -c "import torch; print(torch.cuda.is_available())"`
+2. Check CUDA driver compatibility with the installed PyTorch version
+3. Fall back to CPU mode by setting `compute_resource: "cpu"` in the configuration
 
 ---
 
