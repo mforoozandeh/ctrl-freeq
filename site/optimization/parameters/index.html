@@ -1184,9 +1184,10 @@
 
 
 <h1 id="optimization-parameters">Optimization Parameters</h1>
-<p>ctrl-freeq uses a JSON configuration with a consistent schema across API and GUI.</p>
+<p>Ctrl-freeq employs a JSON-based configuration schema that is shared between the programmatic API and the graphical user interface. This section provides a complete reference for all configurable parameters, organized by category.</p>
 <hr />
 <h2 id="configuration-schema">Configuration Schema</h2>
+<p>The top-level structure of a configuration is as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  &quot;qubits&quot;: [&quot;q1&quot;, &quot;q2&quot;],
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  &quot;compute_resource&quot;: &quot;cpu&quot;,
@@ -1216,7 +1217,7 @@
 </table>
 <hr />
 <h2 id="system-parameters">System Parameters</h2>
-<p>Physical parameters of the quantum system. All are <strong>per-qubit arrays</strong>.</p>
+<p>The system parameters define the physical properties of the quantum system under consideration. All values are specified as <strong>per-qubit arrays</strong>, with one entry for each qubit in the configuration.</p>
 <table>
 <thead>
 <tr>
@@ -1260,7 +1261,7 @@
 </table>
 <hr />
 <h2 id="pulse-parameters">Pulse Parameters</h2>
-<p>Parameters controlling pulse shape and timing. All are <strong>per-qubit arrays</strong>.</p>
+<p>The pulse parameters control the temporal characteristics of the control waveform, including its duration, discretization, and frequency properties. As with the system parameters, all values are <strong>per-qubit arrays</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -1311,7 +1312,7 @@
 </table>
 <hr />
 <h2 id="waveform-settings">Waveform Settings</h2>
-<p>Parameters controlling waveform basis and envelope. All are <strong>per-qubit arrays</strong>.</p>
+<p>The waveform settings determine the basis functions and envelope used to parameterize the control pulse. The choice of basis and mode has a significant influence on the smoothness, bandwidth, and convergence properties of the optimized waveform. All values are <strong>per-qubit arrays</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -1376,8 +1377,9 @@
 </table>
 <div class="admonition info">
 <p class="admonition-title">Waveform Types</p>
+<p>Several families of orthogonal basis functions are available for the parameterization of the control waveform:</p>
 <ul>
-<li><strong>cheb</strong> — Chebyshev polynomial basis (recommended for most cases)</li>
+<li><strong>cheb</strong> — Chebyshev polynomial basis (recommended for most applications due to favourable convergence properties)</li>
 <li><strong>fou</strong> — Fourier series basis</li>
 <li><strong>poly</strong> — Standard polynomial basis</li>
 <li><strong>leg</strong> — Legendre polynomial basis</li>
@@ -1388,15 +1390,16 @@
 </div>
 <div class="admonition info">
 <p class="admonition-title">Waveform Modes</p>
+<p>The waveform representation may be specified in one of three modes:</p>
 <ul>
-<li><strong>cart</strong> — Cartesian mode: optimizes I (in-phase) and Q (quadrature) components</li>
-<li><strong>polar</strong> — Polar mode: optimizes amplitude and phase directly</li>
-<li><strong>polar_phase</strong> — Polar phase mode: optimizes phase with fixed amplitude profile</li>
+<li><strong>cart</strong> — Cartesian mode, in which the in-phase (I) and quadrature (Q) components are optimized independently</li>
+<li><strong>polar</strong> — Polar mode, in which the amplitude and phase are optimized directly</li>
+<li><strong>polar_phase</strong> — Polar phase mode, in which only the phase is optimized while the amplitude profile remains fixed</li>
 </ul>
 </div>
 <hr />
 <h2 id="multi-qubit-coupling">Multi-Qubit Coupling</h2>
-<p>These fields are used when <code>len(qubits) &gt; 1</code>:</p>
+<p>For systems comprising two or more qubits, the inter-qubit coupling parameters must be specified. These fields are used when <code>len(qubits) &gt; 1</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1429,6 +1432,7 @@
 </table>
 <div class="admonition info">
 <p class="admonition-title">Coupling Types</p>
+<p>Three coupling models are supported, corresponding to common interaction Hamiltonians encountered in quantum information processing:</p>
 <ul>
 <li><strong>Z</strong> — Ising-type ZZ coupling only</li>
 <li><strong>XY</strong> — XX + YY exchange coupling (default)</li>
@@ -1437,7 +1441,7 @@
 </div>
 <hr />
 <h2 id="initial-states">Initial States</h2>
-<p>List of initial state specifications per qubit.</p>
+<p>The initial state of each qubit is specified as a list of Bloch sphere axis labels. For multi-qubit systems, each entry in the outer list corresponds to a distinct initial configuration of the entire register.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>// Single qubit
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>{ &quot;initial_states&quot;: [[&quot;Z&quot;]] }
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -1446,9 +1450,9 @@
 </code></pre></div>
 <hr />
 <h2 id="target-states">Target States</h2>
-<p>Three methods for specifying target states:</p>
+<p>The desired final state or gate may be specified using one of three methods, each suited to different use cases.</p>
 <h3 id="axis-targets">Axis Targets</h3>
-<p>Specify target as Bloch sphere axis direction.</p>
+<p>The target state is specified as a Bloch sphere axis direction.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>{ &quot;target_states&quot;: { &quot;Axis&quot;: [[&quot;-Z&quot;]] } }
 </code></pre></div>
 <table>
@@ -1478,14 +1482,14 @@
 </tbody>
 </table>
 <h3 id="gate-targets">Gate Targets</h3>
-<p>Specify a target quantum gate.</p>
+<p>The target is specified as a quantum gate, which implicitly defines the required unitary transformation.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{ &quot;target_states&quot;: { &quot;Gate&quot;: [&quot;X&quot;, &quot;H&quot;, &quot;CNOT&quot;] } }
 </code></pre></div>
 <p><strong>Single-qubit:</strong> <code>X</code>, <code>Y</code>, <code>Z</code>, <code>H</code>, <code>S</code>, <code>T</code></p>
 <p><strong>Two-qubit:</strong> <code>CNOT</code>, <code>CZ</code>, <code>SWAP</code>, <code>iSWAP</code></p>
 <p><strong>Three-qubit:</strong> <code>Toff</code> (Toffoli)</p>
 <h3 id="phibeta-targets">Phi/Beta Targets</h3>
-<p>Specify rotation angles.</p>
+<p>The target rotation is specified in terms of the rotation axis and angle.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{ &quot;target_states&quot;: { &quot;Phi&quot;: [&quot;x&quot;], &quot;Beta&quot;: [&quot;180&quot;] } }
 </code></pre></div>
 <table>
@@ -1511,14 +1515,9 @@
 </table>
 <hr />
 <h2 id="multi-state-optimization">Multi-State Optimization</h2>
-<p>ctrl-freeq supports optimizing pulses for <strong>multiple initial/target state pairs simultaneously</strong>. This is essential for designing:</p>
-<ul>
-<li><strong>Universal rotation pulses</strong> (single qubit)</li>
-<li><strong>Conditional gates</strong> like CNOT, SWAP (multi-qubit)</li>
-</ul>
-<p>The optimizer finds a single pulse that achieves all specified state transformations.</p>
+<p>Ctrl-freeq supports the simultaneous optimization of pulses for multiple initial/target state pairs. This capability is essential for the design of universal rotation pulses (in the single-qubit case) and conditional gates such as CNOT or SWAP (in the multi-qubit case). The optimizer seeks a single pulse that achieves all specified state transformations concurrently.</p>
 <h3 id="single-qubit-example-universal-rotation">Single-Qubit Example: Universal Rotation</h3>
-<p>To design a pulse that performs a universal rotation, specify multiple initial→target mappings:</p>
+<p>To design a pulse that performs a universal rotation, multiple initial-to-target state mappings are specified:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>{
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  &quot;initial_states&quot;: [[&quot;X&quot;], [&quot;Y&quot;], [&quot;Z&quot;]],
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  &quot;target_states&quot;: {
@@ -1526,7 +1525,7 @@
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  }
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>}
 </code></pre></div>
-<p>This optimizes a pulse that simultaneously achieves:</p>
+<p>The optimization then seeks a single pulse that simultaneously achieves the following transformations:</p>
 <table>
 <thead>
 <tr>
@@ -1554,7 +1553,7 @@
 </tbody>
 </table>
 <h3 id="multi-qubit-example-conditional-gates">Multi-Qubit Example: Conditional Gates</h3>
-<p>For two-qubit systems, use multiple state pairs to design conditional gates:</p>
+<p>For two-qubit systems, multiple state pairs may be specified to design conditional gates:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>{
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  &quot;initial_states&quot;: [[&quot;Z&quot;, &quot;-Z&quot;], [&quot;X&quot;, &quot;Y&quot;]],
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  &quot;target_states&quot;: {
@@ -1564,15 +1563,15 @@
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">State Pair Matching</p>
-<p>The number of initial states must match the number of target states. Each initial state at index <code>i</code> maps to the target state at index <code>i</code>.</p>
+<p>It should be noted that the number of initial states must equal the number of target states. Each initial state at index <code>i</code> is mapped to the target state at the corresponding index.</p>
 </div>
 <h3 id="gui-usage">GUI Usage</h3>
-<p>In the GUI, enter comma-separated values for multiple states:</p>
+<p>In the graphical interface, multiple states are entered as comma-separated values:</p>
 <ul>
 <li><strong>Initial States</strong>: <code>X, Y, Z</code></li>
 <li><strong>Target Axis</strong>: <code>X, Z, -Y</code></li>
 </ul>
-<p>For two-qubit systems, use semicolons to separate qubits within each state pair.</p>
+<p>For two-qubit systems, semicolons are used to separate qubits within each state pair.</p>
 <h3 id="api-usage">API Usage</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_multiple_config</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
@@ -1601,6 +1600,7 @@
 </table>
 <hr />
 <h2 id="optimization-settings">Optimization Settings</h2>
+<p>The following fields control the behaviour of the optimization procedure:</p>
 <table>
 <thead>
 <tr>

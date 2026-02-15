@@ -869,18 +869,11 @@
 
 
 <h1 id="ctrl-freeq">ctrl-freeq</h1>
-<p>Gate design with optimal control for quantum circuits, implemented in Python with PyTorch.</p>
-<p>ctrl-freeq finds optimized control pulses for quantum gates by solving the optimal control problem numerically. It supports single- and multi-qubit systems with configurable Hamiltonians, coupling types, and robustness to parameter uncertainties.</p>
+<p>Ctrl-freeq is a numerical framework for the design of quantum gates via optimal control theory. The control pulse optimization problem is formulated and solved using automatic differentiation, as provided by PyTorch, and the resulting software supports single- and multi-qubit systems with configurable Hamiltonians, inter-qubit coupling types, and robustness to parameter uncertainties.</p>
 <h2 id="key-features">Key Features</h2>
-<ul>
-<li><strong>Multiple optimization algorithms</strong> — 9 gradient-based methods via pytorch-minimize and 10 Qiskit optimizers</li>
-<li><strong>Flexible quantum systems</strong> — Single-qubit through multi-qubit with configurable coupling (Z, XY, XYZ)</li>
-<li><strong>Robust pulse design</strong> — Account for detuning and Rabi frequency uncertainties</li>
-<li><strong>Waveform basis functions</strong> — Chebyshev, Fourier, and polynomial bases in Cartesian or polar modes</li>
-<li><strong>GPU acceleration</strong> — Optional CUDA support via PyTorch with automatic CPU fallback</li>
-<li><strong>Interactive dashboards</strong> — Combined Matplotlib/Plotly analysis exported as standalone HTML</li>
-<li><strong>Two interfaces</strong> — Programmatic Python API and Tkinter-based GUI (<code>freeq-gui</code>)</li>
-</ul>
+<p>The framework provides access to a comprehensive suite of optimization algorithms, comprising nine gradient-based methods available through the pytorch-minimize library and ten additional optimizers from the Qiskit ecosystem. Quantum systems of varying complexity are supported, ranging from single-qubit configurations to multi-qubit architectures with configurable inter-qubit coupling of the Ising (Z), exchange (XY), or Heisenberg (XYZ) type.</p>
+<p>Robustness to experimental imperfections is incorporated through the specification of detuning and Rabi frequency uncertainties, allowing the optimizer to find pulses that are tolerant to parameter variations. The waveform parameterization is flexible, supporting Chebyshev, Fourier, and polynomial basis functions in Cartesian or polar modes.</p>
+<p>GPU acceleration is available via the CUDA backend of PyTorch, with automatic fallback to CPU execution when CUDA is not present. Interactive dashboards, combining Matplotlib and Plotly visualizations, are generated as standalone HTML files for analysis and sharing. Two complementary interfaces are provided: a programmatic Python API and a Tkinter-based graphical user interface, accessible via the <code>freeq-gui</code> command.</p>
 <h2 id="quick-example">Quick Example</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>

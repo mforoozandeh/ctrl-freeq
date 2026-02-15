@@ -1,15 +1,12 @@
 # Optimization Algorithms
 
-ctrl-freeq supports multiple optimization algorithms through the `algorithm` configuration field.
+Ctrl-freeq provides access to multiple optimization algorithms through the `algorithm` configuration field. These algorithms are drawn from two distinct families, each offering complementary capabilities for the solution of quantum control problems.
 
 ---
 
 ## Algorithm Families
 
-There are two families of algorithms:
-
-1. **Built-in algorithms** — Gradient-based methods via [pytorch-minimize](https://github.com/rfeinman/pytorch-minimize) (runs on PyTorch tensors, supports automatic differentiation)
-2. **Qiskit optimizers** — Wrapped Qiskit algorithms (prefixed with `qiskit-`)
+The available algorithms are organized into two families. The first comprises gradient-based methods implemented via the [pytorch-minimize](https://github.com/rfeinman/pytorch-minimize) library, which operates directly on PyTorch tensors and supports automatic differentiation for the computation of gradients and, where applicable, Hessians. The second family consists of wrapped Qiskit optimizers, identified by the `qiskit-` prefix, which include both gradient-based and derivative-free methods.
 
 ---
 
@@ -17,7 +14,7 @@ There are two families of algorithms:
 
 | Algorithm | Description |
 |-----------|-------------|
-| `bfgs` | Broyden–Fletcher–Goldfarb–Shanno (quasi-Newton) |
+| `bfgs` | Broyden-Fletcher-Goldfarb-Shanno (quasi-Newton) |
 | `l-bfgs` | Limited-memory BFGS (lower memory usage) |
 | `cg` | Conjugate gradient |
 | `newton-cg` | Newton conjugate gradient |
@@ -31,7 +28,7 @@ There are two families of algorithms:
 
 ## Qiskit Algorithms
 
-Qiskit optimizers are wrapped in `ctrl_freeq/optimizers/qiskit_optimizers.py`.
+The Qiskit optimizers are wrapped in `ctrl_freeq/optimizers/qiskit_optimizers.py`.
 
 | Algorithm | Description |
 |-----------|-------------|
@@ -47,32 +44,25 @@ Qiskit optimizers are wrapped in `ctrl_freeq/optimizers/qiskit_optimizers.py`.
 | `qiskit-gsls` | Gaussian Smoothed Line Search |
 
 !!! note
-    The exact set available depends on `get_supported_qiskit_optimizers()` in your installed version.
+    The exact set of available Qiskit optimizers is determined by the `get_supported_qiskit_optimizers()` function and may vary with the installed version.
 
 ---
 
 ## Choosing an Algorithm
 
-!!! tip "General-Purpose"
-    **`bfgs`** or **`l-bfgs`** — Good default choices for most problems. Use `l-bfgs` for larger parameter spaces to reduce memory usage.
+The selection of an appropriate optimization algorithm depends on the characteristics of the problem at hand, the dimensionality of the parameter space, and the available computational resources.
 
-!!! tip "Smooth Problems"
-    **`newton-cg`** — Often achieves faster convergence for smooth, well-behaved cost landscapes.
+For general-purpose applications, the BFGS or L-BFGS algorithms provide reliable quasi-Newton methods that are well-suited to the majority of pulse design problems; the latter is particularly advantageous when the parameter space is large, owing to its reduced memory requirements. For smooth, well-behaved cost landscapes, the Newton-CG method often exhibits faster convergence due to its use of curvature information.
 
-!!! tip "Constrained Problems"
-    **`qiskit-cobyla`** — Robust derivative-free method, good for constrained optimization.
+In cases where derivative-free optimization is preferred or the problem involves constraints, COBYLA (`qiskit-cobyla`) offers a robust alternative that does not require gradient computation. For noisy or non-convex optimization landscapes, stochastic methods such as Adam (`qiskit-adam`) or SPSA (`qiskit-spsa`) may prove more effective, as they are designed to navigate irregular objective function surfaces.
 
-!!! tip "Noisy Landscapes"
-    **`qiskit-adam`** or **`qiskit-spsa`** — Useful for noisy or non-convex optimization landscapes.
-
-!!! tip "High-Precision"
-    **`trust-exact`** or **`newton-exact`** — When you need high precision and can afford exact Hessian computation.
+When high numerical precision is required and the computational cost of exact Hessian evaluation is acceptable, the `trust-exact` or `newton-exact` algorithms should be considered, as they exploit full second-order information to achieve rapid convergence in the neighbourhood of a minimum.
 
 ---
 
 ## Convergence Parameters
 
-These parameters control optimization termination:
+The following parameters control the termination criteria of the optimization:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|

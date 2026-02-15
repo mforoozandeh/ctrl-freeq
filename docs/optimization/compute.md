@@ -1,12 +1,12 @@
 # Compute (CPU/GPU)
 
-ctrl-freeq supports running optimization on **CPU** or **GPU** via the `compute_resource` configuration key.
+Ctrl-freeq supports the execution of optimization routines on both CPU and GPU hardware. The computational backend is selected through the `compute_resource` configuration field, which determines whether tensor operations are performed on the host processor or offloaded to a CUDA-compatible graphics processing unit.
 
 ---
 
 ## Configuration
 
-Top-level config field:
+The compute resource is specified as a top-level field in the configuration:
 
 ```json
 {
@@ -23,10 +23,7 @@ Valid values:
 
 ## CPU Configuration
 
-When running on CPU, ctrl-freeq automatically manages thread allocation:
-
-- **Default:** Uses `total_cores - 1` threads (leaves one core free for system responsiveness)
-- **Custom:** You can set the `cpu_cores` field in your configuration to specify the number of threads
+When the optimization is executed on CPU, thread allocation is managed automatically by the framework. By default, the number of PyTorch threads is set to one fewer than the total number of available CPU cores, thereby reserving one core for system responsiveness. This default behaviour may be overridden by specifying the `cpu_cores` field in the configuration, in which case the requested value is clamped to the interval [1, total_cores] to prevent invalid settings.
 
 ```json
 {
@@ -35,29 +32,27 @@ When running on CPU, ctrl-freeq automatically manages thread allocation:
 }
 ```
 
-The requested value is clamped to `[1, total_cores]` to prevent invalid settings.
-
 ---
 
 ## GPU Configuration
 
-GPU support requires a CUDA-enabled PyTorch installation.
+GPU acceleration requires a CUDA-enabled PyTorch installation and a compatible NVIDIA graphics processing unit.
 
 ### Setup
 
-1. Ensure you have a CUDA-compatible NVIDIA GPU
+1. Ensure that a CUDA-compatible NVIDIA GPU is available
 2. Install PyTorch with CUDA support (see [Installation](../installation.md#gpu-support-optional))
-3. Set `compute_resource` to `"gpu"` in your configuration
+3. Set `compute_resource` to `"gpu"` in the configuration
 
 ### Automatic Fallback
 
-If `"gpu"` is requested but CUDA is not available, ctrl-freeq **automatically falls back to CPU** and logs a warning:
+If GPU execution is requested but CUDA is not available on the host system, ctrl-freeq automatically falls back to CPU execution and emits a warning:
 
 ```
 WARNING: CUDA not available; falling back to CPU. To use GPU, run on a CUDA-enabled environment.
 ```
 
-This ensures your optimization runs will always execute, even without a GPU.
+This fallback mechanism ensures that optimization runs will always execute, regardless of the available hardware.
 
 ### Verifying GPU Availability
 
@@ -72,7 +67,7 @@ if torch.cuda.is_available():
 
 ## GUI
 
-Use **Optimization Parameters > Compute Resource** to select `cpu` or `gpu`.
+The compute resource may also be selected from the **Optimization Parameters > Compute Resource** dropdown in the graphical interface.
 
 ---
 

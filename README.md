@@ -1,6 +1,6 @@
 # ctrl-freeq
 
-Gate design with optimal control for quantum circuits, implemented in Python with PyTorch. This repository provides both a programmatic API and a GUI for configuring and running ctrl-freeq optimization workflows.
+Ctrl-freeq is a numerical framework for the design of quantum gates and pulses via optimal control theory, implemented in Python with PyTorch. The control pulse optimization problem is formulated and solved using automatic differentiation, and the resulting software provides both a programmatic API and a graphical user interface for the configuration and execution of optimization workflows.
 
 - **PyPI package**: `ctrl-freeq`
 - **Import path**: `ctrl_freeq`
@@ -9,15 +9,11 @@ Gate design with optimal control for quantum circuits, implemented in Python wit
 
 ## Features
 
-- Define and run gate optimization problems via JSON configuration.
-- Programmatic API for loading configs, running the optimizer, and post-processing results.
-- GUI launcher for interactive runs (via `freeq-gui`).
-- Interactive Plotly dashboards for result visualization.
-- CPU thread management and optional GPU (CUDA) acceleration.
+The framework supports the definition and solution of gate optimization problems through JSON configuration files. A high-level Python API is provided for loading configurations, executing the optimizer, and post-processing results, while a Tkinter-based GUI (launched via `freeq-gui`) offers an interactive alternative for users who prefer a graphical workflow. Optimization results may be visualized through interactive Plotly dashboards exported as standalone HTML files. CPU thread management is handled automatically, and optional GPU acceleration is available via CUDA.
 
 ## Installation
 
-ctrl-freeq depends on NumPy, PyTorch, Qiskit, pytorch-minimize, Plotly, and other scientific packages.
+Ctrl-freeq depends on NumPy, PyTorch, Qiskit, pytorch-minimize, Plotly, and other scientific packages.
 
 ```bash
 # Install from source
@@ -35,7 +31,7 @@ For pip users:
 pip install .
 ```
 
-See [Installation](https://ctrl-freeq.readthedocs.io/) for full details.
+A detailed treatment of all installation methods is provided in the [Installation](https://ctrl-freeq.readthedocs.io/) documentation.
 
 ## Quick Start
 
@@ -45,7 +41,7 @@ See [Installation](https://ctrl-freeq.readthedocs.io/) for full details.
 freeq-gui
 ```
 
-This launches the Tkinter-based GUI defined in `ctrl_freeq/cli.py`.
+Execution of this command launches the Tkinter-based graphical interface defined in `ctrl_freeq/cli.py`.
 
 ### Use the API
 
@@ -82,7 +78,7 @@ pyproject.toml        Build and packaging configuration
 
 ## Development
 
-Development tools are in the `dev` dependency group. Additional groups: `docs` (mkdocs), `tools` (ruff, pre-commit).
+Development tools are organized into dependency groups: `dev` (pytest, jupyter), `docs` (mkdocs), and `tools` (ruff, pre-commit).
 
 ```bash
 # Install dev dependencies
@@ -97,10 +93,10 @@ uv run ruff check .
 
 ## Compute Resource Selection (CPU/GPU)
 
-ctrl-freeq supports CPU and GPU (CUDA) execution:
+Ctrl-freeq supports execution on both CPU and GPU (CUDA) hardware:
 
-- **`cpu`** (default) — Limits PyTorch threads to `max(1, os.cpu_count() - 1)`. Override with `cpu_cores`.
-- **`gpu`** — Uses CUDA if available; falls back to CPU with a warning if not.
+- **`cpu`** (default) — PyTorch threads are limited to `max(1, os.cpu_count() - 1)`. This default may be overridden with the `cpu_cores` field.
+- **`gpu`** — CUDA is used if available; the framework falls back to CPU with a warning if CUDA is not present.
 
 ### API Configuration
 
@@ -114,11 +110,11 @@ config = {
 
 ### GUI
 
-Use the **Compute Resource** dropdown in the Optimization Parameters section.
+The compute resource may be selected from the **Compute Resource** dropdown in the Optimization Parameters section of the graphical interface.
 
-> **Note:** Only CUDA is supported for GPU. MPS is not currently supported.
+> **Note:** Only CUDA is supported for GPU acceleration. MPS is not currently supported.
 
-A demo notebook is provided at `examples/api_gpu_cpu_demo.ipynb` showing CPU vs CUDA selection and timing.
+A demonstration notebook is provided at `examples/api_gpu_cpu_demo.ipynb`, illustrating CPU vs CUDA selection and comparative timing.
 
 ## License
 
@@ -126,4 +122,4 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## Citation
 
-If you use this project in academic work, please cite it appropriately. A CITATION.cff can be added upon request.
+If this software is used in academic work, please cite it using the metadata provided in [CITATION.cff](CITATION.cff).

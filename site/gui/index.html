@@ -768,10 +768,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gui-doesnt-launch" class="md-nav__link">
+  <a href="#gui-does-not-launch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GUI doesn't launch
+        GUI does not launch
       
     </span>
   </a>
@@ -779,10 +779,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#optimization-doesnt-converge" class="md-nav__link">
+  <a href="#optimization-does-not-converge" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optimization doesn't converge
+        Optimization does not converge
       
     </span>
   </a>
@@ -790,10 +790,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#plots-dont-appear" class="md-nav__link">
+  <a href="#plots-do-not-appear" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Plots don't appear
+        Plots do not appear
       
     </span>
   </a>
@@ -1290,10 +1290,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gui-doesnt-launch" class="md-nav__link">
+  <a href="#gui-does-not-launch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GUI doesn't launch
+        GUI does not launch
       
     </span>
   </a>
@@ -1301,10 +1301,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#optimization-doesnt-converge" class="md-nav__link">
+  <a href="#optimization-does-not-converge" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optimization doesn't converge
+        Optimization does not converge
       
     </span>
   </a>
@@ -1312,10 +1312,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#plots-dont-appear" class="md-nav__link">
+  <a href="#plots-do-not-appear" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Plots don't appear
+        Plots do not appear
       
     </span>
   </a>
@@ -1359,22 +1359,22 @@
 
 
 <h1 id="gui-guide">GUI Guide</h1>
-<p>ctrl-freeq includes a Tkinter-based graphical user interface for configuring and running quantum control optimizations without writing code.</p>
+<p>In addition to the programmatic API, ctrl-freeq provides a graphical user interface, implemented using the Tkinter framework, which allows the configuration and execution of quantum control optimizations without the need for writing Python code. The interface exposes the full set of configurable parameters and provides real-time feedback during the optimization process.</p>
 <hr />
 <h2 id="launching-the-gui">Launching the GUI</h2>
-<p>After installation, launch the GUI from the command line:</p>
+<p>The GUI may be launched from the command line after installation:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>freeq-gui
 </code></pre></div>
-<p>Alternatively, run it as a Python module:</p>
+<p>Alternatively, it may be invoked as a Python module:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-m<span class="w"> </span>ctrl_freeq.cli
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">First Launch</p>
-<p>On first launch, the GUI opens with a single qubit configured. Use the <strong>Add Qubit</strong> button to add more qubits for multi-qubit optimizations.</p>
+<p>Upon first launch, the GUI opens with a single qubit configured. Additional qubits may be added using the <strong>Add Qubit</strong> button for multi-qubit optimizations.</p>
 </div>
 <hr />
 <h2 id="gui-layout">GUI Layout</h2>
-<p>The GUI is organized into five sections:</p>
+<p>The interface is organized into five principal sections:</p>
 <table>
 <thead>
 <tr>
@@ -1389,7 +1389,7 @@
 </tr>
 <tr>
 <td><strong>Target Specification</strong></td>
-<td>Define the target quantum state or gate</td>
+<td>Definition of the target quantum state or gate</td>
 </tr>
 <tr>
 <td><strong>Optimization Settings</strong></td>
@@ -1409,30 +1409,30 @@
 <figure>
   <img alt="Single-qubit GUI" src="../assets/gui_single_qubit.png" width="600" />
 <br />
-<figcaption>GUI configured for a single-qubit Hadamard gate optimization.</figcaption>
+<figcaption>The GUI configured for a single-qubit Hadamard gate optimization.</figcaption>
 </figure>
 <h3 id="two-qubit-configuration">Two-Qubit Configuration</h3>
 <figure>
   <img alt="Two-qubit GUI" src="../assets/gui_two_qubit.png" width="700" />
 <br />
-<figcaption>GUI configured for a two-qubit CNOT gate optimization with XY coupling.</figcaption>
+<figcaption>The GUI configured for a two-qubit CNOT gate optimization with XY coupling.</figcaption>
 </figure>
 <div class="admonition note">
 <p class="admonition-title">Coupling Controls</p>
-<p>The <strong>Coupling Type</strong> and <strong>Coupling Constants</strong> section on the right only appears when two or more qubits are configured.</p>
+<p>The <strong>Coupling Type</strong> and <strong>Coupling Constants</strong> section appears on the right-hand side of the interface only when two or more qubits are configured.</p>
 </div>
 <hr />
 <h2 id="configuring-parameters">Configuring Parameters</h2>
-<p>Each qubit has its own configuration panel. Parameters are organized into:</p>
+<p>Each qubit is assigned its own configuration panel. The parameters within each panel are organized into three categories:</p>
 <ul>
-<li><strong>System Parameters</strong> — Detuning (Δ), Rabi frequency (Ω_R), and uncertainties</li>
-<li><strong>Pulse Parameters</strong> — Duration, discretization, sweep rate, bandwidth</li>
+<li><strong>System Parameters</strong> — Detuning (Δ), Rabi frequency (Ω_R), and their associated uncertainties</li>
+<li><strong>Pulse Parameters</strong> — Duration, discretization, sweep rate, and bandwidth</li>
 <li><strong>Waveform Settings</strong> — Basis type, mode, envelope, and expansion order</li>
 </ul>
-<p>For detailed parameter descriptions, defaults, and units, see <a href="../optimization/parameters/">Optimization → Parameters</a>.</p>
+<p>A detailed description of all parameters, including their defaults and units, is provided in <a href="../optimization/parameters/">Optimization → Parameters</a>.</p>
 <hr />
 <h2 id="target-specification">Target Specification</h2>
-<p>The <strong>Target States Method</strong> dropdown determines how you specify the desired final state:</p>
+<p>The <strong>Target States Method</strong> dropdown determines the method by which the desired final state is specified:</p>
 <table>
 <thead>
 <tr>
@@ -1461,10 +1461,10 @@
 <li>Target Method: <code>Axis</code></li>
 <li>Target Axis: <code>-Z</code></li>
 </ul>
-<p>For complete target specification options, see <a href="../optimization/parameters/#target-states">Optimization → Parameters → Target States</a>.</p>
+<p>A complete description of all target specification options is provided in <a href="../optimization/parameters/#target-states">Optimization → Parameters → Target States</a>.</p>
 <div class="admonition info">
 <p class="admonition-title">Multi-State Optimization</p>
-<p>To design universal rotations or conditional gates, you can specify multiple initial/target state pairs. Enter comma-separated values (e.g., Initial: <code>X, Y, Z</code>, Target: <code>X, Z, -Y</code>). See <a href="../optimization/parameters/#multi-state-optimization">Multi-State Optimization</a> for details.</p>
+<p>For the design of universal rotations or conditional gates, multiple initial/target state pairs may be specified. Comma-separated values are entered in the respective fields (e.g., Initial: <code>X, Y, Z</code>, Target: <code>X, Z, -Y</code>). A detailed treatment of this capability is provided in <a href="../optimization/parameters/#multi-state-optimization">Multi-State Optimization</a>.</p>
 </div>
 <hr />
 <h2 id="optimization-settings">Optimization Settings</h2>
@@ -1498,11 +1498,11 @@
 </tr>
 </tbody>
 </table>
-<p>For algorithm selection guidance, see <a href="../optimization/algorithms/">Optimization → Algorithms</a>.</p>
-<p>For GPU setup, see <a href="../optimization/compute/">Optimization → Compute</a>.</p>
+<p>For guidance on algorithm selection, the reader is referred to <a href="../optimization/algorithms/">Optimization → Algorithms</a>.</p>
+<p>For GPU setup instructions, see <a href="../optimization/compute/">Optimization → Compute</a>.</p>
 <hr />
 <h2 id="coupling-controls-multi-qubit">Coupling Controls (Multi-Qubit)</h2>
-<p>When using two or more qubits, a coupling section appears:</p>
+<p>When two or more qubits are configured, a coupling section becomes available:</p>
 <table>
 <thead>
 <tr>
@@ -1525,32 +1525,27 @@
 </tr>
 </tbody>
 </table>
-<p>For coupling parameter details, see <a href="../optimization/parameters/#multi-qubit-coupling">Optimization → Parameters → Multi-Qubit Coupling</a>.</p>
+<p>For a detailed description of the coupling parameters, see <a href="../optimization/parameters/#multi-qubit-coupling">Optimization → Parameters → Multi-Qubit Coupling</a>.</p>
 <hr />
 <h2 id="action-buttons">Action Buttons</h2>
 <h3 id="run">Run</h3>
-<p>Executes the optimization with current settings. Progress is displayed in the console, and results are shown in plot windows.</p>
+<p>Initiates the optimization with the current settings. Progress information is displayed in the console, and the resulting plots are presented upon completion.</p>
 <h3 id="save">Save</h3>
-<p>Saves the current configuration to a JSON file. The file can be:</p>
-<ul>
-<li>Loaded later in the GUI</li>
-<li>Used with the Python API</li>
-<li>Shared with collaborators</li>
-</ul>
+<p>Saves the current configuration to a JSON file. The exported file may subsequently be loaded in the GUI, used with the Python API, or shared with collaborators.</p>
 <h3 id="save-results">Save Results</h3>
-<p>After running an optimization:</p>
+<p>Upon completion of an optimization run, this button performs the following actions:</p>
 <ol>
-<li>Saves all generated plots to <code>results/plots/</code></li>
-<li>Creates an interactive dashboard HTML file in <code>results/dashboards/</code></li>
+<li>All generated plots are saved to <code>results/plots/</code></li>
+<li>An interactive dashboard HTML file is created in <code>results/dashboards/</code></li>
 </ol>
-<p>See <a href="../dashboard/">Dashboard</a> for dashboard details.</p>
+<p>A detailed description of the dashboard is provided in <a href="../dashboard/">Dashboard</a>.</p>
 <h3 id="set-defaults">Set Defaults</h3>
 <p>Resets all parameters to their default values.</p>
 <hr />
 <h2 id="workflow-examples">Workflow Examples</h2>
 <h3 id="example-1-single-qubit-pulse">Example 1: Single-Qubit π-Pulse</h3>
 <ol>
-<li>Launch GUI: <code>freeq-gui</code></li>
+<li>Launch the GUI: <code>freeq-gui</code></li>
 <li>Set <strong>Initial State</strong>: <code>Z</code></li>
 <li>Set <strong>Target States Method</strong>: <code>Axis</code></li>
 <li>Set <strong>Target Axis</strong>: <code>-Z</code></li>
@@ -1559,7 +1554,7 @@
 </ol>
 <h3 id="example-2-two-qubit-cnot-gate">Example 2: Two-Qubit CNOT Gate</h3>
 <ol>
-<li>Launch GUI: <code>freeq-gui</code></li>
+<li>Launch the GUI: <code>freeq-gui</code></li>
 <li>Click <strong>Add Qubit</strong> to add a second qubit</li>
 <li>Set <strong>Target States Method</strong>: <code>Gate</code></li>
 <li>Set <strong>Gate</strong>: <code>CNOT</code></li>
@@ -1568,58 +1563,58 @@
 </ol>
 <h3 id="example-3-robust-pulse-design">Example 3: Robust Pulse Design</h3>
 <ol>
-<li>Configure basic pulse parameters</li>
+<li>Configure the basic pulse parameters</li>
 <li>Set <strong>σΔ (Hz)</strong>: <code>100000</code> (100 kHz uncertainty)</li>
 <li>Set <strong>σΩ_R Max (Hz)</strong>: <code>50000</code> (50 kHz uncertainty)</li>
 <li>Set <strong>Target Fidelity</strong>: <code>0.9999</code></li>
 <li>Click <strong>Run</strong></li>
 </ol>
-<p>The optimizer will find pulses robust to the specified parameter uncertainties.</p>
+<p>The optimizer will seek pulses that are robust to the specified parameter uncertainties.</p>
 <h3 id="example-4-universal-rotation-pulse">Example 4: Universal Rotation Pulse</h3>
 <ol>
-<li>Launch GUI: <code>freeq-gui</code></li>
+<li>Launch the GUI: <code>freeq-gui</code></li>
 <li>Set <strong>Initial State</strong>: <code>X, Y, Z</code></li>
 <li>Set <strong>Target States Method</strong>: <code>Axis</code></li>
 <li>Set <strong>Target Axis</strong>: <code>X, Z, -Y</code></li>
-<li>Set <strong>Algorithm</strong>: <code>qiskit-cobyla</code> (recommended for multi-state)</li>
+<li>Set <strong>Algorithm</strong>: <code>qiskit-cobyla</code> (recommended for multi-state optimization)</li>
 <li>Click <strong>Run</strong></li>
 </ol>
-<p>This designs a single pulse that performs a universal rotation, mapping all three Bloch sphere axes to their specified targets. See <a href="../optimization/parameters/#multi-state-optimization">Multi-State Optimization</a> for more details.</p>
+<p>This procedure designs a single pulse that performs a universal rotation, mapping all three Bloch sphere axes to their specified targets simultaneously. A detailed treatment of multi-state optimization is provided in <a href="../optimization/parameters/#multi-state-optimization">Multi-State Optimization</a>.</p>
 <hr />
 <h2 id="tips">Tips</h2>
 <div class="admonition tip">
-<p class="admonition-title">Start Simple</p>
-<p>Begin with default parameters and a simple target (like a π-pulse) to verify your setup works before attempting complex optimizations.</p>
+<p class="admonition-title">Recommended Initial Approach</p>
+<p>It is generally advisable to begin with the default parameter values and a straightforward target configuration (such as a π-pulse) in order to verify that the setup is functioning correctly before proceeding to more complex optimization problems.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Iteration Count</p>
-<p>Start with fewer iterations (100-500) for quick tests. Increase to 1000+ for production runs.</p>
+<p>For initial testing, a moderate number of iterations (100–500) is typically sufficient. For production-quality results, the iteration count should be increased to 1000 or more.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Memory Usage</p>
-<p>Multi-qubit systems with many time points can require significant memory. Monitor system resources for large problems.</p>
+<p>Multi-qubit systems with a large number of time discretization points can require significant memory. System resources should be monitored when working with large problem sizes.</p>
 </div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="gui-doesnt-launch">GUI doesn't launch</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check Tkinter is available</span>
+<h3 id="gui-does-not-launch">GUI does not launch</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Verify that Tkinter is available</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import tkinter; print(&#39;Tkinter OK&#39;)&quot;</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Try running directly</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Attempt to run directly</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>python<span class="w"> </span>-m<span class="w"> </span>ctrl_freeq.cli
 </code></pre></div>
-<h3 id="optimization-doesnt-converge">Optimization doesn't converge</h3>
+<h3 id="optimization-does-not-converge">Optimization does not converge</h3>
 <ul>
-<li>Increase <strong>Max Iterations</strong></li>
-<li>Try a different <strong>Algorithm</strong> (see <a href="../optimization/algorithms/#choosing-an-algorithm">Algorithms</a>)</li>
-<li>Reduce <strong>Target Fidelity</strong> initially</li>
-<li>Check parameter values are physically reasonable</li>
+<li>Increase the <strong>Max Iterations</strong> setting</li>
+<li>Consider using a different <strong>Algorithm</strong> (see <a href="../optimization/algorithms/#choosing-an-algorithm">Algorithms</a>)</li>
+<li>Reduce the <strong>Target Fidelity</strong> initially to verify convergence behaviour</li>
+<li>Ensure that parameter values are physically reasonable</li>
 </ul>
-<h3 id="plots-dont-appear">Plots don't appear</h3>
+<h3 id="plots-do-not-appear">Plots do not appear</h3>
 <ul>
-<li>Ensure matplotlib backend is configured</li>
-<li>Check console for error messages</li>
-<li>Try saving results instead of viewing interactively</li>
+<li>Verify that the matplotlib backend is correctly configured</li>
+<li>Check the console for error messages</li>
+<li>As an alternative, save the results rather than viewing them interactively</li>
 </ul>
 <hr />
 <h2 id="next-steps">Next Steps</h2>

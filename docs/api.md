@@ -1,8 +1,6 @@
 # API Reference
 
-ctrl-freeq provides a high-level Python API for running quantum control optimizations programmatically.
-
-The main entry point is the `CtrlFreeQAPI` class in `ctrl_freeq.api`.
+A high-level Python API is provided for the programmatic execution of quantum control optimizations. The principal interface is the `CtrlFreeQAPI` class, defined in the `ctrl_freeq.api` module, which encapsulates the complete workflow from configuration loading through optimization to result retrieval.
 
 ---
 
@@ -29,7 +27,7 @@ print(f"Iterations: {api.parameters.iterations}")
 
 ## CtrlFreeQAPI Class
 
-The main class for interacting with ctrl-freeq.
+The `CtrlFreeQAPI` class serves as the primary interface for interacting with the ctrl-freeq optimization framework.
 
 ### Constructor
 
@@ -37,10 +35,7 @@ The main class for interacting with ctrl-freeq.
 CtrlFreeQAPI(config: Union[str, Path, Dict[str, Any]])
 ```
 
-Create an API instance from:
-
-- A path to a JSON configuration file (string or `Path`)
-- A dictionary containing configuration parameters
+An API instance may be created from a path to a JSON configuration file (provided as a string or `Path` object) or from a dictionary containing the configuration parameters directly.
 
 **Parameters:**
 
@@ -53,14 +48,14 @@ Create an API instance from:
 === "From JSON file"
     ```python
     from ctrl_freeq.api import CtrlFreeQAPI
-    
+
     api = CtrlFreeQAPI("path/to/config.json")
     ```
 
 === "From dictionary"
     ```python
     from ctrl_freeq.api import CtrlFreeQAPI
-    
+
     config = {
         "qubits": ["q1"],
         "compute_resource": "cpu",
@@ -80,14 +75,14 @@ Create an API instance from:
             "targ_fid": 0.99
         }
     }
-    
+
     api = CtrlFreeQAPI(config)
     ```
 
 === "From built-in config"
     ```python
     from ctrl_freeq.api import load_single_qubit_config
-    
+
     api = load_single_qubit_config()
     ```
 
@@ -97,7 +92,7 @@ Create an API instance from:
 
 #### `run_optimization()`
 
-Run the quantum control optimization with the loaded configuration.
+Executes the quantum control optimization with the loaded configuration.
 
 ```python
 solution = api.run_optimization()
@@ -105,7 +100,7 @@ solution = api.run_optimization()
 
 **Returns:** `torch.Tensor` — The optimized pulse parameters.
 
-After optimization completes, the following attributes are stored on `api.parameters`:
+Upon completion of the optimization, the following attributes are stored on `api.parameters`:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
@@ -131,20 +126,13 @@ print(f"Fidelity history: {api.parameters.fidelity_history}")
 
 #### `get_config_summary()`
 
-Get a human-readable summary of the current configuration.
+Returns a human-readable summary of the current configuration.
 
 ```python
 summary = api.get_config_summary()
 ```
 
-**Returns:** `str` — A formatted string containing:
-
-- Number of qubits
-- Optimization space (Hilbert/Liouville)
-- Algorithm name
-- Maximum iterations
-- Target fidelity
-- Initial and target states
+**Returns:** `str` — A formatted string containing the number of qubits, optimization space (Hilbert/Liouville), algorithm name, maximum iterations, target fidelity, and the initial and target states.
 
 **Example:**
 
@@ -170,7 +158,7 @@ Target Gate: ['CNOT']
 
 #### `update_parameter(parameter_path, value)`
 
-Update a specific parameter in the configuration and reinitialize.
+Updates a specific parameter in the configuration and reinitializes the internal state accordingly.
 
 ```python
 api.update_parameter(parameter_path: str, value: Any)
@@ -232,7 +220,7 @@ raw_config = api.config
 
 #### `config_path`
 
-Path to the configuration file (if loaded from file), otherwise `None`.
+The path to the configuration file, if the instance was created from a file; otherwise `None`.
 
 ```python
 path = api.config_path
@@ -240,7 +228,7 @@ path = api.config_path
 
 #### `parameters`
 
-The initialized parameter object used internally.
+The initialized parameter object used internally by the optimization engine.
 
 ```python
 params = api.parameters
@@ -252,7 +240,7 @@ params = api.parameters
 
 ### `run_from_config(config)`
 
-One-shot helper that creates a `CtrlFreeQAPI` instance and runs optimization.
+A convenience function that creates a `CtrlFreeQAPI` instance and executes the optimization in a single call.
 
 ```python
 from ctrl_freeq.api import run_from_config
@@ -292,7 +280,7 @@ solution = run_from_config({
 
 ### `load_config(config_path)`
 
-Load a configuration file and return a `CtrlFreeQAPI` instance.
+Loads a JSON configuration file and returns a `CtrlFreeQAPI` instance.
 
 ```python
 from ctrl_freeq.api import load_config
@@ -312,13 +300,13 @@ api = load_config("path/to/config.json")
 
 ## Built-in Example Configurations
 
-ctrl-freeq includes several pre-configured examples for common use cases. These correspond to JSON files bundled with the package under `src/ctrl_freeq/data/json_input/`.
+Several pre-configured examples are bundled with the package for common use cases. These correspond to JSON files located under `src/ctrl_freeq/data/json_input/`.
 
 ### Single-Qubit Configurations
 
 #### `load_single_qubit_config()`
 
-Basic single-qubit optimization.
+A basic single-qubit optimization configuration.
 
 ```python
 from ctrl_freeq.api import load_single_qubit_config
@@ -329,7 +317,7 @@ solution = api.run_optimization()
 
 #### `load_single_qubit_multiple_config()`
 
-Single-qubit with multiple initial/target state pairs.
+A single-qubit configuration with multiple initial/target state pairs for universal rotation design.
 
 ```python
 from ctrl_freeq.api import load_single_qubit_multiple_config
@@ -339,7 +327,7 @@ api = load_single_qubit_multiple_config()
 
 #### `load_single_qubit_polar_phase_config()`
 
-Single-qubit using polar/phase waveform mode.
+A single-qubit configuration using the polar/phase waveform mode.
 
 ```python
 from ctrl_freeq.api import load_single_qubit_polar_phase_config
@@ -351,7 +339,7 @@ api = load_single_qubit_polar_phase_config()
 
 #### `load_two_qubit_config()`
 
-Basic two-qubit optimization with coupling.
+A basic two-qubit optimization configuration with inter-qubit coupling.
 
 ```python
 from ctrl_freeq.api import load_two_qubit_config
@@ -361,7 +349,7 @@ api = load_two_qubit_config()
 
 #### `load_two_qubit_multiple_config()`
 
-Two-qubit with multiple initial/target state pairs.
+A two-qubit configuration with multiple initial/target state pairs.
 
 ```python
 from ctrl_freeq.api import load_two_qubit_multiple_config
@@ -371,7 +359,7 @@ api = load_two_qubit_multiple_config()
 
 #### `load_two_qubit_polar_phase_config()`
 
-Two-qubit using polar/phase waveform mode.
+A two-qubit configuration using the polar/phase waveform mode.
 
 ```python
 from ctrl_freeq.api import load_two_qubit_polar_phase_config
@@ -383,7 +371,7 @@ api = load_two_qubit_polar_phase_config()
 
 #### `load_four_qubit_polar_phase_config()`
 
-Four-qubit optimization using polar/phase waveform mode.
+A four-qubit optimization configuration using the polar/phase waveform mode.
 
 ```python
 from ctrl_freeq.api import load_four_qubit_polar_phase_config
@@ -394,6 +382,8 @@ api = load_four_qubit_polar_phase_config()
 ---
 
 ## Complete Workflow Example
+
+The following example illustrates a complete optimization workflow, from configuration loading through parameter customization, optimization, and result visualization:
 
 ```python
 from ctrl_freeq.api import CtrlFreeQAPI, load_single_qubit_config
@@ -433,7 +423,7 @@ print(f"Dashboard saved to: {dashboard_path}")
 
 ## Configuration Schema
 
-For detailed documentation of all configuration parameters, see:
+For a detailed treatment of all configuration parameters, the reader is referred to:
 
 - [Optimization Parameters](optimization/parameters.md) — Full parameter reference
 - [Algorithms](optimization/algorithms.md) — Available optimization algorithms
