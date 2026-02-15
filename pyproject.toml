@@ -83,6 +83,10 @@ src = "src/ctrl_freeq/__init__.py"
 src = "pyproject.toml"
 search = 'version = "{current_version}"'
 
+[[tool.tbump.file]]
+src = "CITATION.cff"
+search = "version: {current_version}"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["ctrl_freeq*"]
