@@ -9,7 +9,7 @@ description = "Quantum gate and pulse design with optimal control"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.13"
-authors = [{ name = "Mohammadali Foroozandeh", email = "mforoozandeh@gmail.com" }]
+authors = [{ name = "Mohammadali Foroozandeh", email = "mohammadali.mforoozandeh@outlook.com" }]
 classifiers = [
   "Programming Language :: Python :: 3",
 ]
