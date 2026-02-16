@@ -1,2 +1,0 @@
-[console_scripts]
-freeq-gui = ctrl_freeq.cli:main
