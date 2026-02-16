@@ -87,8 +87,8 @@ For development or contributing purposes, the package may be installed in editab
 git clone https://github.com/mforoozandeh/ctrl-freeq.git
 cd ctrl-freeq
 
-# Using uv (recommended) — installs with dev dependency group
-uv sync --group dev
+# Using uv (recommended) — installs with all dependency group
+uv sync --all-groups
 
 # Or using pip — installs the package in editable mode (without dev dependencies)
 pip install -e .
@@ -113,7 +113,7 @@ uv pip install --prerelease=allow ctrl-freeq
 # Development install with dependency groups
 git clone https://github.com/mforoozandeh/ctrl-freeq.git
 cd ctrl-freeq
-uv sync --group dev --group docs --group tools
+uv sync --all-groups
 ```
 
 ---
