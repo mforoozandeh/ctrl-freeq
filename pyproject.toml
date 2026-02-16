@@ -74,7 +74,6 @@ $
 [tool.tbump.git]
 message_template = "Bump version: {new_version}"
 tag_template = "v{new_version}"
-push = true
 
 [[tool.tbump.file]]
 src = "src/ctrl_freeq/__init__.py"
