@@ -82,13 +82,14 @@ Development tools are organized into dependency groups: `dev` (pytest, jupyter),
 
 ```bash
 # Install dev dependencies
-uv sync --group dev
+uv sync --all-groups
 
 # Run tests
 uv run pytest -q
 
 # Lint
-uv run ruff check .
+uv run ruff format .
+uv run ruff check --fix .
 ```
 
 ## Compute Resource Selection (CPU/GPU)
