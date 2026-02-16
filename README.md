@@ -19,8 +19,8 @@ Ctrl-freeq depends on NumPy, PyTorch, Qiskit, pytorch-minimize, Plotly, and othe
 # Install from source
 uv sync
 
-# Or with development tools
-uv sync --group dev
+# Or with all development tools
+uv sync --all-groups
 ```
 
 > **Note:** Dependency groups (`dev`, `docs`, `tools`) use [PEP 735](https://peps.python.org/pep-0735/) and require `uv` — they are not pip extras.

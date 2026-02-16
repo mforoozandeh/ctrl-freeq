@@ -63,7 +63,7 @@ The waveform settings determine the basis functions and envelope used to paramet
 | `wf_mode` | Waveform Mode | `cart`, `polar`, `polar_phase` | `cart` | Cartesian or polar representation |
 | `amplitude_envelope` | Amplitude Envelope | `gn`, `rect`, `sinc` | `gn` | Pulse envelope shape |
 | `amplitude_order` | Amplitude Order | Integer | 1 | Envelope order parameter |
-| `coverage` | Coverage | `single`, `broadband` | `single` | Frequency coverage mode |
+| `coverage` | Coverage | `single`, `broadband`, `selective`, `band_selective` | `single` | Frequency coverage mode |
 | `profile_order` | Profile Order | Integer | 2 | Supergaussian order for selectivity profile (1 = Gaussian, higher values → more rectangular) |
 | `n_para` | Number of Parameters | Integer | 16 | Optimization parameters per qubit |
 
