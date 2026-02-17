@@ -4,7 +4,7 @@ In this section, the installation procedure for ctrl-freeq is described. The pac
 
 ## Requirements
 
-- **Python 3.13+** (required)
+- **Python 3.11–3.13** (required)
 - A working installation of `pip` or `uv`
 
 ### Core Dependencies
@@ -23,7 +23,6 @@ Ctrl-freeq automatically installs the following dependencies:
 | `plotly` | Interactive plots |
 | `kaleido` | Static figure export |
 | `panel` | Dashboard generation |
-| `tqdm` | Progress bars |
 
 !!! note
     It should be noted that the PyPI distribution name is `ctrl-freeq`, which differs from the Python import path `ctrl_freeq`.
@@ -228,7 +227,7 @@ The GUI requires Tkinter, which may need to be installed separately on certain s
 === "macOS"
     Tkinter is included with the Python distribution from python.org. If Homebrew is used:
     ```bash
-    brew install python-tk@3.13
+    brew install python-tk@3.11  # adjust version to match your Python
     ```
 
 === "Windows"
