@@ -8,10 +8,13 @@ version = "0.1.0"
 description = "Quantum gate and pulse design with optimal control"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.13"
+requires-python = ">=3.11,<3.14"
 authors = [{ name = "Mohammadali Foroozandeh", email = "mohammadali.mforoozandeh@outlook.com" }]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "numpy>=2.3.4",
@@ -22,7 +25,6 @@ dependencies = [
     "scipy==1.16.3",
     "qiskit>=1.4,<1.5",
     "qiskit-algorithms==0.4.0",
-    "tqdm>=3.8.0",
     "kaleido==1.2.0",
     "panel>=1.8.2",
 ]
