@@ -3,4 +3,4 @@ __all__ = [
 ]
 
 # Project version following PEP 440 / SemVer-compatible
-__version__ = "0.1.0"
+__version__ = "0.1.1"
