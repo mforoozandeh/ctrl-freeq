@@ -3,11 +3,18 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import matplotlib
 from functools import wraps
+import shutil
 import sys
+
+
+def _latex_available():
+    """Check whether a LaTeX installation is available on the system."""
+    return shutil.which("latex") is not None
+
 
 # Base plot settings
 BASE_PLOT_SETTINGS = {
-    "text.usetex": True,  # Use LaTeX for text rendering
+    "text.usetex": _latex_available(),  # Use LaTeX for text rendering if available
     "font.family": "serif",  # Use serif fonts
     "font.serif": ["Times"],  # Use Times font
     "axes.labelsize": 10,  # Axis label font size
