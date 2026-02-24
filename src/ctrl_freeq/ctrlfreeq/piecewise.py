@@ -53,6 +53,7 @@ class Piecewise:
         amp_envelopes=None,
         fixed_amplitude=1.0,  # Only used for polar_phase method
         dtype=torch.float32,  # Add dtype parameter for consistency
+        collapse_ops=None,
     ):
         self.n_qubits = n_qubits
         self.op = op
@@ -73,6 +74,7 @@ class Piecewise:
         self.me = me
         self.fixed_amplitude = fixed_amplitude
         self.dtype = dtype
+        self.collapse_ops = collapse_ops
         self.amp_envelopes = (
             amp_envelopes  # list of tensors [n_pulse,1] per qubit or None
         )
@@ -157,7 +159,13 @@ class Piecewise:
 
         # Simulate evolution (reuse optimized simulator from CtrlFreeQ)
         state = simulator_optimized(
-            self.H0, Hp, self.dt, self.initial_state, self.u_fun, self.state_fun
+            self.H0,
+            Hp,
+            self.dt,
+            self.initial_state,
+            self.u_fun,
+            self.state_fun,
+            collapse_ops=self.collapse_ops,
         )
 
         # Calculate fidelity and cost
@@ -309,6 +317,7 @@ class PiecewiseAPI:
             fidelity_liouville,
             state_hilbert,
             state_liouville,
+            state_lindblad,
         )
         from src.ctrl_freeq.utils.conversion import array_to_tensor
         from src.ctrl_freeq.setup.iterator_generation.generate_iterator import (
@@ -337,12 +346,20 @@ class PiecewiseAPI:
         op = create_hamiltonian_basis_torch(p.n_qubits)
         u_fun = exp_mat_exact if p.n_qubits == 1 else exp_mat_torch
 
-        if p.space == "hilbert":
+        dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
+
+        if dissipation_mode == "dissipative":
+            fid_fun = fidelity_liouville
+            state_fun = state_lindblad
+            collapse_ops = array_to_tensor(p.collapse_operators)
+        elif p.space == "hilbert":
             fid_fun = fidelity_hilbert
             state_fun = state_hilbert
+            collapse_ops = None
         elif p.space == "liouville":
             fid_fun = fidelity_liouville
             state_fun = state_liouville
+            collapse_ops = None
 
         # Create piecewise optimizer
         # Use float64 for qiskit-cobyla to avoid dtype mismatch, float32 for others
@@ -390,6 +407,7 @@ class PiecewiseAPI:
             me=me,
             amp_envelopes=amp_env_tensors,
             dtype=dtype,
+            collapse_ops=collapse_ops,
         )
 
         # Initialize parameters with same dtype as piecewise instance

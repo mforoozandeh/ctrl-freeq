@@ -19,6 +19,7 @@ from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
     fidelity_liouville,
     state_hilbert,
     state_liouville,
+    state_lindblad,
     CtrlFreeQ,
 )
 from ctrl_freeq.setup.iterator_generation.generate_iterator import (
@@ -83,12 +84,20 @@ def run_ctrl(p):
     else:
         u_fun = exp_mat_torch
 
-    if space == "hilbert":
+    dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
+
+    if dissipation_mode == "dissipative":
+        fid_fun = fidelity_liouville
+        state_fun = state_lindblad
+        collapse_ops = array_to_tensor(p.collapse_operators, device=device)
+    elif space == "hilbert":
         fid_fun = fidelity_hilbert
         state_fun = state_hilbert
+        collapse_ops = None
     elif space == "liouville":
         fid_fun = fidelity_liouville
         state_fun = state_liouville
+        collapse_ops = None
 
     wf_fun = []
 
@@ -119,6 +128,7 @@ def run_ctrl(p):
         fid_fun,
         targ_fid,
         me,
+        collapse_ops=collapse_ops,
     )
 
     x0 = x0_con.requires_grad_(True)

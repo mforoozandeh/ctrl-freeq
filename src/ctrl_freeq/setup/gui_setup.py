@@ -163,6 +163,8 @@ def make_data():
             "sigma_J": float(sigma_J_entry.get())
             if sigma_J_entry is not None and sigma_J_entry.get()
             else None,  # Add sigma_J
+            "T1": [],
+            "T2": [],
         },
         "initial_states": [init_ax_entry.get() for init_ax_entry in init_ax_entries],
         "target_states": {
@@ -185,6 +187,7 @@ def make_data():
         },
         "optimization": {
             "space": space_var.get(),
+            "dissipation_mode": dissipation_var.get(),
             "H0_snapshots": int(H0_snapshots_entry.get()),
             "Omega_R_snapshots": int(omega_1_snapshots_entry.get()),
             "algorithm": algorithm_var.get(),
@@ -224,6 +227,9 @@ def make_data():
         )
         data["parameters"]["profile_order"].append(int(order_entries[i].get()))
         data["parameters"]["n_para"].append(int(n_para_entries[i].get()))
+        if dissipation_var.get() == "dissipative":
+            data["parameters"]["T1"].append(float(T1_entries[i].get()))
+            data["parameters"]["T2"].append(float(T2_entries[i].get()))
 
     for i, j, entry in coupling_entries:
         data["parameters"]["J"][i - 1][j - 1] = float(entry.get())
@@ -446,6 +452,27 @@ def update_gate_entries(event):
             entry.insert(0, new_value)
 
 
+def update_dissipation_fields():
+    """Update visibility of T1/T2 fields based on dissipation mode selection."""
+    mode = dissipation_var.get()
+    if mode == "dissipative":
+        # Force space to liouville when dissipative
+        space_var.set("liouville")
+        # Show T1/T2 labels and entries
+        T1_label.grid(row=16, column=0)
+        T2_label.grid(row=17, column=0)
+        for i in range(qubit_count):
+            T1_entries[i].grid(row=16, column=i + 1)
+            T2_entries[i].grid(row=17, column=i + 1)
+    else:
+        # Hide T1/T2 labels and entries
+        T1_label.grid_remove()
+        T2_label.grid_remove()
+        for i in range(qubit_count):
+            T1_entries[i].grid_remove()
+            T2_entries[i].grid_remove()
+
+
 def update_coverage_fields():
     """Update visibility of pulse_bandwidth and order fields based on coverage selection."""
     for i in range(qubit_count):
@@ -630,6 +657,18 @@ def add_qubit():
     n_para_entries.append(n_para_entry)
     n_para_entry.grid(row=20, column=qubit_count)
 
+    # Add T1/T2 entries for the new qubit (hidden by default)
+    T1_entry = ttk.Entry(root, validate="key", validatecommand=vcmd_float)
+    T1_entries.append(T1_entry)
+
+    T2_entry = ttk.Entry(root, validate="key", validatecommand=vcmd_float)
+    T2_entries.append(T2_entry)
+
+    # Only show if dissipative mode is active
+    if dissipation_var.get() == "dissipative":
+        T1_entry.grid(row=16, column=qubit_count)
+        T2_entry.grid(row=17, column=qubit_count)
+
     # Add initial states for the new qubit
     init_ax_entry = ttk.Entry(root, validate="key", validatecommand=vcmd_string)
     init_ax_entries.append(init_ax_entry)
@@ -694,6 +733,8 @@ def set_default_values():
         "targ_fid": 0.999,
         "coupling_type": "XY",  # Default value for Coupling Type
         "sigma_J": 0,  # Default value for σ J
+        "T1": [1e-3] * len(qubits_vars),  # Default T1 relaxation time (1 ms)
+        "T2": [500e-6] * len(qubits_vars),  # Default T2 dephasing time (500 μs)
     }
 
     for i in range(len(qubits_vars)):
@@ -726,6 +767,10 @@ def set_default_values():
         order_entries[i].insert(0, default_values["profile_order"][i])
         n_para_entries[i].delete(0, tk.END)
         n_para_entries[i].insert(0, default_values["n_para"][i])
+        T1_entries[i].delete(0, tk.END)
+        T1_entries[i].insert(0, default_values["T1"][i])
+        T2_entries[i].delete(0, tk.END)
+        T2_entries[i].insert(0, default_values["T2"][i])
         init_ax_entries[i].delete(0, tk.END)
         init_ax_entries[i].insert(0, default_values["init_ax"][i])
 
@@ -807,6 +852,8 @@ pulse_bandwidth_entries = []
 sigma_omega_1_max_entries = []
 order_entries = []
 n_para_entries = []
+T1_entries = []  # List to store T1 relaxation time entries
+T2_entries = []  # List to store T2 dephasing time entries
 init_ax_entries = []  # List to store initial state entries
 axis_entries = []  # List to store axis entries for "Axis" or "Phi" method
 beta_entries = []  # List to store beta entries for "Phi and Beta" method
@@ -831,6 +878,9 @@ space_var = tk.StringVar(value="hilbert")  # Default space value
 # Compute resource selection (cpu/gpu)
 compute_resource_var = tk.StringVar(value="cpu")
 
+# Dissipation mode selection
+dissipation_var = tk.StringVar(value="non-dissipative")
+
 # Add labels for parameter names
 ttk.Label(root, text="Parameter").grid(row=0, column=0)
 ttk.Label(root, text="Qubits:").grid(row=1, column=0)
@@ -852,6 +902,10 @@ pulse_bandwidth_label.grid(row=15, column=0)
 order_label = ttk.Label(root, text="Profile Order:")
 order_label.grid(row=19, column=0)
 ttk.Label(root, text="number of parameters:").grid(row=20, column=0)
+
+# Dissipation parameter labels (hidden by default)
+T1_label = ttk.Label(root, text="T₁ (sec):")
+T2_label = ttk.Label(root, text="T₂ (sec):")
 ttk.Label(root, text="Initial Axis States:").grid(row=21, column=0)
 ttk.Label(root, text="Target States Method:").grid(row=22, column=0)
 
@@ -962,6 +1016,16 @@ ttk.Label(root, text="Compute Resource:").grid(row=7, column=OPT_COL, sticky="e"
 ttk.Combobox(root, textvariable=compute_resource_var, values=["cpu", "gpu"]).grid(
     row=7, column=OPT_COL + 1, sticky="e"
 )
+
+# Dissipation mode selection
+ttk.Label(root, text="Dissipation:").grid(row=8, column=OPT_COL, sticky="e")
+dissipation_combobox = ttk.Combobox(
+    root,
+    textvariable=dissipation_var,
+    values=["non-dissipative", "dissipative"],
+)
+dissipation_combobox.grid(row=8, column=OPT_COL + 1, sticky="e")
+dissipation_combobox.bind("<<ComboboxSelected>>", lambda e: update_dissipation_fields())
 
 # Add submit button (left column as before)
 submit_button = ttk.Button(root, text="Save", command=save_to_json)

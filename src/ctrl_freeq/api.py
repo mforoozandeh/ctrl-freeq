@@ -162,6 +162,17 @@ class CtrlFreeQAPI:
         summary.append(f"Max iterations: {self.config['optimization']['max_iter']}")
         summary.append(f"Target fidelity: {self.config['optimization']['targ_fid']}")
 
+        # Dissipation mode
+        dissipation_mode = self.config["optimization"].get(
+            "dissipation_mode", "non-dissipative"
+        )
+        summary.append(f"Dissipation: {dissipation_mode}")
+        if dissipation_mode == "dissipative":
+            T1 = self.config["parameters"].get("T1", [])
+            T2 = self.config["parameters"].get("T2", [])
+            for i, (t1, t2) in enumerate(zip(T1, T2)):
+                summary.append(f"  Qubit {i + 1}: T1={t1:.2e} s, T2={t2:.2e} s")
+
         # Initial states
         init_states = self.config["initial_states"]
         summary.append(f"Initial states: {init_states}")
@@ -267,3 +278,8 @@ def load_two_qubit_polar_phase_config() -> CtrlFreeQAPI:
 def load_four_qubit_polar_phase_config() -> CtrlFreeQAPI:
     """Load the four qubit polar phase example configuration."""
     return CtrlFreeQAPI("four_qubit_parameters_polar_phase.json")
+
+
+def load_single_qubit_dissipative_config() -> CtrlFreeQAPI:
+    """Load the single qubit dissipative (Lindblad) example configuration."""
+    return CtrlFreeQAPI("single_qubit_dissipative.json")

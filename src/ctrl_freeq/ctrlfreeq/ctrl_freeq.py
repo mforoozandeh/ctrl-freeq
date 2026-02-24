@@ -25,6 +25,7 @@ class CtrlFreeQ:
         fid_fun,
         targ_fid,
         me,
+        collapse_ops=None,
     ):
         self.n_para = n_para
         self.n_qubits = n_qubits
@@ -45,6 +46,7 @@ class CtrlFreeQ:
         self.iter = 0
         self.exit_val = targ_fid
         self.me = me
+        self.collapse_ops = collapse_ops
 
         self.fid = None
         self.pen = None
@@ -76,7 +78,13 @@ class CtrlFreeQ:
         )
         # Use optimized simulator (main optimization - 6.28x speedup from vectorized matrix exponentials)
         state = simulator_optimized(
-            self.H0, Hp, self.dt, self.initial_state, self.u_fun, self.state_fun
+            self.H0,
+            Hp,
+            self.dt,
+            self.initial_state,
+            self.u_fun,
+            self.state_fun,
+            collapse_ops=self.collapse_ops,
         )
         self.fid = self.fid_fun(state, self.target_state)
         self.cost = -self.fid + self.pen
@@ -254,7 +262,7 @@ def simulator(H0, Hp, dt, initial_state, u_fun, state_fun):
     return state
 
 
-def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
+def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_ops=None):
     """
     Optimized simulator that vectorizes matrix exponential computation in chunks.
 
@@ -266,10 +274,13 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
     - H0: Tensor of shape (batch_size, D, D)
     - Hp: Tensor of shape (n_pulse, batch_size, D, D)
     - dt: Time step (float)
-    - initial_state: Tensor of shape (batch_size, D)
+    - initial_state: Tensor of shape (batch_size, D) or (batch_size, D, D) for density matrices
+    - u_fun: Matrix exponential function
+    - state_fun: State evolution function (state_hilbert, state_liouville, or state_lindblad)
+    - collapse_ops: Optional tensor of shape (n_ops, D, D) for Lindblad dissipation
 
     Returns:
-    - state: Tensor of shape (batch_size, D)
+    - state: Tensor of shape (batch_size, D) or (batch_size, D, D)
     """
     n_pulse, batch_size, D, _ = Hp.shape
 
@@ -279,7 +290,10 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
     # benefiting from batched matrix_exp.
     chunk_size = min(n_pulse, 32)
 
-    state = initial_state  # Shape: (batch_size, D)
+    state = initial_state
+
+    # Build extra kwargs for state_fun (only state_lindblad needs dt and collapse_ops)
+    use_lindblad = collapse_ops is not None
 
     for start in range(0, n_pulse, chunk_size):
         end = min(start + chunk_size, n_pulse)
@@ -299,8 +313,12 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun):
         U_chunk = U_flat.reshape(chunk_len, batch_size, D, D)
 
         # Apply time evolution for this chunk
-        for n in range(chunk_len):
-            state = state_fun(U_chunk[n], state)
+        if use_lindblad:
+            for n in range(chunk_len):
+                state = state_fun(U_chunk[n], state, dt, collapse_ops)
+        else:
+            for n in range(chunk_len):
+                state = state_fun(U_chunk[n], state)
 
     return state
 
@@ -434,6 +452,59 @@ def state_liouville(U, state):
 
     state = U @ state @ U.conj().transpose(-2, -1)  # Shape: (batch_size, D, D)
     return state
+
+
+def lindblad_dissipator(rho, collapse_ops):
+    """
+    Compute the Lindblad dissipator: sum_k (L_k rho L_k^dag - 0.5 {L_k^dag L_k, rho}).
+
+    Parameters:
+    rho (torch.Tensor): Density matrices of shape (batch_size, D, D).
+    collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
+
+    Returns:
+    torch.Tensor: The dissipator contribution of shape (batch_size, D, D).
+    """
+    # collapse_ops: (n_ops, D, D) -> unsqueeze for batch: (n_ops, 1, D, D)
+    L = collapse_ops.unsqueeze(1)  # (n_ops, 1, D, D)
+    L_dag = L.conj().transpose(-2, -1)  # (n_ops, 1, D, D)
+    L_dag_L = L_dag @ L  # (n_ops, 1, D, D)
+
+    # rho: (batch_size, D, D) -> unsqueeze for ops: (1, batch_size, D, D)
+    rho_expanded = rho.unsqueeze(0)  # (1, batch_size, D, D)
+
+    # L rho L^dag: (n_ops, batch_size, D, D)
+    term1 = L @ rho_expanded @ L_dag
+
+    # 0.5 * {L^dag L, rho} = 0.5 * (L^dag L rho + rho L^dag L)
+    term2 = 0.5 * (L_dag_L @ rho_expanded + rho_expanded @ L_dag_L)
+
+    # Sum over all collapse operators: (batch_size, D, D)
+    return (term1 - term2).sum(dim=0)
+
+
+def state_lindblad(U, state, dt, collapse_ops):
+    """
+    Apply the Lindblad evolution: unitary step followed by dissipative step.
+
+    Uses Euler splitting: rho(t+dt) = U rho U^dag + dt * L[U rho U^dag]
+
+    Parameters:
+    U (torch.Tensor): Unitary operators of shape (batch_size, D, D).
+    state (torch.Tensor): Density matrices of shape (batch_size, D, D).
+    dt (float or torch.Tensor): Time step.
+    collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
+
+    Returns:
+    torch.Tensor: Updated density matrices of shape (batch_size, D, D).
+    """
+    # Unitary evolution step
+    rho = U @ state @ U.conj().transpose(-2, -1)
+
+    # Dissipative step (Euler)
+    rho = rho + dt * lindblad_dissipator(rho, collapse_ops)
+
+    return rho
 
 
 def matrix_square_root(mat):

@@ -5,6 +5,7 @@ from scipy.linalg import expm
 from ctrl_freeq.evolution.time_evolution import (
     apply_multi_pulse_multi_qubits_hilbert,
     apply_multi_pulse_multi_qubits_liouville,
+    apply_multi_pulse_multi_qubits_lindblad,
 )
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
     create_H_total,
@@ -1347,9 +1348,23 @@ def get_final_rho_for_excitation_profile(x, p, rho_0, num_points):
         cys.append(cy)
     H0 = get_H0_for_plotter(p, num_points)
 
+    dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
+    collapse_operators = getattr(p, "collapse_operators", None)
+
     rho_end = []
     for h0 in H0:
-        if space == "hilbert":
+        if dissipation_mode == "dissipative" and collapse_operators is not None:
+            rho_end.append(
+                apply_multi_pulse_multi_qubits_lindblad(
+                    h0,
+                    pulse_params,
+                    duration,
+                    peak_amplitudes,
+                    rho_0,
+                    collapse_operators,
+                )
+            )
+        elif space == "hilbert":
             rho_end.append(
                 apply_multi_pulse_multi_qubits_hilbert(
                     h0, pulse_params, duration, peak_amplitudes, rho_0

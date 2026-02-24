@@ -57,6 +57,27 @@ class Initialise:
         self.pulse_offset = 2 * np.pi * data["parameters"]["pulse_offset"]
         self.pulse_bandwidth = 2 * np.pi * data["parameters"]["pulse_bandwidth"]
 
+        # Dissipation parameters
+        self.dissipation_mode = data["optimization"].get(
+            "dissipation_mode", "non-dissipative"
+        )
+        if self.dissipation_mode == "dissipative":
+            # Force Liouville space for dissipative evolution
+            self.space = "liouville"
+            self.T1 = np.array(data["parameters"]["T1"])
+            self.T2 = np.array(data["parameters"]["T2"])
+            # Validate T2 <= 2*T1 (physical constraint)
+            for i in range(self.n_qubits):
+                if self.T2[i] > 2 * self.T1[i]:
+                    raise ValueError(
+                        f"Qubit {i + 1}: T2 ({self.T2[i]:.2e}) must be <= 2*T1 ({2 * self.T1[i]:.2e})"
+                    )
+            self.collapse_operators = self.build_collapse_operators()
+        else:
+            self.T1 = None
+            self.T2 = None
+            self.collapse_operators = None
+
         self.frq_band = self.get_frequency_band()
         self.t = self.generate_time_sequence()
         self.x0 = self.generate_initial_x0()
@@ -691,6 +712,54 @@ class Initialise:
             targets = targets.reshape(N * P, Q, R)
 
         return inits, targets
+
+    def build_collapse_operators(self):
+        """
+        Build Lindblad collapse operators for amplitude damping (T1) and
+        pure dephasing (T2) for each qubit.
+
+        For qubit i:
+          - Amplitude damping: L1_i = sqrt(gamma1_i) * (sigma_minus_i ⊗ I_rest)
+          - Pure dephasing:    L2_i = sqrt(gamma_phi_i) * (sigma_z_i/2 ⊗ I_rest)
+
+        where gamma1 = 1/T1, gamma_phi = 1/T2 - 1/(2*T1).
+
+        Returns:
+            list of tuples (L, L_dag, L_dag_L): each collapse operator with
+            its pre-computed adjoint and L†L product.
+        """
+        identity = np.eye(2, dtype=complex)
+
+        # sigma_minus = |0><1|
+        sigma_minus = np.array([[0, 1], [0, 0]], dtype=complex)
+        # sigma_z
+        sigma_z = np.array([[1, 0], [0, -1]], dtype=complex)
+
+        def tensor_op(single_op, qubit_index):
+            """Place single_op on qubit_index, identity on others."""
+            ops = [identity] * self.n_qubits
+            ops[qubit_index] = single_op
+            result = ops[0]
+            for op in ops[1:]:
+                result = np.kron(result, op)
+            return result
+
+        collapse_ops = []
+        for i in range(self.n_qubits):
+            gamma1 = 1.0 / self.T1[i]
+            gamma_phi = 1.0 / self.T2[i] - 1.0 / (2.0 * self.T1[i])
+
+            # Amplitude damping operator
+            if gamma1 > 0:
+                L1 = np.sqrt(gamma1) * tensor_op(sigma_minus, i)
+                collapse_ops.append(L1)
+
+            # Pure dephasing operator
+            if gamma_phi > 0:
+                L2 = np.sqrt(gamma_phi) * tensor_op(0.5 * sigma_z, i)
+                collapse_ops.append(L2)
+
+        return np.array(collapse_ops) if collapse_ops else None
 
     def pulse_offset_exponent(self):
         exponent = []
