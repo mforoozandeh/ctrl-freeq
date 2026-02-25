@@ -43,7 +43,7 @@ Initial public release.
 - Tkinter-based graphical user interface, launched via the `freeq-gui` CLI entry point.
 - Interactive Plotly dashboards exported as standalone HTML files.
 - Multiple optimizer families: BFGS, L-BFGS, CG, Newton-CG, Newton-Exact, Dogleg, Trust-NCG, Trust-Krylov, Trust-Exact, and Qiskit-provided algorithms.
-- Piecewise-constant and Fourier-based waveform parameterizations.
+- Polynomial-based and piecewise-constant waveform parameterisations.
 - Selective and band-selective coverage modes.
 - CPU thread management and optional GPU acceleration via CUDA.
 - Comprehensive documentation built with MkDocs Material.
