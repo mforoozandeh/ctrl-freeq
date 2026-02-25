@@ -169,11 +169,7 @@ def create_density_matrices(N, directions):
             result = np.kron(result, op)
         return result
 
-    rho = np.zeros((2**N, 2**N), dtype=complex)
+    single_qubit_rhos = [pauli_matrices[directions[i]] for i in range(N)]
+    rho = tensor_product(single_qubit_rhos)
 
-    for i in range(N):
-        operators = [identity_matrix] * N
-        operators[i] = pauli_matrices[directions[i]]
-        rho += tensor_product(operators)
-
-    return rho / np.trace(rho)
+    return rho

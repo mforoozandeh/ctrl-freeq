@@ -1400,7 +1400,7 @@ def calculate_observable(state, operator, n_qubits, space_type="hilbert"):
 
     elif space_type == "liouville":
         # In Liouville space, the state is a density matrix ρ
-        return n_qubits * np.real(np.trace(state @ operator))
+        return np.real(np.trace(state @ operator))
 
     else:
         raise ValueError("Invalid space type. Choose 'liouville' or 'hilbert'.")
