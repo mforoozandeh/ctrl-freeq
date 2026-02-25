@@ -3,7 +3,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.1.1] — 2025-02-17
+## [0.2.0] — 2026-02-25
+
+### Added
+
+- Support for dissipative evolution in the optimization process with Lindblad master equation.
+
+### Fixed
+
+- Fixed a bug in the calculation of density matrix.
+- Fixed a normalisation bug in the plotter for observable dynamics visualisation in the Liouville space.
+
+## [0.1.1] — 2026-02-17
 
 ### Changed
 
@@ -21,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Corrected an invalid `tqdm` version pin that referenced the non-existent 3.x series.
 - Resolved a broken relative link to the example dashboard in the documentation.
 
-## [0.1.0] — 2025-02-17
+## [0.1.0] — 2026-02-17
 
 Initial public release.
 
