@@ -200,10 +200,13 @@ solution = api.run_optimization()
 | `optimization.max_iter` | Maximum iterations |
 | `optimization.targ_fid` | Target fidelity |
 | `optimization.space` | `hilbert` or `liouville` |
+| `optimization.dissipation_mode` | `non-dissipative` or `dissipative` |
 | `parameters.Delta` | Detuning (Hz) |
 | `parameters.Omega_R_max` | Maximum Rabi frequency (Hz) |
 | `parameters.pulse_duration` | Pulse duration (seconds) |
 | `parameters.point_in_pulse` | Discretization points |
+| `parameters.T1` | Amplitude damping time (seconds) |
+| `parameters.T2` | Pure dephasing time (seconds) |
 | `compute_resource` | `cpu` or `gpu` |
 
 ---
@@ -335,6 +338,16 @@ from ctrl_freeq.api import load_single_qubit_polar_phase_config
 api = load_single_qubit_polar_phase_config()
 ```
 
+#### `load_single_qubit_dissipative_config()`
+
+A single-qubit configuration with dissipative (Lindblad) dynamics enabled. The evolution includes amplitude damping (T1 = 1 ms) and pure dephasing (T2 = 500 μs), and the optimization is performed in Liouville (density matrix) space.
+
+```python
+from ctrl_freeq.api import load_single_qubit_dissipative_config
+
+api = load_single_qubit_dissipative_config()
+```
+
 ### Two-Qubit Configurations
 
 #### `load_two_qubit_config()`
@@ -418,6 +431,91 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 dashboard_path = create_dashboard(figures, timestamp, parameters=api.parameters)
 print(f"Dashboard saved to: {dashboard_path}")
 ```
+
+---
+
+## Dissipative (Lindblad) Workflow Example
+
+The following example demonstrates a complete optimization workflow for an open quantum system subject to amplitude damping and pure dephasing. The Lindblad master equation is employed to model the dissipative channels, and the optimization is performed in Liouville (density matrix) space.
+
+=== "From built-in config"
+    ```python
+    from ctrl_freeq.api import load_single_qubit_dissipative_config
+    from ctrl_freeq.visualisation.plotter import process_and_plot
+
+    # Load the pre-configured dissipative example
+    api = load_single_qubit_dissipative_config()
+
+    # Review configuration (includes T1/T2 information)
+    print(api.get_config_summary())
+
+    # Run optimization
+    solution = api.run_optimization()
+
+    # Check results
+    print(f"Final fidelity: {api.parameters.final_fidelity}")
+    print(f"Iterations: {api.parameters.iterations}")
+
+    # Generate plots
+    waveforms = process_and_plot(solution, api.parameters, show_plots=True)
+    ```
+
+=== "From dictionary"
+    ```python
+    from ctrl_freeq.api import CtrlFreeQAPI
+    from ctrl_freeq.visualisation.plotter import process_and_plot
+
+    config = {
+        "qubits": ["q1"],
+        "compute_resource": "cpu",
+        "parameters": {
+            "Delta": [10000000.0],
+            "Omega_R_max": [40000000.0],
+            "pulse_duration": [2e-07],
+            "point_in_pulse": [100],
+            "wf_type": ["cheb"],
+            "wf_mode": ["cart"],
+            "amplitude_envelope": ["gn"],
+            "amplitude_order": [1],
+            "coverage": ["broadband"],
+            "sw": [5000000.0],
+            "pulse_offset": [0.0],
+            "pulse_bandwidth": [500000.0],
+            "ratio_factor": [0.5],
+            "sigma_Delta": [0.0],
+            "sigma_Omega_R_max": [0.0],
+            "profile_order": [2],
+            "n_para": [16],
+            "J": [[0.0]],
+            "T1": [0.001],           # 1 ms amplitude damping
+            "T2": [0.0005]           # 500 μs pure dephasing
+        },
+        "initial_states": [["Z"]],
+        "target_states": {"Axis": [["-Z"]]},
+        "optimization": {
+            "space": "liouville",
+            "dissipation_mode": "dissipative",
+            "H0_snapshots": 100,
+            "Omega_R_snapshots": 1,
+            "algorithm": "qiskit-cobyla",
+            "max_iter": 1000,
+            "targ_fid": 0.99
+        }
+    }
+
+    api = CtrlFreeQAPI(config)
+    solution = api.run_optimization()
+    print(f"Final fidelity: {api.parameters.final_fidelity}")
+    ```
+
+!!! note "Dissipation Requirements"
+    When `dissipation_mode` is set to `"dissipative"`, the following conditions must be satisfied:
+
+    - The optimization `space` must be `"liouville"` (density matrix mode)
+    - Per-qubit `T1` and `T2` values must be provided in the `parameters` section
+    - The physical constraint $T_2 \leq 2 T_1$ must hold for each qubit
+
+    For a detailed description of the dissipation parameters, see [Optimization → Parameters → Dissipation Parameters](optimization/parameters.md#dissipation-parameters).
 
 ---
 

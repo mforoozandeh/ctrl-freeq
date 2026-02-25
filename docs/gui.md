@@ -94,6 +94,7 @@ A complete description of all target specification options is provided in [Optim
 | Setting | Description |
 |---------|-------------|
 | **Space** | `hilbert` (pure states) or `liouville` (density matrices) |
+| **Dissipation** | `non-dissipative` (default) or `dissipative` (Lindblad master equation) |
 | **Algorithm** | Optimization algorithm |
 | **Max Iterations** | Maximum optimization iterations |
 | **Target Fidelity** | Stop when fidelity reaches this value |
@@ -102,6 +103,27 @@ A complete description of all target specification options is provided in [Optim
 For guidance on algorithm selection, the reader is referred to [Optimization → Algorithms](optimization/algorithms.md).
 
 For GPU setup instructions, see [Optimization → Compute](optimization/compute.md).
+
+---
+
+## Dissipation Controls
+
+When the **Dissipation** dropdown is set to `dissipative`, the interface enables the modelling of open quantum systems via the Lindblad master equation. The following behaviour is activated:
+
+- The **Space** setting is automatically forced to `liouville` (density matrix mode)
+- Per-qubit **T1** and **T2** entry fields are revealed in the qubit configuration panel
+- The optimizer employs an Euler operator-splitting scheme, applying a unitary step followed by a Lindblad dissipative step at each time increment
+
+| Control | Description | Units |
+|---------|-------------|-------|
+| **T1** | Amplitude damping time constant (energy relaxation) | seconds |
+| **T2** | Pure dephasing time constant (phase decoherence) | seconds |
+
+!!! warning "Physical Constraint"
+    The values entered must satisfy the physical constraint $T_2 \leq 2 T_1$ for each qubit. Configurations that violate this bound will produce a validation error.
+
+!!! note "Liouville Space"
+    Selecting `dissipative` mode automatically sets the optimization space to `liouville`. This is required because dissipative dynamics operate on density matrices rather than pure state vectors. The space selection cannot be changed back to `hilbert` while `dissipative` mode is active.
 
 ---
 
@@ -174,7 +196,21 @@ Resets all parameters to their default values.
 
 The optimizer will seek pulses that are robust to the specified parameter uncertainties.
 
-### Example 4: Universal Rotation Pulse
+### Example 4: Dissipative π-Pulse (Open Quantum System)
+
+1. Launch the GUI: `freeq-gui`
+2. Set **Initial State**: `Z`
+3. Set **Target States Method**: `Axis`
+4. Set **Target Axis**: `-Z`
+5. Set **Dissipation**: `dissipative`
+6. Enter **T1**: `0.001` (1 ms)
+7. Enter **T2**: `0.0005` (500 μs)
+8. Set **Algorithm**: `qiskit-cobyla`
+9. Click **Run**
+
+The optimizer will design a pulse that achieves the desired inversion while accounting for amplitude damping and dephasing during the pulse.
+
+### Example 5: Universal Rotation Pulse
 
 1. Launch the GUI: `freeq-gui`
 2. Set **Initial State**: `X, Y, Z`

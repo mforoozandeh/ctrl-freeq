@@ -87,6 +87,47 @@ The waveform settings determine the basis functions and envelope used to paramet
 
 ---
 
+## Dissipation Parameters
+
+For the simulation of open quantum systems, ctrl-freeq supports dissipative dynamics via the Lindblad master equation. When dissipation is enabled, the evolution includes amplitude damping (characterised by the longitudinal relaxation time T1) and pure dephasing (characterised by the transverse relaxation time T2) for each qubit. All values are **per-qubit arrays**, with one entry for each qubit in the configuration.
+
+| Key | GUI Label | Description | Default | Units |
+|-----|-----------|-------------|---------|-------|
+| `T1` | T1 (s) | Amplitude damping time constant (energy relaxation) | — | seconds |
+| `T2` | T2 (s) | Pure dephasing time constant (phase decoherence) | — | seconds |
+
+The Lindblad collapse operators constructed from these parameters are:
+
+- **Amplitude damping:** $L_1 = \sqrt{1/T_1}\, \sigma^-$ — models energy relaxation to the ground state
+- **Pure dephasing:** $L_2 = \sqrt{1/T_2 - 1/(2T_1)}\, \sigma_z/2$ — models loss of phase coherence without energy exchange
+
+For multi-qubit systems, the collapse operators are extended to the full Hilbert space via tensor products with identity operators on the remaining qubits.
+
+!!! warning "Physical Constraint"
+    The physical constraint $T_2 \leq 2 T_1$ is enforced automatically. Configurations that violate this bound will raise a validation error, as such values are unphysical (the pure dephasing rate cannot be negative).
+
+!!! note "Liouville Space Requirement"
+    Dissipative simulations require the optimization space to be set to `liouville` (density matrix mode). When `dissipation_mode` is set to `"dissipative"`, the space is automatically forced to `liouville` in the GUI.
+
+**Example:**
+
+```jsonc
+{
+  "parameters": {
+    // ... other parameters ...
+    "T1": [0.001],       // 1 ms amplitude damping
+    "T2": [0.0005]       // 500 μs pure dephasing (T2 ≤ 2·T1)
+  },
+  "optimization": {
+    "space": "liouville",
+    "dissipation_mode": "dissipative",
+    // ...
+  }
+}
+```
+
+---
+
 ## Multi-Qubit Coupling
 
 For systems comprising two or more qubits, the inter-qubit coupling parameters must be specified. These fields are used when `len(qubits) > 1`:
@@ -244,6 +285,7 @@ The following fields control the behaviour of the optimization procedure:
 | Key | GUI Label | Description | Default |
 |-----|-----------|-------------|---------|
 | `space` | Space | `hilbert` (pure states) or `liouville` (density matrices) | `hilbert` |
+| `dissipation_mode` | Dissipation | `non-dissipative` or `dissipative` (Lindblad master equation) | `non-dissipative` |
 | `H0_snapshots` | H₀ Snapshots | Time steps for drift Hamiltonian | 100 |
 | `Omega_R_snapshots` | Ω_R Snapshots | Time steps for control Hamiltonian | 1 |
 | `algorithm` | Algorithm | Optimization algorithm (see [Algorithms](algorithms.md)) | varies by config |

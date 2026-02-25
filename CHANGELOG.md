@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Support for dissipative evolution in the optimization process with Lindblad master equation.
+- Documentation of Lindblad master equation support for dissipative open quantum systems (T1/T2 relaxation channels, GUI controls, API workflow, configuration schema).
 
 ### Fixed
 
