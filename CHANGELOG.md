@@ -3,6 +3,29 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-02-27
+
+### Added
+
+- Hamiltonian model abstraction layer (`HamiltonianModel` ABC) enabling platform-agnostic pulse optimization via the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k.
+- `SpinChainModel` — wraps the existing spin-chain drift and coupling Hamiltonians (Ising, XY, Heisenberg) behind the new model interface.
+- `SuperconductingQubitModel` — transmon qubit Hamiltonian with qubit-frequency drift, capacitive coupling (XY, ZZ, XY+ZZ), and anharmonicity-derived static ZZ shifts.
+- `pulse_hamiltonian_generic()` — model-agnostic pulse Hamiltonian construction via `einsum`, replacing the spin-chain-specific implementation for new model paths.
+- GUI Hamiltonian Type selector dropdown (Spin Chain / Superconducting) that dynamically relabels fields (Δ↔ω, J↔g) and reconfigures coupling controls.
+- Gate dropdown (Combobox) in the GUI, replacing free-text entry, with platform-aware gate lists and defaults (CNOT for Spin Chain, iSWAP for Superconducting).
+- Two new two-qubit gates: √iSWAP and ECR (echoed cross-resonance).
+- Superconducting coupling controls in the GUI: coupling types XY, ZZ, XY+ZZ; per-qubit anharmonicity entry.
+
+### Changed
+
+- Default two-qubit gate is now Hamiltonian-type-aware: CNOT for spin chains, iSWAP for superconducting qubits.
+- Gate entry fields in the GUI are now dropdown menus (Combobox) with available gates filtered by qubit count and Hamiltonian type.
+- Backward compatibility is maintained: configurations without `hamiltonian_type` continue to use the legacy spin-chain code path.
+
+### Removed
+
+- `NeutralAtomModel` (Rydberg) — removed due to semantic mismatches between the |g⟩/|r⟩ basis and the Pauli-based state/gate/target infrastructure.
+
 ## [0.2.0] — 2026-02-25
 
 ### Added

@@ -1,6 +1,6 @@
 # ctrl-freeq
 
-Ctrl-freeq is a numerical framework for the design of quantum gates and pulses via optimal control theory, implemented in Python with PyTorch. The control pulse optimization problem is formulated and solved using automatic differentiation, and the resulting software provides both a programmatic API and a graphical user interface for the configuration and execution of optimization workflows.
+Ctrl-freeq is a numerical framework for the design of quantum gates and pulses via optimal control theory, implemented in Python with PyTorch. The control pulse optimization problem is formulated and solved using automatic differentiation, and the resulting software provides both a programmatic API and a graphical user interface for the configuration and execution of optimization workflows. Multiple physical platforms are supported through a Hamiltonian model abstraction layer, including spin-chain systems and superconducting (transmon) qubits.
 
 - **PyPI package**: `ctrl-freeq`
 - **Import path**: `ctrl_freeq`
@@ -9,7 +9,7 @@ Ctrl-freeq is a numerical framework for the design of quantum gates and pulses v
 
 ## Features
 
-The framework supports the definition and solution of gate optimization problems through JSON configuration files. A high-level Python API is provided for loading configurations, executing the optimizer, and post-processing results, while a Tkinter-based GUI (launched via `freeq-gui`) offers an interactive alternative for users who prefer a graphical workflow. Optimization results may be visualized through interactive Plotly dashboards exported as standalone HTML files. CPU thread management is handled automatically, and optional GPU acceleration is available via CUDA.
+The framework supports two physical platforms—spin chains and superconducting (transmon) qubits—through a Hamiltonian model abstraction layer. The optimizer works with the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k, which is platform-agnostic. Gate optimization problems are defined through JSON configuration files, and a high-level Python API is provided for loading configurations, executing the optimizer, and post-processing results. A Tkinter-based GUI (launched via `freeq-gui`) offers an interactive alternative with dynamic field relabelling and platform-aware gate selection. Optimization results may be visualized through interactive Plotly dashboards exported as standalone HTML files. CPU thread management is handled automatically, and optional GPU acceleration is available via CUDA.
 
 ## Installation
 
@@ -69,6 +69,10 @@ src/ctrl_freeq/       Core package
   api.py              High-level API
   cli.py              CLI entry point (freeq-gui)
   setup/              GUI and configuration setup
+    hamiltonian_generation/
+      base.py         HamiltonianModel ABC
+      spin_chain.py   Spin-chain Hamiltonian
+      superconducting.py  Transmon qubit Hamiltonian
   run/                Optimization engine
   utils/              Plotting, dashboards, helpers
 examples/             Example configs and notebooks

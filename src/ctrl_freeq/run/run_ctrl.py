@@ -56,7 +56,6 @@ def run_ctrl(p):
 
     n_para = p.n_para_updated
     n_qubits = p.n_qubits
-    op = create_hamiltonian_basis_torch(n_qubits, device=device)
     n_pulse = p.np_pulse
     space = p.space
     wf_mode = p.wf_mode
@@ -79,7 +78,14 @@ def run_ctrl(p):
 
     H0, initials, targets = h0_omega_1_iterator_torch(H0, n_rabi, initials, targets)
 
-    if n_qubits == 1:
+    # Select matrix exponential function based on Hilbert space dimension
+    hamiltonian_model = getattr(p, "hamiltonian_model", None)
+    if hamiltonian_model is not None:
+        D = hamiltonian_model.dim
+    else:
+        D = 2**n_qubits
+
+    if D == 2:
         u_fun = exp_mat_exact
     else:
         u_fun = exp_mat_torch
@@ -109,6 +115,14 @@ def run_ctrl(p):
         elif mode == "cart":
             wf_fun.append(waveform_gen_cart)
 
+    # Build control operators from model (generic path) or Pauli basis (legacy)
+    if hamiltonian_model is not None:
+        control_ops = hamiltonian_model.control_ops_tensor(device=device)
+        op = None  # Not needed for generic path
+    else:
+        control_ops = None
+        op = create_hamiltonian_basis_torch(n_qubits, device=device)
+
     ctrlfreeq_instance = CtrlFreeQ(
         n_para,
         n_qubits,
@@ -129,6 +143,8 @@ def run_ctrl(p):
         targ_fid,
         me,
         collapse_ops=collapse_ops,
+        hamiltonian_model=hamiltonian_model,
+        control_ops=control_ops,
     )
 
     x0 = x0_con.requires_grad_(True)

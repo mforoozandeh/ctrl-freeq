@@ -58,6 +58,7 @@ An API instance may be created from a path to a JSON configuration file (provide
 
     config = {
         "qubits": ["q1"],
+        "hamiltonian_type": "spin_chain",  # or "superconducting"
         "compute_resource": "cpu",
         "parameters": {
             "Delta": [0.0],
@@ -196,13 +197,14 @@ solution = api.run_optimization()
 
 | Path | Description |
 |------|-------------|
+| `hamiltonian_type` | `spin_chain` or `superconducting` |
 | `optimization.algorithm` | Optimization algorithm |
 | `optimization.max_iter` | Maximum iterations |
 | `optimization.targ_fid` | Target fidelity |
 | `optimization.space` | `hilbert` or `liouville` |
 | `optimization.dissipation_mode` | `non-dissipative` or `dissipative` |
-| `parameters.Delta` | Detuning (Hz) |
-| `parameters.Omega_R_max` | Maximum Rabi frequency (Hz) |
+| `parameters.Delta` | Detuning / qubit frequency (Hz) |
+| `parameters.Omega_R_max` | Maximum Rabi frequency / drive amplitude (Hz) |
 | `parameters.pulse_duration` | Pulse duration (seconds) |
 | `parameters.point_in_pulse` | Discretization points |
 | `parameters.T1` | Amplitude damping time (seconds) |
@@ -516,6 +518,96 @@ The following example demonstrates a complete optimization workflow for an open 
     - The physical constraint $T_2 \leq 2 T_1$ must hold for each qubit
 
     For a detailed description of the dissipation parameters, see [Optimization → Parameters → Dissipation Parameters](optimization/parameters.md#dissipation-parameters).
+
+---
+
+## Hamiltonian Models
+
+Ctrl-freeq provides a platform-agnostic Hamiltonian model abstraction for defining quantum control problems. All models implement the `HamiltonianModel` abstract base class, which follows the standard bilinear control formulation:
+
+**H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k**
+
+### HamiltonianModel (Abstract Base Class)
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import HamiltonianModel
+```
+
+All Hamiltonian models implement the following interface:
+
+| Method / Property | Description |
+|-------------------|-------------|
+| `build_drift(**params)` | Construct drift Hamiltonian H₀ instances (list of `(D, D)` numpy arrays) |
+| `build_control_ops()` | Return fixed control operators H_ctrl_k (list of `(D, D)` numpy arrays) |
+| `control_amplitudes(cx, cy, rabi_freq, n_h0)` | Map waveform outputs to control amplitudes u_k(t) |
+| `dim` (property) | Hilbert space dimension D = 2^n_qubits |
+| `n_controls` (property) | Number of independent control channels (2 × n_qubits) |
+| `control_ops_tensor()` | Control operators as a stacked torch tensor `(n_controls, D, D)` |
+
+### SpinChainModel
+
+Models spin-chain qubits with detuning-based drift and configurable inter-qubit coupling (Ising, XY, Heisenberg).
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import SpinChainModel
+
+model = SpinChainModel(n_qubits=2, coupling_type="XY")
+
+# Build drift Hamiltonian
+import numpy as np
+Delta = np.array([2 * np.pi * 1e7, 2 * np.pi * 2e7])
+J = np.array([[0.0, 2 * np.pi * 1e6], [0.0, 0.0]])
+H0_list = model.build_drift(Delta_instances=[Delta], J_instances=[J])
+
+# Get control operators
+ctrl_ops = model.build_control_ops()  # [X_0, Y_0, X_1, Y_1]
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `n_qubits` | Number of spin-1/2 qubits |
+| `coupling_type` | `"Z"` (Ising), `"XY"` (exchange), or `"XYZ"` (Heisenberg) |
+
+### SuperconductingQubitModel
+
+Models fixed-frequency transmon qubits with capacitive coupling, supporting exchange (XY), static ZZ, and combined (XY+ZZ) coupling.
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import SuperconductingQubitModel
+
+model = SuperconductingQubitModel(
+    n_qubits=2,
+    coupling_type="XY+ZZ",
+    anharmonicities=np.array([2 * np.pi * -330e6, 2 * np.pi * -330e6]),
+)
+
+# Build drift Hamiltonian
+omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+H0_list = model.build_drift(omega_instances=[omega], g_instances=[g])
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `n_qubits` | Number of transmon qubits |
+| `coupling_type` | `"XY"` (exchange), `"ZZ"` (static ZZ), or `"XY+ZZ"` (both) |
+| `anharmonicities` | Per-qubit anharmonicities (rad/s), used for ZZ computation |
+
+### Using Models in Configuration
+
+To use a Hamiltonian model, set the `hamiltonian_type` field in the configuration:
+
+```python
+config = {
+    "qubits": ["q1", "q2"],
+    "hamiltonian_type": "superconducting",  # or "spin_chain"
+    "compute_resource": "cpu",
+    "parameters": { ... },
+    "initial_states": [["Z", "Z"]],
+    "target_states": {"Gate": ["iSWAP"]},
+    "optimization": { ... }
+}
+```
 
 ---
 

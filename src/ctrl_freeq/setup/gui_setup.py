@@ -74,22 +74,59 @@ def reshape_list(input_list):
     return new_list
 
 
+def get_available_gates():
+    """Return gate options based on qubit count and Hamiltonian type."""
+    h_type = hamiltonian_type_var.get()
+
+    single_qubit_gates = ["X", "Y", "Z", "H", "S", "T"]
+
+    if h_type == "superconducting":
+        two_qubit_gates = ["iSWAP", "√iSWAP", "ECR", "CZ", "CNOT", "SWAP"]
+    else:  # spin_chain
+        two_qubit_gates = ["CNOT", "CZ", "SWAP", "iSWAP", "√iSWAP", "ECR"]
+
+    three_qubit_gates = ["Toff"]
+
+    if qubit_count == 1:
+        return single_qubit_gates
+    elif qubit_count == 2:
+        return two_qubit_gates
+    elif qubit_count >= 3:
+        return three_qubit_gates
+    return single_qubit_gates
+
+
 def add_coupling_entries():
     global coupling_entries, coupling_type_var, sigma_J_entry
+    global anharmonicity_entries
+
     for widget in coupling_frame.winfo_children():
         widget.destroy()
 
     coupling_entries = []
+    anharmonicity_entries = []
+    sigma_J_entry = None
+
+    h_type = hamiltonian_type_var.get()
+
+    if h_type == "spin_chain":
+        _add_coupling_spin_chain()
+    elif h_type == "superconducting":
+        _add_coupling_superconducting()
+
+
+def _add_coupling_spin_chain():
+    """Build coupling frame content for spin chain Hamiltonian."""
+    global coupling_entries, coupling_type_var, sigma_J_entry
+
     if qubit_count > 1:
-        # Add coupling type dropdown
         ttk.Label(coupling_frame, text="Coupling Type:").grid(
             row=0, column=0, sticky="e"
         )
         coupling_type_var = tk.StringVar(value="XY")
-        coupling_type_combobox = ttk.Combobox(
+        ttk.Combobox(
             coupling_frame, textvariable=coupling_type_var, values=["Z", "XYZ", "XY"]
-        )
-        coupling_type_combobox.grid(row=0, column=1, sticky="e")
+        ).grid(row=0, column=1, sticky="e")
 
         ttk.Label(coupling_frame, text="Coupling Constants (J_ij):").grid(
             row=1, column=0, columnspan=qubit_count, sticky="e"
@@ -98,8 +135,9 @@ def add_coupling_entries():
 
         for i in range(1, qubit_count + 1):
             for j in range(i + 1, qubit_count + 1):
-                label = ttk.Label(coupling_frame, text=f"J_{i}{j}:")
-                label.grid(row=row, column=0, sticky="e")
+                ttk.Label(coupling_frame, text=f"J_{i}{j}:").grid(
+                    row=row, column=0, sticky="e"
+                )
                 entry = ttk.Entry(
                     coupling_frame, validate="key", validatecommand=vcmd_float
                 )
@@ -107,12 +145,71 @@ def add_coupling_entries():
                 coupling_entries.append((i, j, entry))
                 row += 1
 
-        # Add sigma_J entry
         ttk.Label(coupling_frame, text="σ J:").grid(row=row, column=0, sticky="e")
         sigma_J_entry = ttk.Entry(
             coupling_frame, validate="key", validatecommand=vcmd_float
         )
         sigma_J_entry.grid(row=row, column=1, sticky="e")
+
+
+def _add_coupling_superconducting():
+    """Build coupling frame content for superconducting qubit Hamiltonian."""
+    global coupling_entries, coupling_type_var, sigma_J_entry, anharmonicity_entries
+
+    if qubit_count > 1:
+        # Coupling type dropdown (XY, ZZ, XY+ZZ)
+        ttk.Label(coupling_frame, text="Coupling Type:").grid(
+            row=0, column=0, sticky="e"
+        )
+        coupling_type_var = tk.StringVar(value="XY")
+        ttk.Combobox(
+            coupling_frame,
+            textvariable=coupling_type_var,
+            values=["XY", "ZZ", "XY+ZZ"],
+        ).grid(row=0, column=1, sticky="e")
+
+        # Coupling constants g_ij
+        ttk.Label(coupling_frame, text="Coupling Constants (g_ij):").grid(
+            row=1, column=0, columnspan=2, sticky="e"
+        )
+        row = 2
+
+        for i in range(1, qubit_count + 1):
+            for j in range(i + 1, qubit_count + 1):
+                ttk.Label(coupling_frame, text=f"g_{i}{j}:").grid(
+                    row=row, column=0, sticky="e"
+                )
+                entry = ttk.Entry(
+                    coupling_frame, validate="key", validatecommand=vcmd_float
+                )
+                entry.grid(row=row, column=1, sticky="e")
+                coupling_entries.append((i, j, entry))
+                row += 1
+
+        # σg entry
+        ttk.Label(coupling_frame, text="σ g:").grid(row=row, column=0, sticky="e")
+        sigma_J_entry = ttk.Entry(
+            coupling_frame, validate="key", validatecommand=vcmd_float
+        )
+        sigma_J_entry.grid(row=row, column=1, sticky="e")
+        row += 1
+    else:
+        row = 0
+
+    # Anharmonicity per qubit
+    ttk.Label(coupling_frame, text="Anharmonicity α (Hz):").grid(
+        row=row, column=0, columnspan=2, sticky="w"
+    )
+    row += 1
+    for i in range(qubit_count):
+        ttk.Label(coupling_frame, text=f"α_{i + 1}:").grid(
+            row=row, column=0, sticky="e"
+        )
+        entry = ttk.Entry(coupling_frame, validate="key", validatecommand=vcmd_float)
+        entry.grid(row=row, column=1, sticky="e")
+        entry.insert(0, "-330e6")  # Default anharmonicity
+        anharmonicity_entries.append(entry)
+        row += 1
 
 
 def clean_data(data):
@@ -133,7 +230,10 @@ def clean_data(data):
 
 
 def make_data():
+    h_type = hamiltonian_type_var.get()
+
     data = {
+        "hamiltonian_type": h_type,
         "qubits": [],
         "compute_resource": compute_resource_var.get(),
         "parameters": {
@@ -154,15 +254,11 @@ def make_data():
             "sigma_Omega_R_max": [],
             "profile_order": [],
             "n_para": [],
-            "J": [
-                [0.0 for _ in range(qubit_count)] for _ in range(qubit_count)
-            ],  # Initialize J as a matrix
-            "coupling_type": coupling_type_var.get()
-            if qubit_count > 1
-            else None,  # Add coupling type
+            "J": [[0.0 for _ in range(qubit_count)] for _ in range(qubit_count)],
+            "coupling_type": coupling_type_var.get() if qubit_count > 1 else None,
             "sigma_J": float(sigma_J_entry.get())
             if sigma_J_entry is not None and sigma_J_entry.get()
-            else None,  # Add sigma_J
+            else None,
             "T1": [],
             "T2": [],
         },
@@ -195,6 +291,13 @@ def make_data():
             "targ_fid": float(targ_fid_entry.get()),
         },
     }
+
+    # Superconducting specific params
+    if h_type == "superconducting":
+        anharmonicities = []
+        for entry in anharmonicity_entries:
+            anharmonicities.append(float(entry.get()) if entry.get() else -330e6)
+        data["parameters"]["anharmonicities"] = anharmonicities
 
     for i in range(len(qubits_vars)):
         data["qubits"].append(qubits_vars[i].get())
@@ -448,8 +551,7 @@ def update_gate_entries(event):
     new_value = source_entry.get()
     for entry in gate_entries:
         if entry != source_entry:
-            entry.delete(0, tk.END)
-            entry.insert(0, new_value)
+            entry.set(new_value)
 
 
 def update_dissipation_fields():
@@ -471,6 +573,43 @@ def update_dissipation_fields():
         for i in range(qubit_count):
             T1_entries[i].grid_remove()
             T2_entries[i].grid_remove()
+
+
+def update_hamiltonian_fields():
+    """Update labels and coupling frame based on selected Hamiltonian type."""
+    h_type = hamiltonian_type_var.get()
+
+    if h_type == "spin_chain":
+        # Restore original labels, show Δ/σΔ rows
+        delta_label.config(text="Δ (Hz):")
+        sigma_delta_label.config(text="σΔ (Hz):")
+        omega_r_label.config(text="Ω_R Max (Hz):")
+        sigma_omega_r_label.config(text="σΩ_R Max (Hz):")
+        delta_label.grid()
+        sigma_delta_label.grid()
+        for i in range(qubit_count):
+            Omega_entries[i].grid()
+            sigma_Omega_entries[i].grid()
+
+    elif h_type == "superconducting":
+        # Relabel Δ → ω (qubit frequency), Ω_R → Ω_d
+        delta_label.config(text="ω (Hz):")
+        sigma_delta_label.config(text="σω (Hz):")
+        omega_r_label.config(text="Ω_d Max (Hz):")
+        sigma_omega_r_label.config(text="σΩ_d Max (Hz):")
+        delta_label.grid()
+        sigma_delta_label.grid()
+        for i in range(qubit_count):
+            Omega_entries[i].grid()
+            sigma_Omega_entries[i].grid()
+
+    # Rebuild coupling section for the new type
+    add_coupling_entries()
+
+    # Refresh gate dropdown values for the new Hamiltonian type
+    available_gates = get_available_gates()
+    for entry in gate_entries:
+        entry.config(values=available_gates)
 
 
 def update_coverage_fields():
@@ -522,21 +661,24 @@ def update_target_fields():
         beta_label.grid_remove()
         phi_label.grid_remove()
         axis_label.grid_remove()
+        available_gates = get_available_gates()
         for i in range(qubit_count):
-            # Add gate entry and bind the update function
+            # Add gate combobox and bind the update function
             if i >= len(gate_entries):  # Ensure only new entries are added
-                gate_entry = ttk.Entry(
-                    root, validate="key", validatecommand=vcmd_string
+                gate_var = tk.StringVar()
+                gate_entry = ttk.Combobox(
+                    root, textvariable=gate_var, values=available_gates
                 )
                 gate_entries.append(gate_entry)
                 gate_entry.grid(row=27, column=i + 1, padx=(10, 0), pady=2, sticky="w")
-                gate_entry.bind("<KeyRelease>", update_gate_entries)
+                gate_entry.bind("<<ComboboxSelected>>", update_gate_entries)
             else:
+                gate_entries[i].config(values=available_gates)
                 gate_entries[i].grid(
                     row=27, column=i + 1, padx=(10, 0), pady=2, sticky="w"
                 )
                 gate_entries[i].bind(
-                    "<KeyRelease>", update_gate_entries
+                    "<<ComboboxSelected>>", update_gate_entries
                 )  # Ensure binding
             if axis_entries[i]:
                 axis_entries[i].grid_remove()
@@ -684,12 +826,30 @@ def add_qubit():
     phi_entry = ttk.Entry(root, validate="key", validatecommand=vcmd_string)
     phi_entries.append(phi_entry)
 
-    gate_entry = ttk.Entry(root, validate="key", validatecommand=vcmd_string)
+    gate_var = tk.StringVar()
+    gate_entry = ttk.Combobox(root, textvariable=gate_var, values=get_available_gates())
     gate_entries.append(gate_entry)
 
     update_target_fields()  # Ensure the correct fields are shown initially
     add_coupling_entries()  # Add coupling entries
     update_coverage_fields()  # Show/hide pulse_bandwidth and order based on coverage
+
+
+def _default_gate_value():
+    """Return default gate names based on qubit count and Hamiltonian type."""
+    n = len(qubits_vars)
+    h_type = hamiltonian_type_var.get()
+    if n == 1:
+        return ["X"] * n
+    elif n == 2:
+        if h_type == "superconducting":
+            return ["iSWAP"] * n
+        else:  # spin_chain
+            return ["CNOT"] * n
+    elif n == 3:
+        return ["Toff"] * n
+    else:
+        return ["X"] * n
 
 
 def set_default_values():
@@ -718,14 +878,7 @@ def set_default_values():
         * len(qubits_vars),  # Default Phi value for Phi and Beta method
         "beta_value": [180.0]
         * len(qubits_vars),  # Default Beta value for Phi and Beta method
-        "gate_value": ["X"]
-        if len(qubits_vars) == 1
-        else ["CNOT"] * 2
-        if len(qubits_vars) == 2
-        else ["Toff"] * 3
-        if len(qubits_vars) == 3
-        else ["X"]
-        * len(qubits_vars),  # Default Gate value based on the number of qubits
+        "gate_value": _default_gate_value(),
         "algorithm": "newton-cg",
         "h0_snapshots": 100,
         "Omega_R_snapshots": 1,
@@ -790,14 +943,12 @@ def set_default_values():
 
         elif target_method_var.get() == "Gate":
             if gate_entries[i]:
-                gate_entries[i].delete(0, tk.END)
-                gate_entries[i].insert(0, default_values["gate_value"][i])
+                gate_entries[i].set(default_values["gate_value"][i])
 
-    if qubit_count > 1:  # Ensure that there are multiple qubits
-        # Reset the Coupling Type to its default value
+    # Set coupling defaults
+    if qubit_count > 1:
         coupling_type_var.set(default_values["coupling_type"])
 
-        # Set default values for J entries
         default_J_values = [
             [
                 0.0 if i == j else 10e6 * ((i + 1) * (j + 1) / 1.2)
@@ -809,8 +960,12 @@ def set_default_values():
             entry.delete(0, tk.END)
             entry.insert(0, default_J_values[i - 1][j - 1])
 
-        sigma_J_entry.delete(0, tk.END)
-        sigma_J_entry.insert(0, str(default_values["sigma_J"]))
+        if sigma_J_entry is not None:
+            sigma_J_entry.delete(0, tk.END)
+            sigma_J_entry.insert(0, str(default_values["sigma_J"]))
+
+    # Superconducting-specific defaults (anharmonicities) are set during widget creation
+    # in _add_coupling_superconducting()
 
     algorithm_var.set(default_values["algorithm"])
     H0_snapshots_entry.delete(0, tk.END)
@@ -881,13 +1036,23 @@ compute_resource_var = tk.StringVar(value="cpu")
 # Dissipation mode selection
 dissipation_var = tk.StringVar(value="non-dissipative")
 
+# Hamiltonian type selection
+hamiltonian_type_var = tk.StringVar(value="spin_chain")
+
+# Superconducting specific widget lists (populated in add_coupling_entries)
+anharmonicity_entries = []
+
 # Add labels for parameter names
 ttk.Label(root, text="Parameter").grid(row=0, column=0)
 ttk.Label(root, text="Qubits:").grid(row=1, column=0)
-ttk.Label(root, text="Δ (Hz):").grid(row=2, column=0)
-ttk.Label(root, text="σΔ (Hz):").grid(row=3, column=0)
-ttk.Label(root, text="Ω_R Max (Hz):").grid(row=4, column=0)
-ttk.Label(root, text="σΩ_R Max (Hz):").grid(row=5, column=0)
+delta_label = ttk.Label(root, text="Δ (Hz):")
+delta_label.grid(row=2, column=0)
+sigma_delta_label = ttk.Label(root, text="σΔ (Hz):")
+sigma_delta_label.grid(row=3, column=0)
+omega_r_label = ttk.Label(root, text="Ω_R Max (Hz):")
+omega_r_label.grid(row=4, column=0)
+sigma_omega_r_label = ttk.Label(root, text="σΩ_R Max (Hz):")
+sigma_omega_r_label.grid(row=5, column=0)
 ttk.Label(root, text="Pulse Duration (sec):").grid(row=6, column=0)
 ttk.Label(root, text="Point in Pulse:").grid(row=7, column=0)
 ttk.Label(root, text="Waveform Type:").grid(row=8, column=0)
@@ -1026,6 +1191,18 @@ dissipation_combobox = ttk.Combobox(
 )
 dissipation_combobox.grid(row=8, column=OPT_COL + 1, sticky="e")
 dissipation_combobox.bind("<<ComboboxSelected>>", lambda e: update_dissipation_fields())
+
+# Hamiltonian type selection
+ttk.Label(root, text="Hamiltonian Type:").grid(row=9, column=OPT_COL, sticky="e")
+hamiltonian_type_combobox = ttk.Combobox(
+    root,
+    textvariable=hamiltonian_type_var,
+    values=["spin_chain", "superconducting"],
+)
+hamiltonian_type_combobox.grid(row=9, column=OPT_COL + 1, sticky="e")
+hamiltonian_type_combobox.bind(
+    "<<ComboboxSelected>>", lambda e: update_hamiltonian_fields()
+)
 
 # Add submit button (left column as before)
 submit_button = ttk.Button(root, text="Save", command=save_to_json)

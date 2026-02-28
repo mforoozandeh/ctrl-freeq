@@ -12,6 +12,10 @@ from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
     createHcs,
     createHJ,
 )
+from ctrl_freeq.setup.hamiltonian_generation import (
+    SpinChainModel,
+    SuperconductingQubitModel,
+)
 from ctrl_freeq.make_pulse.waveform_gen_torch import (
     waveform_gen_cart,
     waveform_gen_polar,
@@ -1234,6 +1238,28 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
     return all_waveforms, figures
 
 
+def _get_mean_H0(p):
+    """Build the mean drift Hamiltonian, using the model when available.
+
+    This replaces ``create_H_total(p)`` for Hamiltonian-aware plotting:
+    when ``p.hamiltonian_model`` is set (e.g. for superconducting qubits),
+    the model's ``build_drift`` is used instead of the legacy spin-chain
+    functions.
+    """
+    model = getattr(p, "hamiltonian_model", None)
+    if model is not None:
+        Delta_mean = [np.array(p.Delta)]
+        J_mean = [p.Jmat] if p.n_qubits > 1 else None
+
+        if isinstance(model, SpinChainModel):
+            return model.build_drift(Delta_instances=Delta_mean, J_instances=J_mean)[0]
+        elif isinstance(model, SuperconductingQubitModel):
+            return model.build_drift(omega_instances=Delta_mean, g_instances=J_mean)[0]
+
+    # Legacy fallback
+    return create_H_total(p)
+
+
 def get_H0_for_plotter(p, num_points):
     Omegas = []
     for i in range(p.n_qubits):
@@ -1241,6 +1267,22 @@ def get_H0_for_plotter(p, num_points):
 
     Om = [list(group) for group in zip(*Omegas)]
 
+    # Model-aware path: use the Hamiltonian model when available
+    model = getattr(p, "hamiltonian_model", None)
+    if model is not None:
+        Om_arrays = [np.array(om) for om in Om]
+        Jmat_instances = get_Jmat_for_plotter(p, num_points) if p.n_qubits > 1 else None
+
+        if isinstance(model, SpinChainModel):
+            return model.build_drift(
+                Delta_instances=Om_arrays, J_instances=Jmat_instances
+            )
+        elif isinstance(model, SuperconductingQubitModel):
+            return model.build_drift(
+                omega_instances=Om_arrays, g_instances=Jmat_instances
+            )
+
+    # Legacy path (no hamiltonian_type specified)
     if p.n_qubits == 1:
         HCSs = []
 
@@ -1266,13 +1308,13 @@ def get_H0_for_plotter(p, num_points):
 
 def get_Jmat_for_plotter(p, num_points):
     Jmat_instances = []
+    sigma = p.sigma_J if p.sigma_J is not None else 0
 
     for _ in range(num_points):
-        Jmat_instance = np.array(
-            [
-                [np.random.normal(elm, p.sigma_J) if elm != 0 else 0 for elm in row]
-                for row in p.Jmat
-            ]
+        Jmat_instance = np.where(
+            p.Jmat != 0,
+            np.random.normal(p.Jmat, sigma),
+            0.0,
         )
         Jmat_instances.append(Jmat_instance)
     return Jmat_instances
@@ -1425,7 +1467,7 @@ def compute_and_store_evolution(x, p, rho_0):
     n_qubits = p.n_qubits
     n_para = p.n_para_updated
     peak_amplitudes = p.Omega_R_max
-    H0_mean = create_H_total(p)
+    H0_mean = _get_mean_H0(p)
 
     dt = t[1] - t[0]
 

@@ -11,6 +11,7 @@ The top-level structure of a configuration is as follows:
 ```jsonc
 {
   "qubits": ["q1", "q2"],
+  "hamiltonian_type": "spin_chain",
   "compute_resource": "cpu",
   "parameters": { ... },
   "initial_states": [["Z", "Z"]],
@@ -22,20 +23,38 @@ The top-level structure of a configuration is as follows:
 | Field | Description |
 |-------|-------------|
 | `qubits` | List of qubit identifiers for display and indexing |
+| `hamiltonian_type` | `"spin_chain"` (default) or `"superconducting"` — selects the physical platform |
 | `compute_resource` | `"cpu"` or `"gpu"` (see [Compute](compute.md)) |
+
+!!! note "Backward Compatibility"
+    The `hamiltonian_type` field is optional. When omitted, the legacy spin-chain code path is used, ensuring backward compatibility with existing configuration files.
 
 ---
 
 ## System Parameters
 
-The system parameters define the physical properties of the quantum system under consideration. All values are specified as **per-qubit arrays**, with one entry for each qubit in the configuration.
+The system parameters define the physical properties of the quantum system under consideration. All values are specified as **per-qubit arrays**, with one entry for each qubit in the configuration. The interpretation and GUI labelling of these parameters depends on the selected Hamiltonian type.
+
+### Spin Chain
 
 | Key | GUI Label | Description | Default | Units |
 |-----|-----------|-------------|---------|-------|
-| `Delta` | Δ (Hz) | Detuning frequency | 10 MHz | Hz |
+| `Delta` | Δ (Hz) | Detuning frequency (chemical shift) | 10 MHz | Hz |
 | `sigma_Delta` | σΔ (Hz) | Detuning uncertainty (for robustness) | 0 | Hz |
 | `Omega_R_max` | Ω_R Max (Hz) | Maximum Rabi frequency | 40 MHz | Hz |
 | `sigma_Omega_R_max` | σΩ_R Max (Hz) | Rabi frequency uncertainty | 0 | Hz |
+
+### Superconducting
+
+| Key | GUI Label | Description | Default | Units |
+|-----|-----------|-------------|---------|-------|
+| `Delta` | ω (Hz) | Qubit transition frequency | 10 MHz | Hz |
+| `sigma_Delta` | σω (Hz) | Frequency uncertainty (for robustness) | 0 | Hz |
+| `Omega_R_max` | Ω_d Max (Hz) | Maximum drive amplitude | 40 MHz | Hz |
+| `sigma_Omega_R_max` | σΩ_d Max (Hz) | Drive amplitude uncertainty | 0 | Hz |
+
+!!! info "Shared Configuration Keys"
+    Both platforms use the same JSON keys (`Delta`, `sigma_Delta`, `Omega_R_max`, `sigma_Omega_R_max`) for cross-platform compatibility. The GUI relabels these fields to match the physical conventions of the selected platform (Δ vs ω, Ω_R vs Ω_d).
 
 ---
 
@@ -130,20 +149,43 @@ For multi-qubit systems, the collapse operators are extended to the full Hilbert
 
 ## Multi-Qubit Coupling
 
-For systems comprising two or more qubits, the inter-qubit coupling parameters must be specified. These fields are used when `len(qubits) > 1`:
+For systems comprising two or more qubits, the inter-qubit coupling parameters must be specified. These fields are used when `len(qubits) > 1`. The available coupling types depend on the selected Hamiltonian type.
+
+### Spin Chain Coupling
 
 | Key | GUI Label | Description                      | Default |
 |-----|-----------|----------------------------------|---------|
-| `J` | J_ij | Coupling matrix (N×N), symmetric | ~16.7 MHz |
+| `J` | J_ij | J-coupling matrix (N×N), symmetric | ~16.7 MHz |
 | `coupling_type` | Coupling Type | `Z`, `XY`, or `XYZ`              | `XY` |
 | `sigma_J` | σ J | Coupling strength uncertainty    | 0 |
 
-!!! info "Coupling Types"
-    Three coupling models are supported, corresponding to common interaction Hamiltonians encountered in quantum information processing:
+!!! info "Spin Chain Coupling Types"
+    Three coupling models are supported for spin-chain systems:
 
     - **Z** — Ising-type ZZ coupling only
     - **XY** — XX + YY exchange coupling (default)
     - **XYZ** — Full Heisenberg coupling (XX + YY + ZZ)
+
+### Superconducting Coupling
+
+| Key | GUI Label | Description                      | Default |
+|-----|-----------|----------------------------------|---------|
+| `J` | g_ij | Capacitive coupling matrix (N×N), symmetric | ~16.7 MHz |
+| `coupling_type` | Coupling Type | `XY`, `ZZ`, or `XY+ZZ` | `XY` |
+| `sigma_J` | σ g | Coupling strength uncertainty | 0 |
+| `anharmonicities` | Anharmonicity (Hz) | Per-qubit anharmonicity α_i, used for ZZ computation | — |
+
+!!! info "Superconducting Coupling Types"
+    Three coupling models are supported for superconducting qubit systems:
+
+    - **XY** — Exchange coupling from capacitive interaction (XX + YY, default)
+    - **ZZ** — Static ZZ coupling from anharmonicity-mediated frequency shifts
+    - **XY+ZZ** — Both exchange and static ZZ terms
+
+    When the coupling type includes ZZ, the static ZZ interaction strength is approximated as ζ_ij ≈ 2 g_ij² (1/α_i + 1/α_j), where α_i are the per-qubit anharmonicities.
+
+!!! note "Shared JSON Keys"
+    Both platforms use the `J` and `sigma_J` keys in the JSON configuration for cross-platform compatibility. The GUI relabels these as g_ij / σg for superconducting qubits.
 
 ---
 
@@ -182,7 +224,7 @@ The target state is specified as a Bloch sphere axis direction.
 
 ### Gate Targets
 
-The target is specified as a quantum gate, which implicitly defines the required unitary transformation.
+The target is specified as a quantum gate, which implicitly defines the required unitary transformation. In the GUI, gates are selected from a **dropdown menu** with platform-aware defaults.
 
 ```jsonc
 { "target_states": { "Gate": ["X", "H", "CNOT"] } }
@@ -190,9 +232,17 @@ The target is specified as a quantum gate, which implicitly defines the required
 
 **Single-qubit:** `X`, `Y`, `Z`, `H`, `S`, `T`
 
-**Two-qubit:** `CNOT`, `CZ`, `SWAP`, `iSWAP`
+**Two-qubit:** `CNOT`, `CZ`, `SWAP`, `iSWAP`, `√iSWAP`, `ECR`
 
 **Three-qubit:** `Toff` (Toffoli)
+
+!!! info "Platform-Specific Gate Ordering"
+    In the GUI dropdown, gates are ordered by relevance to the selected Hamiltonian type:
+
+    - **Spin Chain**: CNOT (default), CZ, SWAP, iSWAP, √iSWAP, ECR
+    - **Superconducting**: iSWAP (default), √iSWAP, ECR, CZ, CNOT, SWAP
+
+    The √iSWAP gate is the square root of the iSWAP gate, satisfying (√iSWAP)² = iSWAP. The ECR (echoed cross-resonance) gate is a native entangling gate on many superconducting platforms.
 
 ### Phi/Beta Targets
 

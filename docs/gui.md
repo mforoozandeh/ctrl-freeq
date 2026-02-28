@@ -25,14 +25,14 @@ python -m ctrl_freeq.cli
 
 ## GUI Layout
 
-The interface is organized into five principal sections:
+The interface is organized into six principal sections:
 
 | Section | Purpose |
 |---------|---------|
 | **Qubit Configuration** | Per-qubit pulse and system parameters |
 | **Target Specification** | Definition of the target quantum state or gate |
-| **Optimization Settings** | Algorithm, iterations, and compute options |
-| **Coupling Controls** | Inter-qubit coupling (multi-qubit only) |
+| **Optimization Settings** | Hamiltonian type, algorithm, iterations, and compute options |
+| **Coupling Controls** | Inter-qubit coupling (multi-qubit only, type-dependent) |
 | **Action Buttons** | Run, Save, and Reset controls |
 
 ### Single-Qubit Configuration
@@ -58,9 +58,18 @@ The interface is organized into five principal sections:
 
 Each qubit is assigned its own configuration panel. The parameters within each panel are organized into three categories:
 
-- **System Parameters** — Detuning (Δ), Rabi frequency (Ω_R), and their associated uncertainties
+- **System Parameters** — Detuning/frequency, Rabi/drive amplitude, and their associated uncertainties
 - **Pulse Parameters** — Duration, discretization, sweep rate, and bandwidth
 - **Waveform Settings** — Basis type, mode, envelope, and expansion order
+
+The system parameter labels change depending on the selected **Hamiltonian Type**:
+
+| Parameter | Spin Chain Label | Superconducting Label |
+|-----------|-----------------|----------------------|
+| Frequency | Δ (Hz) — Detuning | ω (Hz) — Qubit frequency |
+| Frequency uncertainty | σΔ (Hz) | σω (Hz) |
+| Drive amplitude | Ω_R Max (Hz) — Rabi frequency | Ω_d Max (Hz) — Drive amplitude |
+| Drive uncertainty | σΩ_R Max (Hz) | σΩ_d Max (Hz) |
 
 A detailed description of all parameters, including their defaults and units, is provided in [Optimization → Parameters](optimization/parameters.md).
 
@@ -73,8 +82,18 @@ The **Target States Method** dropdown determines the method by which the desired
 | Method | Description |
 |--------|-------------|
 | **Axis** | Bloch sphere direction (`Z`, `-Z`, `X`, `-X`, `Y`, `-Y`) |
-| **Gate** | Quantum gate (`X`, `H`, `CNOT`, `CZ`, etc.) |
+| **Gate** | Quantum gate (selected from a dropdown; see below) |
 | **Phi/Beta** | Rotation angles (axis φ and angle β) |
+
+When the **Gate** method is selected, the gate entry field is a **dropdown menu** with available gates filtered by the number of qubits and the selected Hamiltonian type:
+
+| Qubits | Spin Chain | Superconducting |
+|--------|-----------|-----------------|
+| 1 | X, Y, Z, H, S, T | X, Y, Z, H, S, T |
+| 2 | CNOT, CZ, SWAP, iSWAP, √iSWAP, ECR | iSWAP, √iSWAP, ECR, CZ, CNOT, SWAP |
+| 3+ | Toff | Toff |
+
+The default gate is platform-aware: **CNOT** for spin chains and **iSWAP** for superconducting qubits.
 
 **Example — π-pulse (inversion):**
 
@@ -93,12 +112,31 @@ A complete description of all target specification options is provided in [Optim
 
 | Setting | Description |
 |---------|-------------|
+| **Hamiltonian Type** | `spin_chain` or `superconducting` — selects the physical platform (see below) |
 | **Space** | `hilbert` (pure states) or `liouville` (density matrices) |
 | **Dissipation** | `non-dissipative` (default) or `dissipative` (Lindblad master equation) |
 | **Algorithm** | Optimization algorithm |
 | **Max Iterations** | Maximum optimization iterations |
 | **Target Fidelity** | Stop when fidelity reaches this value |
 | **Compute Resource** | `cpu` or `gpu` |
+
+### Hamiltonian Type
+
+The **Hamiltonian Type** dropdown selects the physical platform for the optimization. Changing this setting dynamically updates the interface:
+
+| Platform | Field Labels | Default 2-Qubit Gate | Coupling Types |
+|----------|-------------|---------------------|----------------|
+| **Spin Chain** | Δ (detuning), σΔ, Ω_R, σΩ_R | CNOT | Z, XY, XYZ |
+| **Superconducting** | ω (qubit frequency), σω, Ω_d, σΩ_d | iSWAP | XY, ZZ, XY+ZZ |
+
+When the Hamiltonian type is changed:
+
+- System parameter labels are relabelled to match the physical conventions of the selected platform
+- The coupling controls section is rebuilt with the appropriate coupling types and parameters
+- Gate dropdown values are updated with platform-appropriate defaults
+
+!!! note "Backward Compatibility"
+    Configurations saved without a `hamiltonian_type` field default to the spin-chain model, preserving backward compatibility with existing JSON files.
 
 For guidance on algorithm selection, the reader is referred to [Optimization → Algorithms](optimization/algorithms.md).
 
@@ -129,13 +167,27 @@ When the **Dissipation** dropdown is set to `dissipative`, the interface enables
 
 ## Coupling Controls (Multi-Qubit)
 
-When two or more qubits are configured, a coupling section becomes available:
+When two or more qubits are configured, a coupling section becomes available. The controls displayed depend on the selected Hamiltonian type.
+
+### Spin Chain Coupling
 
 | Control | Description |
 |---------|-------------|
-| **J_ij** | Coupling strength between qubit pairs |
+| **J_ij** | J-coupling strength between qubit pairs (Hz) |
 | **Coupling Type** | `Z` (Ising), `XY` (exchange), or `XYZ` (Heisenberg) |
 | **σ J** | Coupling uncertainty |
+
+### Superconducting Coupling
+
+| Control | Description |
+|---------|-------------|
+| **g_ij** | Capacitive coupling strength between qubit pairs (Hz) |
+| **Coupling Type** | `XY` (exchange), `ZZ` (static ZZ), or `XY+ZZ` (both) |
+| **σ g** | Coupling uncertainty |
+| **Anharmonicity** | Per-qubit anharmonicity α_i (Hz), used to compute the static ZZ shift when the coupling type includes ZZ |
+
+!!! info "Static ZZ Coupling"
+    When the superconducting coupling type includes `ZZ`, the ZZ interaction strength is approximated from the anharmonicities as ζ_ij ≈ 2 g_ij² (1/α_i + 1/α_j). This models the always-on parasitic ZZ coupling that arises in fixed-frequency transmon architectures.
 
 For a detailed description of the coupling parameters, see [Optimization → Parameters → Multi-Qubit Coupling](optimization/parameters.md#multi-qubit-coupling).
 
@@ -177,16 +229,27 @@ Resets all parameters to their default values.
 5. Set **Algorithm**: `bfgs`
 6. Click **Run**
 
-### Example 2: Two-Qubit CNOT Gate
+### Example 2: Two-Qubit CNOT Gate (Spin Chain)
 
 1. Launch the GUI: `freeq-gui`
-2. Click **Add Qubit** to add a second qubit
-3. Set **Target States Method**: `Gate`
-4. Set **Gate**: `CNOT`
-5. Configure coupling in the **Coupling** section
-6. Click **Run**
+2. Ensure **Hamiltonian Type** is set to `spin_chain`
+3. Click **Add Qubit** to add a second qubit
+4. Set **Target States Method**: `Gate`
+5. Select **Gate**: `CNOT` from the dropdown
+6. Configure J-coupling in the **Coupling** section
+7. Click **Run**
 
-### Example 3: Robust Pulse Design
+### Example 3: Two-Qubit iSWAP Gate (Superconducting)
+
+1. Launch the GUI: `freeq-gui`
+2. Set **Hamiltonian Type** to `superconducting`
+3. Click **Add Qubit** to add a second qubit
+4. Set **Target States Method**: `Gate`
+5. Select **Gate**: `iSWAP` from the dropdown (default for superconducting)
+6. Configure coupling strength (g_ij) and coupling type (`XY`) in the **Coupling** section
+7. Click **Run**
+
+### Example 5: Robust Pulse Design
 
 1. Configure the basic pulse parameters
 2. Set **σΔ (Hz)**: `100000` (100 kHz uncertainty)
@@ -196,7 +259,7 @@ Resets all parameters to their default values.
 
 The optimizer will seek pulses that are robust to the specified parameter uncertainties.
 
-### Example 4: Dissipative π-Pulse (Open Quantum System)
+### Example 6: Dissipative π-Pulse (Open Quantum System)
 
 1. Launch the GUI: `freeq-gui`
 2. Set **Initial State**: `Z`
@@ -210,7 +273,7 @@ The optimizer will seek pulses that are robust to the specified parameter uncert
 
 The optimizer will design a pulse that achieves the desired inversion while accounting for amplitude damping and dephasing during the pulse.
 
-### Example 5: Universal Rotation Pulse
+### Example 7: Universal Rotation Pulse
 
 1. Launch the GUI: `freeq-gui`
 2. Set **Initial State**: `X, Y, Z`

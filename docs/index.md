@@ -1,14 +1,17 @@
 # ctrl-freeq
 
-Ctrl-freeq is a numerical framework for the design of quantum gates and pulses via optimal control theory. The control pulse optimization problem is formulated and solved using automatic differentiation, as provided by PyTorch, and the resulting software supports single- and multi-qubit systems with configurable Hamiltonians, inter-qubit coupling types, and robustness to parameter uncertainties.
+Ctrl-freeq is a numerical framework for the design of quantum gates and pulses via optimal control theory. The control pulse optimization problem is formulated and solved using automatic differentiation, as provided by PyTorch, and the resulting software supports single- and multi-qubit systems across multiple physical platforms (spin chains and superconducting qubits) with configurable Hamiltonians, inter-qubit coupling types, and robustness to parameter uncertainties.
 
 ## Key Features
 
-The framework provides access to a comprehensive suite of optimization algorithms, comprising nine gradient-based methods available through the pytorch-minimize library and ten additional optimizers from the Qiskit ecosystem. Quantum systems of varying complexity are supported, ranging from single-qubit configurations to multi-qubit architectures with configurable inter-qubit coupling of the Ising (Z), exchange (XY), or Heisenberg (XYZ) type.
+The framework provides access to a comprehensive suite of optimization algorithms, comprising nine gradient-based methods available through the pytorch-minimize library and ten additional optimizers from the Qiskit ecosystem. Multiple physical platforms are supported through a Hamiltonian model abstraction layer:
 
-Robustness to experimental imperfections is incorporated through the specification of detuning and Rabi frequency uncertainties, allowing the optimizer to find pulses that are tolerant to parameter variations. Open quantum systems subject to decoherence may be modelled via the Lindblad master equation, with support for amplitude damping (T1) and pure dephasing (T2) relaxation channels on a per-qubit basis. The waveform parameterization is flexible, supporting Chebyshev, Fourier, and polynomial basis functions in Cartesian or polar modes.
+- **Spin Chains** — detuning-based drift Hamiltonians with Ising (Z), exchange (XY), or Heisenberg (XYZ) coupling
+- **Superconducting Qubits** — transmon qubit frequencies with capacitive coupling (XY, ZZ, or XY+ZZ) and anharmonicity-derived static ZZ shifts
 
-GPU acceleration is available via the CUDA backend of PyTorch, with automatic fallback to CPU execution when CUDA is not present. Interactive dashboards, combining Matplotlib and Plotly visualizations, are generated as standalone HTML files for analysis and sharing. Two complementary interfaces are provided: a programmatic Python API and a Tkinter-based graphical user interface, accessible via the `freeq-gui` command.
+Quantum systems of varying complexity are supported, ranging from single-qubit configurations to multi-qubit architectures. Robustness to experimental imperfections is incorporated through the specification of frequency and drive amplitude uncertainties, allowing the optimizer to find pulses that are tolerant to parameter variations. Open quantum systems subject to decoherence may be modelled via the Lindblad master equation, with support for amplitude damping (T1) and pure dephasing (T2) relaxation channels on a per-qubit basis. The waveform parameterization is flexible, supporting Chebyshev, Fourier, and polynomial basis functions in Cartesian or polar modes.
+
+GPU acceleration is available via the CUDA backend of PyTorch, with automatic fallback to CPU execution when CUDA is not present. Interactive dashboards, combining Matplotlib and Plotly visualizations, are generated as standalone HTML files for analysis and sharing. Two complementary interfaces are provided: a programmatic Python API and a Tkinter-based graphical user interface, accessible via the `freeq-gui` command. The GUI dynamically adapts its controls to the selected Hamiltonian type, including platform-aware gate selection with dropdown menus.
 
 ## Quick Example
 

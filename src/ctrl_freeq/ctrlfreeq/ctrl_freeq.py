@@ -26,6 +26,8 @@ class CtrlFreeQ:
         targ_fid,
         me,
         collapse_ops=None,
+        hamiltonian_model=None,
+        control_ops=None,
     ):
         self.n_para = n_para
         self.n_qubits = n_qubits
@@ -48,6 +50,11 @@ class CtrlFreeQ:
         self.me = me
         self.collapse_ops = collapse_ops
 
+        # Model-based (generic) path: when a HamiltonianModel is provided,
+        # pulse_hamiltonian_generic is used instead of the legacy function.
+        self.hamiltonian_model = hamiltonian_model
+        self.control_ops = control_ops
+
         self.fid = None
         self.pen = None
         self.fidelity_history = []  # Track fidelity per iteration
@@ -65,17 +72,26 @@ class CtrlFreeQ:
             self.n_qubits, parameters, self.mat, self.wf_fun, self.me
         )
         self.pen = penalty(amps)
-        # Use original pulse_hamiltonian (faster than optimized version for typical problem sizes)
-        Hp = pulse_hamiltonian(
-            cxs,
-            cys,
-            self.rabi_freq,
-            self.op,
-            self.n_pulse,
-            self.n_h0,
-            self.n_rabi,
-            self.n_qubits,
-        )
+
+        if self.hamiltonian_model is not None:
+            # Generic path: works for any HamiltonianModel
+            u = self.hamiltonian_model.control_amplitudes(
+                cxs, cys, self.rabi_freq, self.n_h0
+            )
+            Hp = pulse_hamiltonian_generic(u, self.control_ops)
+        else:
+            # Legacy spin-chain path (backward compatible)
+            Hp = pulse_hamiltonian(
+                cxs,
+                cys,
+                self.rabi_freq,
+                self.op,
+                self.n_pulse,
+                self.n_h0,
+                self.n_rabi,
+                self.n_qubits,
+            )
+
         # Use optimized simulator (main optimization - 6.28x speedup from vectorized matrix exponentials)
         state = simulator_optimized(
             self.H0,
@@ -237,6 +253,32 @@ def pulse_hamiltonian(cx, cy, rabi_freq, op_tensor, n_pulse, n_h0, n_rabi, n_qub
         Hp_total += Hp_i
 
     return Hp_total  # Shape: (n_pulse, n_rabi * n_h0, D, D)
+
+
+def pulse_hamiltonian_generic(amplitudes, control_ops_tensor):
+    """Build the pulse Hamiltonian using the generic bilinear control formulation.
+
+    Computes  Hp(t, b) = sum_k  u_k(t, b) * H_ctrl_k  for every time step t
+    and batch element b using a single ``einsum``.
+
+    This replaces the spin-chain-specific ``pulse_hamiltonian`` and works for
+    any Hamiltonian model (spin chain, superconducting, etc.).
+
+    Args:
+        amplitudes (torch.Tensor): Control amplitudes of shape
+            ``(n_pulse, n_batch, n_controls)`` as returned by
+            ``HamiltonianModel.control_amplitudes()``.
+        control_ops_tensor (torch.Tensor): Fixed control operators of shape
+            ``(n_controls, D, D)`` as returned by
+            ``HamiltonianModel.control_ops_tensor()``.
+
+    Returns:
+        torch.Tensor: Pulse Hamiltonian of shape ``(n_pulse, n_batch, D, D)``.
+    """
+    # Promote real amplitudes to complex so einsum can contract with complex operators
+    if not amplitudes.is_complex() and control_ops_tensor.is_complex():
+        amplitudes = amplitudes.to(control_ops_tensor.dtype)
+    return torch.einsum("tbk,kij->tbij", amplitudes, control_ops_tensor)
 
 
 def simulator(H0, Hp, dt, initial_state, u_fun, state_fun):

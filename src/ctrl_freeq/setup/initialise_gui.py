@@ -4,6 +4,10 @@ import numpy as np
 from scipy.linalg import expm
 
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
+from ctrl_freeq.setup.hamiltonian_generation.spin_chain import SpinChainModel
+from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
+    SuperconductingQubitModel,
+)
 from ctrl_freeq.setup.basis_generation.mat_x0_gen import (
     generate_mat_x0_from_basis,
     generate_mat_x0_from_fourier_basis,
@@ -37,15 +41,31 @@ class Initialise:
         self.n_para = data["parameters"]["n_para"]
         self.n_para_updated = self.update_n_para()
         self.coupling_type = (
-            data["parameters"]["coupling_type"] if self.n_qubits > 1 else None
+            data["parameters"].get("coupling_type") if self.n_qubits > 1 else None
         )
         self.sw = 2 * np.pi * data["parameters"]["sw"]
-        self.Delta = 2 * np.pi * data["parameters"]["Delta"]
-        self.sigma_Delta = 2 * np.pi * data["parameters"]["sigma_Delta"]
-        self.sigma_J = (
-            2 * np.pi * data["parameters"]["sigma_J"] if self.n_qubits > 1 else None
+        self.Delta = (
+            2 * np.pi * np.array(data["parameters"]["Delta"])
+            if "Delta" in data["parameters"]
+            else np.zeros(self.n_qubits)
         )
-        self.Jmat = 2 * np.pi * data["parameters"]["J"]
+        self.sigma_Delta = (
+            2 * np.pi * np.array(data["parameters"]["sigma_Delta"])
+            if "sigma_Delta" in data["parameters"]
+            else np.zeros(self.n_qubits)
+        )
+        self.sigma_J = (
+            2 * np.pi * data["parameters"]["sigma_J"]
+            if self.n_qubits > 1
+            and "sigma_J" in data["parameters"]
+            and data["parameters"]["sigma_J"] is not None
+            else None
+        )
+        self.Jmat = (
+            2 * np.pi * np.array(data["parameters"]["J"])
+            if "J" in data["parameters"]
+            else np.zeros((self.n_qubits, self.n_qubits))
+        )
         self.H0_snapshots = data["optimization"]["H0_snapshots"]
         self.Omega_R_max = 2 * np.pi * data["parameters"]["Omega_R_max"]
         self.sigma_Omega_R_max = 2 * np.pi * data["parameters"]["sigma_Omega_R_max"]
@@ -121,6 +141,10 @@ class Initialise:
                 "Input data is missing necessary initial or target state information."
             )
 
+        # Build Hamiltonian model (if hamiltonian_type is specified in config)
+        self.hamiltonian_type = data.get("hamiltonian_type", None)
+        self.hamiltonian_model = self._build_hamiltonian_model(data)
+
         self.H0 = self.get_H0()
 
         # Optional runtime settings
@@ -132,6 +156,35 @@ class Initialise:
             self.cpu_cores = data.get("cpu_cores")
         except Exception:
             self.cpu_cores = None
+
+    def _build_hamiltonian_model(self, data):
+        """Build a HamiltonianModel instance from the config, or None for legacy path."""
+        h_type = self.hamiltonian_type
+        if h_type is None:
+            return None
+
+        params = data.get("parameters", {})
+
+        if h_type == "spin_chain":
+            coupling_type = self.coupling_type or "XY"
+            return SpinChainModel(self.n_qubits, coupling_type=coupling_type)
+
+        elif h_type == "superconducting":
+            coupling_type = params.get("coupling_type", "XY")
+            anharmonicities = params.get("anharmonicities", None)
+            if anharmonicities is not None:
+                anharmonicities = 2 * np.pi * np.array(anharmonicities)
+            return SuperconductingQubitModel(
+                n_qubits=self.n_qubits,
+                coupling_type=coupling_type,
+                anharmonicities=anharmonicities,
+            )
+
+        else:
+            raise ValueError(
+                f"Unknown hamiltonian_type: '{h_type}'. "
+                f"Supported: 'spin_chain', 'superconducting'"
+            )
 
     def __str__(self):
         return (
@@ -268,7 +321,9 @@ class Initialise:
 
     def two_qubit_gate(self, gate):
         """
-        Generate a 4x4 matrix for a specified two-qubit gate ('CNOT', 'CZ', 'SWAP').
+        Generate a 4x4 matrix for a specified two-qubit gate.
+
+        Supported: 'CNOT'/'CX', 'CZ', 'SWAP', 'iSWAP', '√iSWAP', 'ECR'.
 
         :return: 4x4 matrix for the operation
         """
@@ -285,9 +340,33 @@ class Initialise:
         elif gate == "iSWAP":
             return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
+        elif gate == "√iSWAP":
+            s = 1 / np.sqrt(2)
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, s, 1j * s, 0],
+                    [0, 1j * s, s, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
+
+        elif gate == "ECR":
+            s = 1 / np.sqrt(2)
+            # Echoed Cross-Resonance: (1/√2)(IX - XY)
+            return np.array(
+                [
+                    [0, 0, s, 1j * s],
+                    [0, 0, 1j * s, s],
+                    [s, -1j * s, 0, 0],
+                    [-1j * s, s, 0, 0],
+                ]
+            )
+
         else:
             raise ValueError(
-                "Unsupported operation. Please specify 'CNOT', 'CZ', 'SWAP', or 'iSWAP'."
+                "Unsupported operation. Please specify 'CNOT', 'CZ', 'SWAP', "
+                "'iSWAP', '√iSWAP', or 'ECR'."
             )
 
     def three_qubit_gate(self, gate):
@@ -412,6 +491,10 @@ class Initialise:
         )
 
     def get_H0(self):
+        if self.hamiltonian_model is not None:
+            return self._get_H0_from_model()
+
+        # Legacy path (no hamiltonian_type specified)
         if self.n_qubits == 1:
             HCSs = []
             for Omega_instance in self.Omega_instances:
@@ -430,6 +513,32 @@ class Initialise:
                 HJs.append(HJ)
 
             H0 = [HJ + HCS for HJ, HCS in zip(HJs, HCSs)]
+
+        H0_stacked = []
+        for _ in range(len(self.initial)):
+            H0_stacked.extend(H0)
+
+        return H0_stacked
+
+    def _get_H0_from_model(self):
+        """Build H0 using the HamiltonianModel abstraction."""
+        model = self.hamiltonian_model
+
+        if isinstance(model, SpinChainModel):
+            J_instances = self.Jmat_instances if self.n_qubits > 1 else None
+            H0 = model.build_drift(
+                Delta_instances=self.Omega_instances,
+                J_instances=J_instances,
+            )
+        elif isinstance(model, SuperconductingQubitModel):
+            J_instances = self.Jmat_instances if self.n_qubits > 1 else None
+            H0 = model.build_drift(
+                omega_instances=self.Omega_instances,
+                g_instances=J_instances,
+            )
+        else:
+            # Generic fallback: call build_drift with no args
+            H0 = model.build_drift()
 
         H0_stacked = []
         for _ in range(len(self.initial)):
@@ -529,16 +638,13 @@ class Initialise:
 
     def generate_Jmat_instances(self):
         Jmat_instances = []
+        sigma = self.sigma_J if self.sigma_J is not None else 0
 
         for _ in range(self.H0_snapshots):
-            Jmat_instance = np.array(
-                [
-                    [
-                        np.random.normal(elm, self.sigma_J) if elm != 0 else 0
-                        for elm in row
-                    ]
-                    for row in self.Jmat
-                ]
+            Jmat_instance = np.where(
+                self.Jmat != 0,
+                np.random.normal(self.Jmat, sigma),
+                0.0,
             )
             Jmat_instances.append(Jmat_instance)
         return Jmat_instances
