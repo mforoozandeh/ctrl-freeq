@@ -33,6 +33,8 @@ plugins:
   - search
 
 markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.superfences
@@ -42,6 +44,10 @@ markdown_extensions:
   - pymdownx.details
   - attr_list
   - md_in_html
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md

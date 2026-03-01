@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 import numpy as np
 import torch
 
-from ctrl_freeq.setup.hamiltonian_generation.base import HamiltonianModel
+from ctrl_freeq.setup.hamiltonian_generation.base import (
+    HamiltonianModel,
+    register_hamiltonian,
+)
 
 
+@register_hamiltonian("superconducting")
 class SuperconductingQubitModel(HamiltonianModel):
     """Superconducting transmon qubit Hamiltonian.
 
@@ -84,31 +90,28 @@ class SuperconductingQubitModel(HamiltonianModel):
 
     def build_drift(
         self,
-        omega_instances: list[np.ndarray] | None = None,
-        g_instances: list[np.ndarray] | None = None,
-        zz_instances: list[np.ndarray] | None = None,
-        **params,
+        frequency_instances: list[np.ndarray],
+        coupling_instances: list[np.ndarray] | None = None,
+        **kwargs,
     ) -> list[np.ndarray]:
         """Build drift Hamiltonian snapshots.
 
         Args:
-            omega_instances: list of qubit-frequency arrays ``(n_qubits,)``,
+            frequency_instances: list of qubit-frequency arrays ``(n_qubits,)``,
                 one per snapshot.  In rad/s.
-            g_instances: list of coupling matrices ``(n_qubits, n_qubits)``,
+            coupling_instances: list of coupling matrices ``(n_qubits, n_qubits)``,
                 one per snapshot.  Upper-triangular, in rad/s.
-            zz_instances: list of static ZZ coupling matrices, one per snapshot.
-                Only used when ``coupling_type`` includes ``"ZZ"``.
+            **kwargs: Optional ``zz_instances`` for explicit ZZ coupling values.
 
         Returns:
             List of ``(D, D)`` complex numpy arrays.
         """
-        if omega_instances is None:
-            raise ValueError("omega_instances is required")
+        zz_instances = kwargs.get("zz_instances", None)
 
         D = self.dim
         H0_list = []
 
-        for idx, omega in enumerate(omega_instances):
+        for idx, omega in enumerate(frequency_instances):
             H = np.zeros((D, D), dtype=complex)
 
             # Qubit frequencies: sum_i (omega_i/2) Z_i
@@ -116,8 +119,12 @@ class SuperconductingQubitModel(HamiltonianModel):
                 H += omega[i] * self._Z[i]
 
             # Coupling terms
-            if g_instances is not None and self.n_qubits > 1:
-                g = g_instances[idx] if idx < len(g_instances) else g_instances[-1]
+            if coupling_instances is not None and self.n_qubits > 1:
+                g = (
+                    coupling_instances[idx]
+                    if idx < len(coupling_instances)
+                    else coupling_instances[-1]
+                )
                 use_xy = "XY" in self.coupling_type
                 use_zz = "ZZ" in self.coupling_type
 
@@ -136,14 +143,9 @@ class SuperconductingQubitModel(HamiltonianModel):
                             if idx < len(zz_instances)
                             else zz_instances[-1]
                         )
-                    elif self.anharmonicities is not None and g_instances is not None:
+                    elif self.anharmonicities is not None:
                         # Approximate static ZZ from anharmonicity:
                         # zeta_{ij} ~ 2 * g_{ij}^2 * (1/alpha_i + 1/alpha_j)
-                        g = (
-                            g_instances[idx]
-                            if idx < len(g_instances)
-                            else g_instances[-1]
-                        )
                         alpha = self.anharmonicities
                         zz = np.zeros((self.n_qubits, self.n_qubits))
                         for i in range(self.n_qubits):
@@ -209,3 +211,80 @@ class SuperconductingQubitModel(HamiltonianModel):
         u = u.unsqueeze(1) * rabi_batch.unsqueeze(0)
 
         return u  # (n_pulse, n_rabi * n_h0, 2 * n_qubits)
+
+    @classmethod
+    def from_config(cls, n_qubits: int, params: dict) -> SuperconductingQubitModel:
+        """Construct from config dict, extracting superconducting-specific params."""
+        coupling_type = params.get("coupling_type", "XY")
+        anharmonicities = params.get("anharmonicities", None)
+        if anharmonicities is not None:
+            anharmonicities = 2 * np.pi * np.array(anharmonicities)
+        return cls(
+            n_qubits,
+            coupling_type=coupling_type,
+            anharmonicities=anharmonicities,
+        )
+
+    @classmethod
+    def default_config(cls, n_qubits: int) -> dict:
+        """Return a complete runnable superconducting qubit configuration.
+
+        Provides sensible transmon defaults: XY coupling, iSWAP gate target
+        (the natural entangling gate for XY-coupled transmons), Chebyshev
+        waveforms.
+        """
+        qubits = [f"q{i + 1}" for i in range(n_qubits)]
+
+        # Qubit frequencies: 10, 20, 30, … MHz (in rotating frame)
+        omegas = [(i + 1) * 10e6 for i in range(n_qubits)]
+
+        # Capacitive coupling matrix (upper-triangular, nearest-neighbour)
+        g = [[0.0] * n_qubits for _ in range(n_qubits)]
+        for i in range(n_qubits - 1):
+            g[i][i + 1] = 1.047e7
+
+        # Target gate: iSWAP for multi-qubit, axis flip for single qubit
+        if n_qubits == 1:
+            initial_states = [["Z"]]
+            target_states = {"Axis": [["-Z"]]}
+        else:
+            initial_states = [["-Z", "Z"] + ["-Z"] * max(0, n_qubits - 2)]
+            target_states = {"Gate": ["iSWAP"]}
+
+        return {
+            "hamiltonian_type": "superconducting",
+            "qubits": qubits,
+            "compute_resource": "cpu",
+            "parameters": {
+                "Delta": omegas,
+                "sigma_Delta": [0.0] * n_qubits,
+                "Omega_R_max": [40e6] * n_qubits,
+                "sigma_Omega_R_max": [0.0] * n_qubits,
+                "pulse_duration": [200e-9] * n_qubits,
+                "point_in_pulse": [100] * n_qubits,
+                "wf_type": ["cheb"] * n_qubits,
+                "wf_mode": ["cart"] * n_qubits,
+                "amplitude_envelope": ["gn"] * n_qubits,
+                "amplitude_order": [1] * n_qubits,
+                "coverage": ["broadband"] * n_qubits,
+                "sw": [5e6] * n_qubits,
+                "pulse_offset": [0.0] * n_qubits,
+                "pulse_bandwidth": [5e5] * n_qubits,
+                "ratio_factor": [0.5] * n_qubits,
+                "profile_order": [2] * n_qubits,
+                "n_para": [16] * n_qubits,
+                "J": g,
+                "sigma_J": 0.0,
+                "coupling_type": "XY",
+            },
+            "initial_states": initial_states,
+            "target_states": target_states,
+            "optimization": {
+                "space": "hilbert",
+                "H0_snapshots": 1,
+                "Omega_R_snapshots": 1,
+                "algorithm": "l-bfgs",
+                "max_iter": 300,
+                "targ_fid": 0.999,
+            },
+        }

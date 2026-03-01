@@ -158,7 +158,7 @@ When the **Dissipation** dropdown is set to `dissipative`, the interface enables
 | **T2** | Pure dephasing time constant (phase decoherence) | seconds |
 
 !!! warning "Physical Constraint"
-    The values entered must satisfy the physical constraint $T_2 \leq 2 T_1$ for each qubit. Configurations that violate this bound will produce a validation error.
+    The values entered must satisfy the physical constraint \(T_2 \leq 2\,T_1\) for each qubit. Configurations that violate this bound will produce a validation error.
 
 !!! note "Liouville Space"
     Selecting `dissipative` mode automatically sets the optimization space to `liouville`. This is required because dissipative dynamics operate on density matrices rather than pure state vectors. The space selection cannot be changed back to `hilbert` while `dissipative` mode is active.

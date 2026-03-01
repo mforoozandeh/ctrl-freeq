@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import numpy as np
 import torch
 
-from ctrl_freeq.setup.hamiltonian_generation.base import HamiltonianModel
+from ctrl_freeq.setup.hamiltonian_generation.base import (
+    HamiltonianModel,
+    register_hamiltonian,
+)
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
 from ctrl_freeq.setup.operator_generation.generate_operators import (
     create_hamiltonian_basis,
 )
 
 
+@register_hamiltonian("spin_chain")
 class SpinChainModel(HamiltonianModel):
     """Spin-chain Hamiltonian (NMR / spin-qubit systems).
 
@@ -37,26 +43,27 @@ class SpinChainModel(HamiltonianModel):
 
     def build_drift(
         self,
-        Delta_instances: list[np.ndarray],
-        J_instances: list[np.ndarray] | None = None,
+        frequency_instances: list[np.ndarray],
+        coupling_instances: list[np.ndarray] | None = None,
+        **kwargs,
     ) -> list[np.ndarray]:
         """Build drift Hamiltonian snapshots.
 
         Args:
-            Delta_instances: list of length ``n_h0``, each element is an array
-                of chemical shift values (one per qubit).
-            J_instances: list of length ``n_h0``, each element is a coupling
-                matrix.  ``None`` for single-qubit systems.
+            frequency_instances: list of length ``n_h0``, each element is an
+                array of chemical shift values (one per qubit).
+            coupling_instances: list of length ``n_h0``, each element is a
+                J-coupling matrix.  ``None`` for single-qubit systems.
 
         Returns:
             List of ``(D, D)`` complex numpy arrays.
         """
         H0_list = []
-        if self.n_qubits == 1 or J_instances is None:
-            for Delta in Delta_instances:
+        if self.n_qubits == 1 or coupling_instances is None:
+            for Delta in frequency_instances:
                 H0_list.append(createHcs(Delta, self._op))
         else:
-            for Delta, J in zip(Delta_instances, J_instances):
+            for Delta, J in zip(frequency_instances, coupling_instances):
                 Hcs = createHcs(Delta, self._op)
                 HJ = createHJ(J, self._op, coupling_type=self.coupling_type)
                 H0_list.append(HJ + Hcs)
@@ -103,3 +110,72 @@ class SpinChainModel(HamiltonianModel):
         u = u.unsqueeze(1) * rabi_batch.unsqueeze(0)
 
         return u  # (n_pulse, n_rabi * n_h0, 2 * n_qubits)
+
+    @classmethod
+    def from_config(cls, n_qubits: int, params: dict) -> SpinChainModel:
+        """Construct from config dict, extracting ``coupling_type``."""
+        coupling_type = params.get("coupling_type", "XY")
+        return cls(n_qubits, coupling_type=coupling_type)
+
+    @classmethod
+    def default_config(cls, n_qubits: int) -> dict:
+        """Return a complete runnable spin-chain configuration.
+
+        Provides sensible NMR-style defaults: XY coupling, CNOT gate target
+        (for multi-qubit), Chebyshev waveforms.
+        """
+        qubits = [f"q{i + 1}" for i in range(n_qubits)]
+
+        # Per-qubit detunings: 10, 20, 30, … MHz
+        deltas = [(i + 1) * 10e6 for i in range(n_qubits)]
+
+        # J-coupling matrix (upper-triangular, nearest-neighbour ~ 16.67 MHz)
+        J = [[0.0] * n_qubits for _ in range(n_qubits)]
+        for i in range(n_qubits - 1):
+            J[i][i + 1] = 16.67e6
+
+        # Target gate: CNOT for multi-qubit, axis flip for single qubit
+        if n_qubits == 1:
+            initial_states = [["Z"]]
+            target_states = {"Axis": [["-Z"]]}
+        else:
+            initial_states = [["Z"] + ["-Z"] * (n_qubits - 1)]
+            target_states = {"Gate": ["CNOT"]}
+
+        return {
+            "hamiltonian_type": "spin_chain",
+            "qubits": qubits,
+            "compute_resource": "cpu",
+            "parameters": {
+                "Delta": deltas,
+                "sigma_Delta": [0.0] * n_qubits,
+                "Omega_R_max": [40e6] * n_qubits,
+                "sigma_Omega_R_max": [0.0] * n_qubits,
+                "pulse_duration": [200e-9] * n_qubits,
+                "point_in_pulse": [100] * n_qubits,
+                "wf_type": ["cheb"] * n_qubits,
+                "wf_mode": ["cart"] * n_qubits,
+                "amplitude_envelope": ["gn"] * n_qubits,
+                "amplitude_order": [1] * n_qubits,
+                "coverage": ["broadband"] * n_qubits,
+                "sw": [5e6] * n_qubits,
+                "pulse_offset": [0.0] * n_qubits,
+                "pulse_bandwidth": [5e5] * n_qubits,
+                "ratio_factor": [0.5] * n_qubits,
+                "profile_order": [2] * n_qubits,
+                "n_para": [16] * n_qubits,
+                "J": J,
+                "sigma_J": 0.0,
+                "coupling_type": "XY",
+            },
+            "initial_states": initial_states,
+            "target_states": target_states,
+            "optimization": {
+                "space": "hilbert",
+                "H0_snapshots": 1,
+                "Omega_R_snapshots": 1,
+                "algorithm": "l-bfgs",
+                "max_iter": 300,
+                "targ_fid": 0.999,
+            },
+        }

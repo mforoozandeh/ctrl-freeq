@@ -4,13 +4,20 @@ Tests cover:
 - SpinChainModel: drift, control ops, control amplitudes, equivalence with legacy
 - SuperconductingQubitModel: drift (qubit frequencies + coupling), control ops, ZZ coupling
 - pulse_hamiltonian_generic: equivalence with legacy pulse_hamiltonian
+- Plugin registry: registration, lookup, custom models, from_config, default_config
 """
 
 import numpy as np
 import pytest
 import torch
 
-from ctrl_freeq.setup.hamiltonian_generation.base import HamiltonianModel
+from ctrl_freeq.setup.hamiltonian_generation.base import (
+    HamiltonianModel,
+    _HAMILTONIAN_REGISTRY,
+    get_hamiltonian_class,
+    list_hamiltonians,
+    register_hamiltonian,
+)
 from ctrl_freeq.setup.hamiltonian_generation.spin_chain import SpinChainModel
 from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
     SuperconductingQubitModel,
@@ -51,7 +58,7 @@ class TestSpinChainModel:
     def test_build_drift_single_qubit(self):
         model = SpinChainModel(1)
         Delta = np.array([2 * np.pi * 1e7])
-        H0_list = model.build_drift(Delta_instances=[Delta])
+        H0_list = model.build_drift(frequency_instances=[Delta])
         assert len(H0_list) == 1
         assert H0_list[0].shape == (2, 2)
 
@@ -65,7 +72,9 @@ class TestSpinChainModel:
         J = np.array([[0.0, 2 * np.pi * 1e6], [0.0, 0.0]])
 
         # Model path
-        H0_model = model.build_drift(Delta_instances=[Delta], J_instances=[J])
+        H0_model = model.build_drift(
+            frequency_instances=[Delta], coupling_instances=[J]
+        )
 
         # Legacy path
         Hcs = createHcs(Delta, op)
@@ -160,7 +169,7 @@ class TestSuperconductingQubitModel:
     def test_build_drift_single_qubit(self):
         model = SuperconductingQubitModel(1)
         omega = np.array([2 * np.pi * 5e9])
-        H0 = model.build_drift(omega_instances=[omega])
+        H0 = model.build_drift(frequency_instances=[omega])
         assert len(H0) == 1
         assert H0[0].shape == (2, 2)
         np.testing.assert_allclose(H0[0], H0[0].conj().T, atol=1e-12)
@@ -169,7 +178,7 @@ class TestSuperconductingQubitModel:
         model = SuperconductingQubitModel(2, coupling_type="XY")
         omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
         g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
-        H0 = model.build_drift(omega_instances=[omega], g_instances=[g])
+        H0 = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
         assert H0[0].shape == (4, 4)
         np.testing.assert_allclose(H0[0], H0[0].conj().T, atol=1e-12)
 
@@ -181,12 +190,14 @@ class TestSuperconductingQubitModel:
         )
         omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
         g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
-        H0 = model.build_drift(omega_instances=[omega], g_instances=[g])
+        H0 = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
         assert H0[0].shape == (4, 4)
         np.testing.assert_allclose(H0[0], H0[0].conj().T, atol=1e-12)
         # ZZ should add additional coupling
         model_xy_only = SuperconductingQubitModel(2, coupling_type="XY")
-        H0_xy = model_xy_only.build_drift(omega_instances=[omega], g_instances=[g])
+        H0_xy = model_xy_only.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
         # Hamiltonians should differ due to ZZ term
         assert not np.allclose(H0[0], H0_xy[0])
 
@@ -283,3 +294,232 @@ class TestHamiltonianModelABC:
         I2 = np.eye(2, dtype=complex)
         expected = np.kron(I2, Z)
         np.testing.assert_allclose(embedded, expected, atol=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# Plugin registry tests
+# ---------------------------------------------------------------------------
+
+
+class TestHamiltonianRegistry:
+    """Tests for the registry / decorator infrastructure."""
+
+    def test_builtins_registered(self):
+        """SpinChainModel and SuperconductingQubitModel should be auto-registered."""
+        assert get_hamiltonian_class("spin_chain") is SpinChainModel
+        assert get_hamiltonian_class("superconducting") is SuperconductingQubitModel
+
+    def test_list_hamiltonians(self):
+        names = list_hamiltonians()
+        assert "spin_chain" in names
+        assert "superconducting" in names
+
+    def test_unknown_name_raises(self):
+        with pytest.raises(KeyError, match="Unknown hamiltonian_type"):
+            get_hamiltonian_class("nonexistent")
+
+    def test_unknown_name_shows_available(self):
+        with pytest.raises(KeyError, match="spin_chain"):
+            get_hamiltonian_class("nonexistent")
+
+    def test_register_custom_model(self):
+        """Register a minimal custom model and look it up."""
+
+        @register_hamiltonian("_test_custom")
+        class _TestModel(HamiltonianModel):
+            def __init__(self, n_qubits):
+                self._n = n_qubits
+
+            @property
+            def dim(self):
+                return 2**self._n
+
+            @property
+            def n_controls(self):
+                return 2 * self._n
+
+            def build_drift(self, frequency_instances, coupling_instances=None, **kw):
+                return [np.diag(f) for f in frequency_instances]
+
+            def build_control_ops(self):
+                return [np.eye(self.dim)] * self.n_controls
+
+            def control_amplitudes(self, cx, cy, rabi_freq, n_h0):
+                n_pulse = cx.shape[0]
+                u = torch.stack([cx, cy], dim=-1).reshape(n_pulse, 2 * self._n)
+                rabi_expanded = rabi_freq.repeat_interleave(2, dim=-1)
+                rabi_batch = rabi_expanded.repeat(n_h0, 1)
+                return u.unsqueeze(1) * rabi_batch.unsqueeze(0)
+
+            @classmethod
+            def from_config(cls, n_qubits, params):
+                return cls(n_qubits)
+
+        try:
+            assert get_hamiltonian_class("_test_custom") is _TestModel
+            assert "_test_custom" in list_hamiltonians()
+
+            # Verify from_config works
+            model = _TestModel.from_config(2, {})
+            assert model.dim == 4
+
+            # Verify build_drift works with standardized signature
+            freq = [np.array([1.0, 2.0])]
+            H0 = model.build_drift(frequency_instances=freq)
+            assert len(H0) == 1
+            np.testing.assert_allclose(H0[0], np.diag([1.0, 2.0]))
+        finally:
+            _HAMILTONIAN_REGISTRY.pop("_test_custom", None)
+
+    def test_duplicate_registration_raises(self):
+        @register_hamiltonian("_test_dup")
+        class _Dup1(HamiltonianModel):
+            @property
+            def dim(self):
+                return 2
+
+            @property
+            def n_controls(self):
+                return 2
+
+            def build_drift(self, frequency_instances, coupling_instances=None, **kw):
+                return []
+
+            def build_control_ops(self):
+                return []
+
+            def control_amplitudes(self, cx, cy, rabi_freq, n_h0):
+                return cx
+
+            @classmethod
+            def from_config(cls, n_qubits, params):
+                return cls()
+
+        try:
+            with pytest.raises(ValueError, match="already registered"):
+
+                @register_hamiltonian("_test_dup")
+                class _Dup2(_Dup1):
+                    pass
+        finally:
+            _HAMILTONIAN_REGISTRY.pop("_test_dup", None)
+
+    def test_non_subclass_registration_raises(self):
+        with pytest.raises(TypeError, match="must be a HamiltonianModel subclass"):
+
+            @register_hamiltonian("_test_bad")
+            class _NotAModel:
+                pass
+
+
+# ---------------------------------------------------------------------------
+# from_config tests
+# ---------------------------------------------------------------------------
+
+
+class TestFromConfig:
+    def test_spin_chain_from_config(self):
+        params = {"coupling_type": "XY"}
+        model = SpinChainModel.from_config(2, params)
+        assert isinstance(model, SpinChainModel)
+        assert model.n_qubits == 2
+        assert model.coupling_type == "XY"
+
+    def test_spin_chain_from_config_defaults(self):
+        model = SpinChainModel.from_config(3, {})
+        assert model.coupling_type == "XY"
+        assert model.n_qubits == 3
+
+    def test_superconducting_from_config(self):
+        params = {
+            "coupling_type": "XY+ZZ",
+            "anharmonicities": [-330e6, -330e6],
+        }
+        model = SuperconductingQubitModel.from_config(2, params)
+        assert isinstance(model, SuperconductingQubitModel)
+        assert model.coupling_type == "XY+ZZ"
+        assert model.anharmonicities is not None
+        # Should be scaled by 2*pi
+        expected = 2 * np.pi * np.array([-330e6, -330e6])
+        np.testing.assert_allclose(model.anharmonicities, expected)
+
+    def test_superconducting_from_config_defaults(self):
+        model = SuperconductingQubitModel.from_config(2, {})
+        assert model.coupling_type == "XY"
+        assert model.anharmonicities is None
+
+    def test_from_config_via_registry(self):
+        """End-to-end: look up by name, then construct via from_config."""
+        cls = get_hamiltonian_class("spin_chain")
+        model = cls.from_config(2, {"coupling_type": "XY"})
+        assert isinstance(model, SpinChainModel)
+        assert model.dim == 4
+
+
+# ---------------------------------------------------------------------------
+# default_config tests
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultConfig:
+    def test_spin_chain_default_config_single_qubit(self):
+        config = SpinChainModel.default_config(1)
+        assert config["hamiltonian_type"] == "spin_chain"
+        assert len(config["qubits"]) == 1
+        assert "parameters" in config
+        assert "optimization" in config
+        assert "initial_states" in config
+        assert "target_states" in config
+        # Single qubit → Axis target
+        assert "Axis" in config["target_states"]
+
+    def test_spin_chain_default_config_two_qubit(self):
+        config = SpinChainModel.default_config(2)
+        assert len(config["qubits"]) == 2
+        # Two qubit → Gate target (CNOT)
+        assert "Gate" in config["target_states"]
+        assert config["target_states"]["Gate"] == ["CNOT"]
+
+    def test_superconducting_default_config_two_qubit(self):
+        config = SuperconductingQubitModel.default_config(2)
+        assert config["hamiltonian_type"] == "superconducting"
+        assert len(config["qubits"]) == 2
+        # Two qubit → Gate target (iSWAP)
+        assert "Gate" in config["target_states"]
+        assert config["target_states"]["Gate"] == ["iSWAP"]
+
+    def test_default_config_is_runnable(self):
+        """Verify default_config produces a config that CtrlFreeQAPI can accept."""
+        from ctrl_freeq.api import CtrlFreeQAPI
+
+        config = SpinChainModel.default_config(1)
+        # Should not raise — just verify it initializes
+        api = CtrlFreeQAPI(config)
+        assert api.parameters is not None
+        assert api.parameters.n_qubits == 1
+
+
+# ---------------------------------------------------------------------------
+# Direct model injection tests
+# ---------------------------------------------------------------------------
+
+
+class TestDirectModelInjection:
+    def test_api_accepts_hamiltonian_model(self):
+        """CtrlFreeQAPI should accept a pre-built model via hamiltonian_model param."""
+        from ctrl_freeq.api import CtrlFreeQAPI
+
+        config = SpinChainModel.default_config(1)
+        model = SpinChainModel(1, coupling_type="XY")
+        api = CtrlFreeQAPI(config, hamiltonian_model=model)
+        assert api.parameters.hamiltonian_model is model
+
+    def test_injected_model_overrides_config(self):
+        """An injected model should override whatever hamiltonian_type is in config."""
+        from ctrl_freeq.api import CtrlFreeQAPI
+
+        # Config says spin_chain, but we inject superconducting
+        config = SpinChainModel.default_config(1)
+        sc_model = SuperconductingQubitModel(1, coupling_type="XY")
+        api = CtrlFreeQAPI(config, hamiltonian_model=sc_model)
+        assert isinstance(api.parameters.hamiltonian_model, SuperconductingQubitModel)

@@ -32,16 +32,17 @@ The `CtrlFreeQAPI` class serves as the primary interface for interacting with th
 ### Constructor
 
 ```python
-CtrlFreeQAPI(config: Union[str, Path, Dict[str, Any]])
+CtrlFreeQAPI(config: Union[str, Path, Dict[str, Any]], hamiltonian_model=None)
 ```
 
-An API instance may be created from a path to a JSON configuration file (provided as a string or `Path` object) or from a dictionary containing the configuration parameters directly.
+An API instance may be created from a path to a JSON configuration file (provided as a string or `Path` object) or from a dictionary containing the configuration parameters directly. An optional `hamiltonian_model` argument allows a pre-built `HamiltonianModel` instance to be injected directly, bypassing the registry lookup.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `config` | `str`, `Path`, or `dict` | Configuration source |
+| `hamiltonian_model` | `HamiltonianModel` or `None` | Optional pre-built model instance (overrides `hamiltonian_type` in config) |
 
 **Examples:**
 
@@ -243,7 +244,7 @@ params = api.parameters
 
 ## Helper Functions
 
-### `run_from_config(config)`
+### `run_from_config(config, hamiltonian_model=None)`
 
 A convenience function that creates a `CtrlFreeQAPI` instance and executes the optimization in a single call.
 
@@ -258,6 +259,7 @@ solution = run_from_config("path/to/config.json")
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `config` | `str`, `Path`, or `dict` | Configuration source |
+| `hamiltonian_model` | `HamiltonianModel` or `None` | Optional pre-built model instance |
 
 **Returns:** `torch.Tensor` — The optimized pulse parameters.
 
@@ -515,7 +517,7 @@ The following example demonstrates a complete optimization workflow for an open 
 
     - The optimization `space` must be `"liouville"` (density matrix mode)
     - Per-qubit `T1` and `T2` values must be provided in the `parameters` section
-    - The physical constraint $T_2 \leq 2 T_1$ must hold for each qubit
+    - The physical constraint \(T_2 \leq 2\,T_1\) must hold for each qubit
 
     For a detailed description of the dissipation parameters, see [Optimization → Parameters → Dissipation Parameters](optimization/parameters.md#dissipation-parameters).
 
@@ -525,7 +527,11 @@ The following example demonstrates a complete optimization workflow for an open 
 
 Ctrl-freeq provides a platform-agnostic Hamiltonian model abstraction for defining quantum control problems. All models implement the `HamiltonianModel` abstract base class, which follows the standard bilinear control formulation:
 
-**H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k**
+$$
+H(t) = H_\text{drift} + \sum_k u_k(t) \, H_{\text{ctrl},k}
+$$
+
+The framework uses a **plugin architecture** based on a model registry. New Hamiltonian types can be added by subclassing `HamiltonianModel` and decorating with `@register_hamiltonian` — no framework files need to be modified.
 
 ### HamiltonianModel (Abstract Base Class)
 
@@ -537,12 +543,41 @@ All Hamiltonian models implement the following interface:
 
 | Method / Property | Description |
 |-------------------|-------------|
-| `build_drift(**params)` | Construct drift Hamiltonian H₀ instances (list of `(D, D)` numpy arrays) |
-| `build_control_ops()` | Return fixed control operators H_ctrl_k (list of `(D, D)` numpy arrays) |
-| `control_amplitudes(cx, cy, rabi_freq, n_h0)` | Map waveform outputs to control amplitudes u_k(t) |
-| `dim` (property) | Hilbert space dimension D = 2^n_qubits |
-| `n_controls` (property) | Number of independent control channels (2 × n_qubits) |
-| `control_ops_tensor()` | Control operators as a stacked torch tensor `(n_controls, D, D)` |
+| `build_drift(frequency_instances, coupling_instances=None, **kwargs)` | Construct drift Hamiltonian \(H_0\) snapshots (list of \((D, D)\) numpy arrays) |
+| `build_control_ops()` | Return fixed control operators \(H_{\text{ctrl},k}\) (list of \((D, D)\) numpy arrays) |
+| `control_amplitudes(cx, cy, rabi_freq, n_h0)` | Map waveform outputs to control amplitudes \(u_k(t)\) |
+| `from_config(n_qubits, params)` (classmethod) | Construct a model instance from a configuration dictionary |
+| `default_config(n_qubits)` (classmethod) | Return a complete runnable configuration dictionary |
+| `dim` (property) | Hilbert space dimension \(D = 2^{n_\text{qubits}}\) |
+| `n_controls` (property) | Number of independent control channels (\(2 \times n_\text{qubits}\)) |
+| `control_ops_tensor()` | Control operators as a stacked torch tensor \((n_\text{controls}, D, D)\) |
+
+The `build_drift` method uses a **standardized signature** across all models: `frequency_instances` contains per-qubit frequency arrays (detunings, qubit frequencies, etc.), and `coupling_instances` contains coupling matrices. Model-specific parameters are passed via `**kwargs`.
+
+### Model Registry
+
+The registry provides automatic discovery and lookup of Hamiltonian models:
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import (
+    register_hamiltonian,
+    get_hamiltonian_class,
+    list_hamiltonians,
+)
+
+# List all registered models
+print(list_hamiltonians())  # ['spin_chain', 'superconducting']
+
+# Look up a model class by name
+cls = get_hamiltonian_class("spin_chain")
+model = cls.from_config(n_qubits=2, params={"coupling_type": "XY"})
+```
+
+| Function | Description |
+|----------|-------------|
+| `register_hamiltonian(name)` | Decorator that registers a `HamiltonianModel` subclass under the given name |
+| `get_hamiltonian_class(name)` | Look up and return the model class for a given name |
+| `list_hamiltonians()` | Return a sorted list of all registered model names |
 
 ### SpinChainModel
 
@@ -557,7 +592,7 @@ model = SpinChainModel(n_qubits=2, coupling_type="XY")
 import numpy as np
 Delta = np.array([2 * np.pi * 1e7, 2 * np.pi * 2e7])
 J = np.array([[0.0, 2 * np.pi * 1e6], [0.0, 0.0]])
-H0_list = model.build_drift(Delta_instances=[Delta], J_instances=[J])
+H0_list = model.build_drift(frequency_instances=[Delta], coupling_instances=[J])
 
 # Get control operators
 ctrl_ops = model.build_control_ops()  # [X_0, Y_0, X_1, Y_1]
@@ -584,7 +619,7 @@ model = SuperconductingQubitModel(
 # Build drift Hamiltonian
 omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
 g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
-H0_list = model.build_drift(omega_instances=[omega], g_instances=[g])
+H0_list = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
 ```
 
 | Parameter | Description |
@@ -608,6 +643,118 @@ config = {
     "optimization": { ... }
 }
 ```
+
+### Default Configurations
+
+Each model provides a `default_config` classmethod that returns a complete, ready-to-run configuration dictionary with sensible physical defaults. This is useful for quick experiments and will also serve as the basis for GUI form population.
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import SpinChainModel, SuperconductingQubitModel
+from ctrl_freeq.api import CtrlFreeQAPI
+
+# Get a complete spin-chain config for 2 qubits (CNOT gate, XY coupling)
+config = SpinChainModel.default_config(n_qubits=2)
+api = CtrlFreeQAPI(config)
+
+# Get a complete superconducting config for 2 qubits (iSWAP gate, XY coupling)
+config = SuperconductingQubitModel.default_config(n_qubits=2)
+api = CtrlFreeQAPI(config)
+```
+
+### Adding Custom Hamiltonian Models
+
+A user who wants to add a new Hamiltonian needs to do just **one thing**: write a Python class that subclasses `HamiltonianModel` and decorate it with `@register_hamiltonian("name")`. No framework files need to be touched.
+
+#### Step 1 — Define the model class
+
+Implement six required members (`build_drift`, `build_control_ops`, `control_amplitudes`, `from_config`, `dim`, `n_controls`) and optionally `default_config`:
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import HamiltonianModel, register_hamiltonian
+import numpy as np
+
+@register_hamiltonian("trapped_ion")
+class TrappedIonModel(HamiltonianModel):
+    def __init__(self, n_qubits, laser_wavelength=729e-9):
+        self.n_qubits = n_qubits
+        self.laser_wavelength = laser_wavelength
+        # ... pre-compute operators, Lamb-Dicke params, etc.
+
+    @property
+    def dim(self):
+        return 2 ** self.n_qubits
+
+    @property
+    def n_controls(self):
+        return 2 * self.n_qubits  # I, Q per qubit
+
+    def build_drift(self, frequency_instances, coupling_instances=None, **kwargs):
+        # frequency_instances: list of arrays with per-qubit trap frequencies
+        # coupling_instances: list of coupling matrices (Mølmer-Sørensen, etc.)
+        # Return: list of (D, D) numpy arrays — one per snapshot
+        ...
+
+    def build_control_ops(self):
+        # Return list of (D, D) numpy arrays: [X_0, Y_0, X_1, Y_1, ...]
+        ...
+
+    def control_amplitudes(self, cx, cy, rabi_freq, n_h0):
+        # Map waveform (cx, cy) and Rabi frequency to control amplitudes u_k(t)
+        ...
+
+    @classmethod
+    def from_config(cls, n_qubits, params):
+        # Extract model-specific constructor args from the config dict
+        return cls(n_qubits, laser_wavelength=params.get("laser_wavelength", 729e-9))
+
+    @classmethod
+    def default_config(cls, n_qubits):
+        # Optional: return a complete, ready-to-run config with sensible defaults
+        return {
+            "hamiltonian_type": "trapped_ion",
+            "qubits": [f"q{i+1}" for i in range(n_qubits)],
+            "parameters": { ... },
+            "initial_states": [["Z", "Z"]],
+            "target_states": {"Gate": ["XX"]},
+            "optimization": {"algorithm": "l-bfgs", "max_iter": 300, "targ_fid": 0.999, ...},
+        }
+```
+
+#### Step 2 — Make sure the class is imported
+
+The `@register_hamiltonian` decorator fires at import time, so the module just needs to be imported before the config is loaded. Define it in the same script that runs the optimization, or import it from your own package.
+
+#### Step 3 — Use it
+
+Two workflows are available:
+
+=== "Via registry (main path)"
+    Reference the model by name in any configuration dictionary or JSON file:
+
+    ```python
+    from ctrl_freeq.api import CtrlFreeQAPI
+
+    # Use default_config for zero-effort setup
+    config = TrappedIonModel.default_config(n_qubits=2)
+    # or: config = {"hamiltonian_type": "trapped_ion", ...}
+
+    api = CtrlFreeQAPI(config)
+    solution = api.run_optimization()
+    ```
+
+=== "Via direct injection (quick experiments)"
+    For one-off experiments, inject a model instance directly without registration:
+
+    ```python
+    model = TrappedIonModel(n_qubits=2, laser_wavelength=729e-9)
+    api = CtrlFreeQAPI(config_dict, hamiltonian_model=model)
+    solution = api.run_optimization()
+    ```
+
+    The injected model overrides any `hamiltonian_type` specified in the configuration.
+
+!!! tip "What you get for free"
+    Everything else in the pipeline works automatically — waveform parameterisation, gradient computation (autograd), fidelity evaluation, plotting, and dashboards — because it all goes through the generic `pulse_hamiltonian_generic` path using `build_control_ops` and `control_amplitudes`. The user only defines the *physics*; the *optimisation machinery* is inherited.
 
 ---
 

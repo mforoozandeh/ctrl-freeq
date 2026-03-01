@@ -56,13 +56,19 @@ class CtrlFreeQAPI:
     and run CtrlFreeQ optimizations.
     """
 
-    def __init__(self, config: Union[str, Path, Dict[str, Any]]):
+    def __init__(
+        self, config: Union[str, Path, Dict[str, Any]], hamiltonian_model=None
+    ):
         """
         Initialize the CtrlFreeQ API with a configuration.
 
         Args:
             config: Either a path to a JSON configuration file, or a dictionary
                    containing the configuration parameters.
+            hamiltonian_model: Optional pre-built HamiltonianModel instance.
+                   If provided, overrides the ``hamiltonian_type`` in the config.
+                   Useful for custom/user-defined models that are not registered
+                   in the model registry.
         """
         if isinstance(config, (str, Path)):
             self.config_path = _resolve_config_path(config)
@@ -79,6 +85,11 @@ class CtrlFreeQAPI:
 
         # Initialize the parameter object
         self.parameters = Initialise(self.processed_config)
+
+        # Override model if user provided one directly
+        if hamiltonian_model is not None:
+            self.parameters.hamiltonian_model = hamiltonian_model
+            self.parameters.H0 = self.parameters.get_H0()
 
     def _preprocess_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -229,18 +240,21 @@ def load_config(config_path: Union[str, Path]) -> CtrlFreeQAPI:
     return CtrlFreeQAPI(config_path)
 
 
-def run_from_config(config: Union[str, Path, Dict[str, Any]]) -> Any:
+def run_from_config(
+    config: Union[str, Path, Dict[str, Any]], hamiltonian_model=None
+) -> Any:
     """
     Run an optimization directly from a configuration.
 
     Args:
         config: Either a path to a JSON configuration file, or a dictionary
                containing the configuration parameters.
+        hamiltonian_model: Optional pre-built HamiltonianModel instance.
 
     Returns:
         The optimization solution.
     """
-    api = CtrlFreeQAPI(config)
+    api = CtrlFreeQAPI(config, hamiltonian_model=hamiltonian_model)
     return api.run_optimization()
 
 

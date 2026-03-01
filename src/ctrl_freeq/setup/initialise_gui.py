@@ -4,10 +4,7 @@ import numpy as np
 from scipy.linalg import expm
 
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
-from ctrl_freeq.setup.hamiltonian_generation.spin_chain import SpinChainModel
-from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
-    SuperconductingQubitModel,
-)
+from ctrl_freeq.setup.hamiltonian_generation import get_hamiltonian_class
 from ctrl_freeq.setup.basis_generation.mat_x0_gen import (
     generate_mat_x0_from_basis,
     generate_mat_x0_from_fourier_basis,
@@ -164,27 +161,8 @@ class Initialise:
             return None
 
         params = data.get("parameters", {})
-
-        if h_type == "spin_chain":
-            coupling_type = self.coupling_type or "XY"
-            return SpinChainModel(self.n_qubits, coupling_type=coupling_type)
-
-        elif h_type == "superconducting":
-            coupling_type = params.get("coupling_type", "XY")
-            anharmonicities = params.get("anharmonicities", None)
-            if anharmonicities is not None:
-                anharmonicities = 2 * np.pi * np.array(anharmonicities)
-            return SuperconductingQubitModel(
-                n_qubits=self.n_qubits,
-                coupling_type=coupling_type,
-                anharmonicities=anharmonicities,
-            )
-
-        else:
-            raise ValueError(
-                f"Unknown hamiltonian_type: '{h_type}'. "
-                f"Supported: 'spin_chain', 'superconducting'"
-            )
+        cls = get_hamiltonian_class(h_type)
+        return cls.from_config(self.n_qubits, params)
 
     def __str__(self):
         return (
@@ -523,22 +501,11 @@ class Initialise:
     def _get_H0_from_model(self):
         """Build H0 using the HamiltonianModel abstraction."""
         model = self.hamiltonian_model
-
-        if isinstance(model, SpinChainModel):
-            J_instances = self.Jmat_instances if self.n_qubits > 1 else None
-            H0 = model.build_drift(
-                Delta_instances=self.Omega_instances,
-                J_instances=J_instances,
-            )
-        elif isinstance(model, SuperconductingQubitModel):
-            J_instances = self.Jmat_instances if self.n_qubits > 1 else None
-            H0 = model.build_drift(
-                omega_instances=self.Omega_instances,
-                g_instances=J_instances,
-            )
-        else:
-            # Generic fallback: call build_drift with no args
-            H0 = model.build_drift()
+        coupling = self.Jmat_instances if self.n_qubits > 1 else None
+        H0 = model.build_drift(
+            frequency_instances=self.Omega_instances,
+            coupling_instances=coupling,
+        )
 
         H0_stacked = []
         for _ in range(len(self.initial)):

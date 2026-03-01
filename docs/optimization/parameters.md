@@ -23,11 +23,11 @@ The top-level structure of a configuration is as follows:
 | Field | Description |
 |-------|-------------|
 | `qubits` | List of qubit identifiers for display and indexing |
-| `hamiltonian_type` | `"spin_chain"` (default) or `"superconducting"` — selects the physical platform |
+| `hamiltonian_type` | Selects the physical platform via the model registry (see [Hamiltonian Models](../api.md#hamiltonian-models)) |
 | `compute_resource` | `"cpu"` or `"gpu"` (see [Compute](compute.md)) |
 
 !!! note "Backward Compatibility"
-    The `hamiltonian_type` field is optional. When omitted, the legacy spin-chain code path is used, ensuring backward compatibility with existing configuration files.
+    The `hamiltonian_type` field is optional. When omitted, the legacy spin-chain code path is used, ensuring backward compatibility with existing configuration files. Built-in values are `"spin_chain"` and `"superconducting"`. Custom models registered with `@register_hamiltonian("name")` can also be referenced here.
 
 ---
 
@@ -117,13 +117,13 @@ For the simulation of open quantum systems, ctrl-freeq supports dissipative dyna
 
 The Lindblad collapse operators constructed from these parameters are:
 
-- **Amplitude damping:** $L_1 = \sqrt{1/T_1}\, \sigma^-$ — models energy relaxation to the ground state
-- **Pure dephasing:** $L_2 = \sqrt{1/T_2 - 1/(2T_1)}\, \sigma_z/2$ — models loss of phase coherence without energy exchange
+- **Amplitude damping:** \(L_1 = \sqrt{1/T_1}\;\sigma^-\) — models energy relaxation to the ground state
+- **Pure dephasing:** \(L_2 = \sqrt{1/T_2 - 1/(2T_1)}\;\sigma_z/2\) — models loss of phase coherence without energy exchange
 
 For multi-qubit systems, the collapse operators are extended to the full Hilbert space via tensor products with identity operators on the remaining qubits.
 
 !!! warning "Physical Constraint"
-    The physical constraint $T_2 \leq 2 T_1$ is enforced automatically. Configurations that violate this bound will raise a validation error, as such values are unphysical (the pure dephasing rate cannot be negative).
+    The physical constraint \(T_2 \leq 2\,T_1\) is enforced automatically. Configurations that violate this bound will raise a validation error, as such values are unphysical (the pure dephasing rate cannot be negative).
 
 !!! note "Liouville Space Requirement"
     Dissipative simulations require the optimization space to be set to `liouville` (density matrix mode). When `dissipation_mode` is set to `"dissipative"`, the space is automatically forced to `liouville` in the GUI.
@@ -182,7 +182,7 @@ For systems comprising two or more qubits, the inter-qubit coupling parameters m
     - **ZZ** — Static ZZ coupling from anharmonicity-mediated frequency shifts
     - **XY+ZZ** — Both exchange and static ZZ terms
 
-    When the coupling type includes ZZ, the static ZZ interaction strength is approximated as ζ_ij ≈ 2 g_ij² (1/α_i + 1/α_j), where α_i are the per-qubit anharmonicities.
+    When the coupling type includes ZZ, the static ZZ interaction strength is approximated as \(\zeta_{ij} \approx 2\,g_{ij}^2 \left(\frac{1}{\alpha_i} + \frac{1}{\alpha_j}\right)\), where \(\alpha_i\) are the per-qubit anharmonicities.
 
 !!! note "Shared JSON Keys"
     Both platforms use the `J` and `sigma_J` keys in the JSON configuration for cross-platform compatibility. The GUI relabels these as g_ij / σg for superconducting qubits.
@@ -336,7 +336,7 @@ The following fields control the behaviour of the optimization procedure:
 |-----|-----------|-------------|---------|
 | `space` | Space | `hilbert` (pure states) or `liouville` (density matrices) | `hilbert` |
 | `dissipation_mode` | Dissipation | `non-dissipative` or `dissipative` (Lindblad master equation) | `non-dissipative` |
-| `H0_snapshots` | H₀ Snapshots | Time steps for drift Hamiltonian | 100 |
+| `H0_snapshots` | \(H_0\) Snapshots | Time steps for drift Hamiltonian | 100 |
 | `Omega_R_snapshots` | Ω_R Snapshots | Time steps for control Hamiltonian | 1 |
 | `algorithm` | Algorithm | Optimization algorithm (see [Algorithms](algorithms.md)) | varies by config |
 | `max_iter` | Max Iterations | Maximum optimization iterations | 1000 |
