@@ -195,6 +195,40 @@ class HamiltonianModel(ABC):
         raise NotImplementedError(f"{cls.__name__} does not provide a default_config")
 
     # ------------------------------------------------------------------
+    # Computational subspace embedding (override for d > 2 models)
+    # ------------------------------------------------------------------
+
+    def embed_computational_state(self, state: np.ndarray) -> np.ndarray:
+        """Embed a 2^n computational state vector into the model Hilbert space.
+
+        For models whose local dimension equals 2 (standard qubit models),
+        this is the identity operation.  Models with larger local dimensions
+        (e.g. 3-level transmons) override this to zero-pad into the full space.
+
+        Args:
+            state: ``(2**n,)`` complex state vector.
+
+        Returns:
+            ``(D,)`` complex state vector in the model's Hilbert space.
+        """
+        return state
+
+    def embed_computational_gate(self, gate: np.ndarray) -> np.ndarray:
+        """Embed a 2^n × 2^n gate into the model Hilbert space.
+
+        For standard qubit models this is the identity operation.  Models with
+        larger local dimensions override this to act as the gate on the
+        computational subspace and identity on the rest.
+
+        Args:
+            gate: ``(2**n, 2**n)`` unitary matrix.
+
+        Returns:
+            ``(D, D)`` unitary matrix in the model's Hilbert space.
+        """
+        return gate
+
+    # ------------------------------------------------------------------
     # Convenience helpers (shared by all models)
     # ------------------------------------------------------------------
 

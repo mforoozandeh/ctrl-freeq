@@ -548,9 +548,11 @@ All Hamiltonian models implement the following interface:
 | `control_amplitudes(cx, cy, rabi_freq, n_h0)` | Map waveform outputs to control amplitudes \(u_k(t)\) |
 | `from_config(n_qubits, params)` (classmethod) | Construct a model instance from a configuration dictionary |
 | `default_config(n_qubits)` (classmethod) | Return a complete runnable configuration dictionary |
-| `dim` (property) | Hilbert space dimension \(D = 2^{n_\text{qubits}}\) |
-| `n_controls` (property) | Number of independent control channels (\(2 \times n_\text{qubits}\)) |
+| `dim` (property) | Hilbert space dimension \(D\) (e.g. \(2^n\) for qubit models, \(3^n\) for 3-level models) |
+| `n_controls` (property) | Number of independent control channels |
 | `control_ops_tensor()` | Control operators as a stacked torch tensor \((n_\text{controls}, D, D)\) |
+| `embed_computational_state(state)` | Embed a \(2^n\) state into the model's Hilbert space (identity for qubit models) |
+| `embed_computational_gate(gate)` | Embed a \(2^n \times 2^n\) gate into the model's Hilbert space (identity for qubit models) |
 
 The `build_drift` method uses a **standardized signature** across all models: `frequency_instances` contains per-qubit frequency arrays (detunings, qubit frequencies, etc.), and `coupling_instances` contains coupling matrices. Model-specific parameters are passed via `**kwargs`.
 
@@ -566,7 +568,7 @@ from ctrl_freeq.setup.hamiltonian_generation import (
 )
 
 # List all registered models
-print(list_hamiltonians())  # ['spin_chain', 'superconducting']
+print(list_hamiltonians())  # ['duffing_transmon', 'spin_chain', 'superconducting']
 
 # Look up a model class by name
 cls = get_hamiltonian_class("spin_chain")
@@ -605,7 +607,7 @@ ctrl_ops = model.build_control_ops()  # [X_0, Y_0, X_1, Y_1]
 
 ### SuperconductingQubitModel
 
-Models fixed-frequency transmon qubits with capacitive coupling, supporting exchange (XY), static ZZ, and combined (XY+ZZ) coupling.
+Models fixed-frequency transmon qubits in the **per-qubit rotating frame** (RWA applied) with capacitive coupling, supporting exchange (XY), static ZZ, and combined (XY+ZZ) coupling. The `frequency_instances` values are rotating-frame detunings \(\delta_i\), not bare transition frequencies.
 
 ```python
 from ctrl_freeq.setup.hamiltonian_generation import SuperconductingQubitModel
@@ -626,7 +628,59 @@ H0_list = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
 |-----------|-------------|
 | `n_qubits` | Number of transmon qubits |
 | `coupling_type` | `"XY"` (exchange), `"ZZ"` (static ZZ), or `"XY+ZZ"` (both) |
-| `anharmonicities` | Per-qubit anharmonicities (rad/s), used for ZZ computation |
+| `anharmonicities` | Per-qubit anharmonicities \(\alpha_i\) (rad/s), used for perturbative ZZ computation |
+| `zz_crosstalk` | Calibrated static ZZ coupling matrix (rad/s). Overrides the perturbative formula when provided |
+| `stark_shift_coeffs` | Per-qubit AC Stark shift coefficients \(s_i\). Adds a Z control channel per qubit with amplitude \(s_i (I^2+Q^2) \Omega_d^2\) |
+
+!!! info "ZZ coupling priority chain"
+    When `coupling_type` includes `"ZZ"`, the ZZ interaction is determined by the first available source:
+
+    1. Runtime `zz_instances` kwarg to `build_drift` (per-snapshot, highest priority)
+    2. Constructor `zz_crosstalk` (calibrated, fixed across snapshots)
+    3. Perturbative formula: \(\zeta_{ij} \approx 2\,g_{ij}^2 (1/\alpha_i + 1/\alpha_j)\)
+    4. Zero matrix
+
+### DuffingTransmonModel
+
+A 3-level (Duffing oscillator) transmon model that captures leakage to the \(|2\rangle\) state. Each transmon is modelled as a 3-level system, giving a Hilbert space of dimension \(3^{n_\text{qubits}}\). Anharmonicities are **required**.
+
+```python
+from ctrl_freeq.setup.hamiltonian_generation import DuffingTransmonModel
+
+model = DuffingTransmonModel(
+    n_qubits=2,
+    coupling_type="XY",
+    anharmonicities=np.array([2 * np.pi * -330e6, 2 * np.pi * -330e6]),
+)
+
+# Drift: ω n̂ + (α/2) n̂(n̂−I) + g (a†a + aa†)
+omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+H0_list = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
+
+# Embed 2-level states/gates into the 3-level space
+import numpy as np
+state_2 = np.array([1, 0, 0, 0], dtype=complex)  # |00>
+state_3 = model.embed_computational_state(state_2)  # (9,) vector
+
+X_gate = np.array([[0,1],[1,0]], dtype=complex)
+X_embed = model.embed_computational_gate(X_gate)  # (3,3) — identity on |2>
+
+# Compute leakage
+leakage = model.leakage(state_3)  # 0.0 for computational states
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `n_qubits` | Number of transmon qubits |
+| `coupling_type` | Currently `"XY"` (exchange coupling via \(a^\dagger_i a_j + a_i a^\dagger_j\)) |
+| `anharmonicities` | Per-qubit anharmonicities \(\alpha_i\) (rad/s). **Required.** |
+
+| Method | Description |
+|--------|-------------|
+| `embed_computational_state(state)` | Map a \(2^n\) state vector into the \(3^n\) Hilbert space |
+| `embed_computational_gate(gate)` | Embed a \(2^n \times 2^n\) gate (identity on leakage subspace) |
+| `leakage(state)` | Compute population outside the computational subspace \(\{|0\rangle, |1\rangle\}^{\otimes n}\) |
 
 ### Using Models in Configuration
 
@@ -649,7 +703,9 @@ config = {
 Each model provides a `default_config` classmethod that returns a complete, ready-to-run configuration dictionary with sensible physical defaults. This is useful for quick experiments and will also serve as the basis for GUI form population.
 
 ```python
-from ctrl_freeq.setup.hamiltonian_generation import SpinChainModel, SuperconductingQubitModel
+from ctrl_freeq.setup.hamiltonian_generation import (
+    SpinChainModel, SuperconductingQubitModel, DuffingTransmonModel
+)
 from ctrl_freeq.api import CtrlFreeQAPI
 
 # Get a complete spin-chain config for 2 qubits (CNOT gate, XY coupling)
@@ -658,6 +714,10 @@ api = CtrlFreeQAPI(config)
 
 # Get a complete superconducting config for 2 qubits (iSWAP gate, XY coupling)
 config = SuperconductingQubitModel.default_config(n_qubits=2)
+api = CtrlFreeQAPI(config)
+
+# Get a complete 3-level Duffing config for 2 qubits (leakage-aware)
+config = DuffingTransmonModel.default_config(n_qubits=2)
 api = CtrlFreeQAPI(config)
 ```
 

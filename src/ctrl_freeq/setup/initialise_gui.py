@@ -142,6 +142,10 @@ class Initialise:
         self.hamiltonian_type = data.get("hamiltonian_type", None)
         self.hamiltonian_model = self._build_hamiltonian_model(data)
 
+        # Embed states/gates into model Hilbert space (e.g. 3-level Duffing)
+        if self.hamiltonian_model is not None:
+            self._embed_states_for_model()
+
         self.H0 = self.get_H0()
 
         # Optional runtime settings
@@ -163,6 +167,26 @@ class Initialise:
         params = data.get("parameters", {})
         cls = get_hamiltonian_class(h_type)
         return cls.from_config(self.n_qubits, params)
+
+    def _embed_states_for_model(self):
+        """Embed computational states/gates into the model's Hilbert space.
+
+        For 2-level models (dim = 2^n) this is a no-op.  For models with
+        larger local dimensions (e.g. DuffingTransmonModel with dim = 3^n),
+        the ``embed_computational_state`` / ``embed_computational_gate``
+        methods re-map the 2^n vectors/matrices into the full space.
+        """
+        model = self.hamiltonian_model
+        d_comp = 2**self.n_qubits
+        if model.dim == d_comp:
+            # Standard 2-level model — no embedding needed
+            return
+
+        # Embed initial and target state vectors
+        if hasattr(self, "initials") and self.initials is not None:
+            self.initials = [model.embed_computational_state(s) for s in self.initials]
+        if hasattr(self, "targets") and self.targets is not None:
+            self.targets = [model.embed_computational_state(s) for s in self.targets]
 
     def __str__(self):
         return (

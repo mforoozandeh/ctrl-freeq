@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Direct model injection** via `CtrlFreeQAPI(config, hamiltonian_model=model)` for quick experiments with custom or unregistered models.
 - `SpinChainModel` — wraps the existing spin-chain drift and coupling Hamiltonians (Ising, XY, Heisenberg) behind the new model interface.
 - `SuperconductingQubitModel` — transmon qubit Hamiltonian with qubit-frequency drift, capacitive coupling (XY, ZZ, XY+ZZ), and anharmonicity-derived static ZZ shifts.
+- **Calibrated ZZ parameter** (`zz_crosstalk`) for `SuperconductingQubitModel`: accepts a calibrated static ZZ coupling matrix that overrides the perturbative formula, with a clear priority chain (runtime `zz_instances` > calibrated `zz_crosstalk` > perturbative formula > zero).
+- **AC Stark shift** (`stark_shift_coeffs`) for `SuperconductingQubitModel`: adds per-qubit drive-dependent Z control channels modelling the light shift H_Stark = Σ_i s_i/2 (I²+Q²) Ω_d² σ_z.
+- **`DuffingTransmonModel`** — 3-level (Duffing oscillator) transmon Hamiltonian with dim = 3^n_qubits, enabling leakage detection to the |2⟩ state. Registered as `"duffing_transmon"` in the plugin registry.
+- `embed_computational_state()` and `embed_computational_gate()` methods on `HamiltonianModel` ABC for mapping 2^n states/gates into higher-dimensional model spaces (identity for standard qubit models, active embedding for 3-level models).
+- `leakage()` method on `DuffingTransmonModel` to compute population outside the computational subspace.
+- Automatic state/gate embedding in `initialise_gui.py` for models with dim > 2^n (e.g. Duffing transmon).
 - `pulse_hamiltonian_generic()` — model-agnostic pulse Hamiltonian construction via `einsum`, replacing the spin-chain-specific implementation for new model paths.
 - GUI Hamiltonian Type selector dropdown (Spin Chain / Superconducting) that dynamically relabels fields (Δ↔ω, J↔g) and reconfigures coupling controls.
 - Gate dropdown (Combobox) in the GUI, replacing free-text entry, with platform-aware gate lists and defaults (CNOT for Spin Chain, iSWAP for Superconducting).
@@ -27,9 +33,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Standardized `build_drift` signature across all models: `frequency_instances`, `coupling_instances` (replaces model-specific parameter names).
 - `initialise_gui.py` and `plotter.py` now use the registry for model construction and generic `build_drift` calls, eliminating all isinstance dispatch.
+- `SuperconductingQubitModel` docstrings now explicitly document the rotating-frame convention, sign/scaling conventions (rad/s, spin-½ Paulis), and the distinction between exchange coupling (g) and static ZZ (ζ).
 - Default two-qubit gate is now Hamiltonian-type-aware: CNOT for spin chains, iSWAP for superconducting qubits.
 - Gate entry fields in the GUI are now dropdown menus (Combobox) with available gates filtered by qubit count and Hamiltonian type.
-- Backward compatibility is maintained: configurations without `hamiltonian_type` continue to use the legacy spin-chain code path.
+- Backward compatibility is maintained: configurations without `hamiltonian_type` continue to use the legacy spin-chain code path. All new parameters (`zz_crosstalk`, `stark_shift_coeffs`) default to `None` and are fully backward-compatible.
 - API reference: constructor and `run_from_config` signatures now document the `hamiltonian_model` parameter for direct model injection.
 - Parameter reference: `hamiltonian_type` field now links to the model registry documentation and notes support for custom registered models.
 

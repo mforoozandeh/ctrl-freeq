@@ -10,6 +10,9 @@ from ctrl_freeq.setup.hamiltonian_generation.spin_chain import SpinChainModel
 from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
     SuperconductingQubitModel,
 )
+from ctrl_freeq.setup.hamiltonian_generation.duffing_transmon import (
+    DuffingTransmonModel,
+)
 
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
     createHcs,
@@ -21,6 +24,7 @@ __all__ = [
     "HamiltonianModel",
     "SpinChainModel",
     "SuperconductingQubitModel",
+    "DuffingTransmonModel",
     "register_hamiltonian",
     "get_hamiltonian_class",
     "list_hamiltonians",

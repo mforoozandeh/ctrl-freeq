@@ -174,6 +174,8 @@ For systems comprising two or more qubits, the inter-qubit coupling parameters m
 | `coupling_type` | Coupling Type | `XY`, `ZZ`, or `XY+ZZ` | `XY` |
 | `sigma_J` | σ g | Coupling strength uncertainty | 0 |
 | `anharmonicities` | Anharmonicity (Hz) | Per-qubit anharmonicity α_i, used for ZZ computation | — |
+| `zz_crosstalk` | — | Calibrated static ZZ coupling matrix (Hz). Overrides perturbative formula | — |
+| `stark_shift_coeffs` | — | Per-qubit AC Stark shift coefficients \(s_i\) (dimensionless). Adds drive-dependent Z term | — |
 
 !!! info "Superconducting Coupling Types"
     Three coupling models are supported for superconducting qubit systems:
@@ -182,10 +184,42 @@ For systems comprising two or more qubits, the inter-qubit coupling parameters m
     - **ZZ** — Static ZZ coupling from anharmonicity-mediated frequency shifts
     - **XY+ZZ** — Both exchange and static ZZ terms
 
-    When the coupling type includes ZZ, the static ZZ interaction strength is approximated as \(\zeta_{ij} \approx 2\,g_{ij}^2 \left(\frac{1}{\alpha_i} + \frac{1}{\alpha_j}\right)\), where \(\alpha_i\) are the per-qubit anharmonicities.
+    When the coupling type includes ZZ, the static ZZ interaction is determined by the first available source (highest priority first):
+
+    1. Runtime `zz_instances` kwarg (per-snapshot)
+    2. Calibrated `zz_crosstalk` matrix (fixed, from constructor / config)
+    3. Perturbative formula: \(\zeta_{ij} \approx 2\,g_{ij}^2 \left(\frac{1}{\alpha_i} + \frac{1}{\alpha_j}\right)\)
+    4. Zero matrix
+
+!!! info "AC Stark Shift"
+    When `stark_shift_coeffs` is provided, an additional Z control channel per qubit is added, modelling the drive-dependent frequency shift (light shift):
+
+    \[
+    H_{\text{Stark}}(t) = \sum_i \frac{s_i}{2}\,(I_i^2 + Q_i^2)\,\Omega_{d,i}^2\;\sigma_z^{(i)}
+    \]
+
+    This increases `n_controls` from \(2N\) to \(3N\) qubits. The `stark_shift_coeffs` are dimensionless and specified as-is in the configuration (no Hz-to-rad/s conversion).
 
 !!! note "Shared JSON Keys"
     Both platforms use the `J` and `sigma_J` keys in the JSON configuration for cross-platform compatibility. The GUI relabels these as g_ij / σg for superconducting qubits.
+
+### Duffing Transmon (3-Level)
+
+When using `hamiltonian_type: "duffing_transmon"`, each transmon is modelled as a 3-level system (\(|0\rangle, |1\rangle, |2\rangle\)) to capture leakage outside the computational subspace. The Hilbert space dimension is \(3^{n_\text{qubits}}\).
+
+| Key | Description | Default | Units |
+|-----|-------------|---------|-------|
+| `anharmonicities` | Per-qubit anharmonicities α_i (**required**) | −330 MHz | Hz |
+| `coupling_type` | Currently `"XY"` only | `XY` | — |
+
+The drift Hamiltonian includes the number operator and anharmonicity:
+
+\[
+H_{\text{drift}} = \sum_i \bigl[\delta_i\,\hat{n}_i + \tfrac{\alpha_i}{2}\,\hat{n}_i(\hat{n}_i - I)\bigr] + \sum_{i<j} g_{ij}(a_i^\dagger a_j + a_i a_j^\dagger)
+\]
+
+!!! warning "Anharmonicities Required"
+    The `anharmonicities` parameter is mandatory for the Duffing transmon model. The 3-level structure is meaningless without it. Configurations that omit this field will raise a `ValueError`.
 
 ---
 

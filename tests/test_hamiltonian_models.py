@@ -3,6 +3,8 @@
 Tests cover:
 - SpinChainModel: drift, control ops, control amplitudes, equivalence with legacy
 - SuperconductingQubitModel: drift (qubit frequencies + coupling), control ops, ZZ coupling
+- SuperconductingQubitModel: calibrated ZZ (zz_crosstalk), AC Stark shift
+- DuffingTransmonModel: 3-level operators, embedding, leakage
 - pulse_hamiltonian_generic: equivalence with legacy pulse_hamiltonian
 - Plugin registry: registration, lookup, custom models, from_config, default_config
 """
@@ -21,6 +23,9 @@ from ctrl_freeq.setup.hamiltonian_generation.base import (
 from ctrl_freeq.setup.hamiltonian_generation.spin_chain import SpinChainModel
 from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
     SuperconductingQubitModel,
+)
+from ctrl_freeq.setup.hamiltonian_generation.duffing_transmon import (
+    DuffingTransmonModel,
 )
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
 from ctrl_freeq.setup.operator_generation.generate_operators import (
@@ -523,3 +528,407 @@ class TestDirectModelInjection:
         sc_model = SuperconductingQubitModel(1, coupling_type="XY")
         api = CtrlFreeQAPI(config, hamiltonian_model=sc_model)
         assert isinstance(api.parameters.hamiltonian_model, SuperconductingQubitModel)
+
+
+# ---------------------------------------------------------------------------
+# Tier 2A — Calibrated ZZ (zz_crosstalk) tests
+# ---------------------------------------------------------------------------
+
+
+class TestCalibratedZZ:
+    def test_zz_crosstalk_used_directly(self):
+        """When zz_crosstalk is provided, it should be used instead of the formula."""
+        zz_cal = np.array([[0.0, 1e6], [0.0, 0.0]])
+        model = SuperconductingQubitModel(2, coupling_type="XY+ZZ", zz_crosstalk=zz_cal)
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+        H0 = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
+        assert H0[0].shape == (4, 4)
+        np.testing.assert_allclose(H0[0], H0[0].conj().T, atol=1e-12)
+
+    def test_zz_crosstalk_differs_from_formula(self):
+        """Calibrated ZZ should produce different H0 than the formula."""
+        alpha = np.array([2 * np.pi * -330e6, 2 * np.pi * -330e6])
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+
+        model_formula = SuperconductingQubitModel(
+            2, coupling_type="XY+ZZ", anharmonicities=alpha
+        )
+        H0_formula = model_formula.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+
+        # Use a very different calibrated value
+        zz_cal = np.array([[0.0, 1e8], [0.0, 0.0]])
+        model_cal = SuperconductingQubitModel(
+            2, coupling_type="XY+ZZ", zz_crosstalk=zz_cal
+        )
+        H0_cal = model_cal.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+
+        assert not np.allclose(H0_formula[0], H0_cal[0])
+
+    def test_zz_instances_overrides_zz_crosstalk(self):
+        """Runtime zz_instances should override calibrated zz_crosstalk."""
+        zz_cal = np.array([[0.0, 1e6], [0.0, 0.0]])
+        zz_runtime = np.array([[0.0, 5e8], [0.0, 0.0]])
+
+        model = SuperconductingQubitModel(2, coupling_type="XY+ZZ", zz_crosstalk=zz_cal)
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+
+        H0_cal = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
+        H0_runtime = model.build_drift(
+            frequency_instances=[omega],
+            coupling_instances=[g],
+            zz_instances=[zz_runtime],
+        )
+
+        assert not np.allclose(H0_cal[0], H0_runtime[0])
+
+    def test_from_config_extracts_zz_crosstalk(self):
+        """from_config should extract and 2π-scale zz_crosstalk."""
+        params = {
+            "coupling_type": "XY+ZZ",
+            "zz_crosstalk": [[0.0, 1e6], [0.0, 0.0]],
+        }
+        model = SuperconductingQubitModel.from_config(2, params)
+        assert model.zz_crosstalk is not None
+        expected = 2 * np.pi * np.array([[0.0, 1e6], [0.0, 0.0]])
+        np.testing.assert_allclose(model.zz_crosstalk, expected)
+
+    def test_backward_compat_no_zz_crosstalk(self):
+        """Omitting zz_crosstalk should preserve existing formula behaviour."""
+        alpha = np.array([2 * np.pi * -330e6, 2 * np.pi * -330e6])
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+
+        model_old = SuperconductingQubitModel(
+            2, coupling_type="XY+ZZ", anharmonicities=alpha
+        )
+        model_new = SuperconductingQubitModel(
+            2,
+            coupling_type="XY+ZZ",
+            anharmonicities=alpha,
+            zz_crosstalk=None,
+        )
+
+        H0_old = model_old.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+        H0_new = model_new.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+        np.testing.assert_allclose(H0_old[0], H0_new[0], atol=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# Tier 2B — AC Stark shift tests
+# ---------------------------------------------------------------------------
+
+
+class TestACStarkShift:
+    def test_n_controls_without_stark(self):
+        model = SuperconductingQubitModel(2)
+        assert model.n_controls == 4
+
+    def test_n_controls_with_stark(self):
+        model = SuperconductingQubitModel(2, stark_shift_coeffs=[0.01, 0.01])
+        assert model.n_controls == 6  # 3 per qubit
+
+    def test_build_control_ops_without_stark(self):
+        model = SuperconductingQubitModel(2)
+        ops = model.build_control_ops()
+        assert len(ops) == 4  # X_0, Y_0, X_1, Y_1
+
+    def test_build_control_ops_with_stark(self):
+        model = SuperconductingQubitModel(2, stark_shift_coeffs=[0.01, 0.01])
+        ops = model.build_control_ops()
+        assert len(ops) == 6  # X_0, Y_0, Z_0, X_1, Y_1, Z_1
+        for op in ops:
+            np.testing.assert_allclose(op, op.conj().T, atol=1e-12)
+
+    def test_control_amplitudes_shape_with_stark(self):
+        model = SuperconductingQubitModel(2, stark_shift_coeffs=[0.01, 0.02])
+        n_pulse, n_rabi, n_h0 = 50, 2, 5
+        cx = torch.randn(n_pulse, 2)
+        cy = torch.randn(n_pulse, 2)
+        rabi = torch.rand(n_rabi, 2) * 1e7
+        u = model.control_amplitudes(cx, cy, rabi, n_h0)
+        assert u.shape == (n_pulse, n_rabi * n_h0, 6)
+
+    def test_z_amplitude_is_quadratic(self):
+        """Z channel amplitude should be s*(I²+Q²)*Ω²."""
+        s = np.array([0.5, 0.3])
+        model = SuperconductingQubitModel(2, stark_shift_coeffs=s)
+
+        cx = torch.tensor([[1.0, 2.0]])
+        cy = torch.tensor([[3.0, 4.0]])
+        rabi = torch.tensor([[10.0, 10.0]])
+
+        u = model.control_amplitudes(cx, cy, rabi, n_h0=1)
+        # u has shape (1, 1, 6): [I_0*Ω, Q_0*Ω, s_0*(I²+Q²)*Ω², I_1*Ω, Q_1*Ω, s_1*(I²+Q²)*Ω²]
+
+        # Qubit 0: s=0.5, I=1, Q=3, Ω=10  → Z = 0.5*(1+9)*100 = 500
+        expected_z0 = s[0] * (1.0**2 + 3.0**2) * 10.0**2
+        assert abs(u[0, 0, 2].item() - expected_z0) < 1e-6
+
+        # Qubit 1: s=0.3, I=2, Q=4, Ω=10  → Z = 0.3*(4+16)*100 = 600
+        expected_z1 = s[1] * (2.0**2 + 4.0**2) * 10.0**2
+        assert abs(u[0, 0, 5].item() - expected_z1) < 1e-6
+
+    def test_stark_compatible_with_pulse_hamiltonian_generic(self):
+        """Stark-shift control amplitudes should work with einsum pipeline."""
+        model = SuperconductingQubitModel(2, stark_shift_coeffs=[0.01, 0.01])
+        ctrl_ops = model.control_ops_tensor()
+        assert ctrl_ops.shape == (6, 4, 4)
+
+        cx = torch.randn(20, 2, dtype=torch.float64)
+        cy = torch.randn(20, 2, dtype=torch.float64)
+        rabi = torch.rand(2, 2, dtype=torch.float64) * 1e7
+        u = model.control_amplitudes(cx, cy, rabi, n_h0=3)
+
+        Hp = pulse_hamiltonian_generic(u, ctrl_ops)
+        assert Hp.shape == (20, 6, 4, 4)
+
+    def test_from_config_extracts_stark_shift_coeffs(self):
+        params = {"stark_shift_coeffs": [0.01, 0.02]}
+        model = SuperconductingQubitModel.from_config(2, params)
+        assert model.stark_shift_coeffs is not None
+        np.testing.assert_allclose(model.stark_shift_coeffs, [0.01, 0.02])
+
+    def test_backward_compat_no_stark(self):
+        """Without Stark shift, behaviour should be identical to before."""
+        model_no_stark = SuperconductingQubitModel(2)
+        model_none = SuperconductingQubitModel(2, stark_shift_coeffs=None)
+
+        cx = torch.randn(20, 2)
+        cy = torch.randn(20, 2)
+        rabi = torch.rand(3, 2) * 1e7
+
+        u1 = model_no_stark.control_amplitudes(cx, cy, rabi, n_h0=5)
+        u2 = model_none.control_amplitudes(cx, cy, rabi, n_h0=5)
+        torch.testing.assert_close(u1, u2)
+
+
+# ---------------------------------------------------------------------------
+# Tier 3 — DuffingTransmonModel tests
+# ---------------------------------------------------------------------------
+
+
+class TestDuffingTransmonModel:
+    def test_registered_in_registry(self):
+        assert get_hamiltonian_class("duffing_transmon") is DuffingTransmonModel
+        assert "duffing_transmon" in list_hamiltonians()
+
+    def test_is_hamiltonian_model(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        assert isinstance(model, HamiltonianModel)
+
+    def test_dim_single_qubit(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        assert model.dim == 3
+
+    def test_dim_two_qubits(self):
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        assert model.dim == 9
+
+    def test_n_controls(self):
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        assert model.n_controls == 4
+
+    def test_anharmonicities_required(self):
+        with pytest.raises(ValueError, match="requires anharmonicities"):
+            DuffingTransmonModel(1, anharmonicities=None)
+
+    def test_build_drift_hermitian(self):
+        model = DuffingTransmonModel(
+            2, anharmonicities=np.array([2 * np.pi * -330e6, 2 * np.pi * -330e6])
+        )
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+        H0 = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
+        assert H0[0].shape == (9, 9)
+        np.testing.assert_allclose(H0[0], H0[0].conj().T, atol=1e-12)
+
+    def test_anharmonicity_structure_single_qubit(self):
+        """Single-qubit drift diagonal should have correct level structure."""
+        alpha = 2 * np.pi * -330e6
+        omega = np.array([2 * np.pi * 5e9])
+        model = DuffingTransmonModel(1, anharmonicities=[alpha])
+        H0 = model.build_drift(frequency_instances=[omega])
+        H = H0[0]
+
+        # For single qubit: H = omega * n_hat + (alpha/2) * n_hat*(n_hat - I)
+        # n_hat = diag(0, 1, 2)
+        # n_hat*(n_hat-I) = diag(0, 0, 2)
+        # H = diag(0, omega, 2*omega) + diag(0, 0, alpha)
+        #   = diag(0, omega, 2*omega + alpha)
+        expected_diag = np.array([0, omega[0], 2 * omega[0] + alpha])
+        np.testing.assert_allclose(np.diag(H).real, expected_diag, rtol=1e-10)
+
+    def test_build_control_ops_count_and_hermiticity(self):
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        ops = model.build_control_ops()
+        assert len(ops) == 4
+        for op in ops:
+            assert op.shape == (9, 9)
+            np.testing.assert_allclose(op, op.conj().T, atol=1e-12)
+
+    def test_control_amplitudes_shape(self):
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        n_pulse, n_rabi, n_h0 = 50, 2, 5
+        cx = torch.randn(n_pulse, 2)
+        cy = torch.randn(n_pulse, 2)
+        rabi = torch.rand(n_rabi, 2) * 1e7
+        u = model.control_amplitudes(cx, cy, rabi, n_h0)
+        assert u.shape == (n_pulse, n_rabi * n_h0, 4)
+
+    def test_control_amplitudes_matches_superconducting(self):
+        """Duffing control amplitudes should match superconducting (same structure)."""
+        n_qubits = 2
+        alpha = [2 * np.pi * -330e6] * n_qubits
+        duff = DuffingTransmonModel(n_qubits, anharmonicities=alpha)
+        sc = SuperconductingQubitModel(n_qubits)
+
+        cx = torch.randn(20, n_qubits)
+        cy = torch.randn(20, n_qubits)
+        rabi = torch.rand(3, n_qubits) * 1e7
+
+        u_duff = duff.control_amplitudes(cx, cy, rabi, n_h0=5)
+        u_sc = sc.control_amplitudes(cx, cy, rabi, n_h0=5)
+
+        torch.testing.assert_close(u_duff, u_sc)
+
+
+class TestDuffingEmbedding:
+    def test_embed_computational_state_ground(self):
+        """Embedding |0> (2-level) should give |0> (3-level)."""
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        state_2 = np.array([1, 0], dtype=complex)
+        state_3 = model.embed_computational_state(state_2)
+        assert state_3.shape == (3,)
+        np.testing.assert_allclose(state_3, [1, 0, 0])
+
+    def test_embed_computational_state_excited(self):
+        """Embedding |1> (2-level) should give |1> (3-level)."""
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        state_2 = np.array([0, 1], dtype=complex)
+        state_3 = model.embed_computational_state(state_2)
+        np.testing.assert_allclose(state_3, [0, 1, 0])
+
+    def test_embed_two_qubit_state(self):
+        """Embedding |01> (4-dim) should give correct 9-dim state."""
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        # |01> = [0, 1, 0, 0] in 2^2 = 4 dimensional space
+        state_4 = np.array([0, 1, 0, 0], dtype=complex)
+        state_9 = model.embed_computational_state(state_4)
+        assert state_9.shape == (9,)
+        # |01> in 3^2 = 9 dim:
+        # qubit 0 = |1>, qubit 1 = |0>
+        # index = 1*3^0 + 0*3^1 = 1
+        expected = np.zeros(9, dtype=complex)
+        expected[1] = 1.0
+        np.testing.assert_allclose(state_9, expected)
+
+    def test_embed_computational_gate_x(self):
+        """Embedding Pauli X should flip |0>↔|1> and leave |2> unchanged."""
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        X = np.array([[0, 1], [1, 0]], dtype=complex)
+        X_embed = model.embed_computational_gate(X)
+        assert X_embed.shape == (3, 3)
+
+        # Apply to |0> → should give |1>
+        result = X_embed @ np.array([1, 0, 0], dtype=complex)
+        np.testing.assert_allclose(result, [0, 1, 0], atol=1e-12)
+
+        # Apply to |2> → should give |2> (identity on leakage subspace)
+        result = X_embed @ np.array([0, 0, 1], dtype=complex)
+        np.testing.assert_allclose(result, [0, 0, 1], atol=1e-12)
+
+    def test_embed_gate_is_unitary(self):
+        """Embedded gate should be unitary."""
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        H = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+        H_embed = model.embed_computational_gate(H)
+        np.testing.assert_allclose(H_embed @ H_embed.conj().T, np.eye(3), atol=1e-12)
+
+
+class TestDuffingLeakage:
+    def test_leakage_zero_for_computational_state(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        state = np.array([0, 1, 0], dtype=complex)  # |1> — computational
+        assert abs(model.leakage(state)) < 1e-12
+
+    def test_leakage_one_for_pure_leakage_state(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        state = np.array([0, 0, 1], dtype=complex)  # |2> — leakage
+        assert abs(model.leakage(state) - 1.0) < 1e-12
+
+    def test_leakage_partial(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        # 50% in |1>, 50% in |2>
+        state = np.array([0, 1, 1], dtype=complex) / np.sqrt(2)
+        assert abs(model.leakage(state) - 0.5) < 1e-12
+
+    def test_leakage_with_torch_tensor(self):
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        state = torch.tensor([0, 0, 1], dtype=torch.complex128)
+        assert abs(model.leakage(state) - 1.0) < 1e-12
+
+    def test_leakage_two_qubit(self):
+        """Leakage for a 2-qubit state with some |2> population."""
+        model = DuffingTransmonModel(2, anharmonicities=[2 * np.pi * -330e6] * 2)
+        # |00> in 3^2 space = index 0 — computational
+        state = np.zeros(9, dtype=complex)
+        state[0] = 1.0
+        assert abs(model.leakage(state)) < 1e-12
+
+        # |20> in 3^2 space = index 0*3^0 + 2*3^1 = 6 — leakage
+        state2 = np.zeros(9, dtype=complex)
+        state2[6] = 1.0
+        assert abs(model.leakage(state2) - 1.0) < 1e-12
+
+
+class TestDuffingPulseHamiltonianGenericCompat:
+    def test_einsum_compatible(self):
+        """pulse_hamiltonian_generic should work with Duffing model."""
+        model = DuffingTransmonModel(1, anharmonicities=[2 * np.pi * -330e6])
+        ctrl_ops = model.control_ops_tensor()
+        assert ctrl_ops.shape == (2, 3, 3)
+
+        cx = torch.randn(10, 1, dtype=torch.float64)
+        cy = torch.randn(10, 1, dtype=torch.float64)
+        rabi = torch.rand(2, 1, dtype=torch.float64) * 1e7
+        u = model.control_amplitudes(cx, cy, rabi, n_h0=3)
+
+        Hp = pulse_hamiltonian_generic(u, ctrl_ops)
+        assert Hp.shape == (10, 6, 3, 3)
+
+
+class TestDuffingFromConfig:
+    def test_from_config_with_anharmonicities(self):
+        params = {
+            "coupling_type": "XY",
+            "anharmonicities": [-330e6, -330e6],
+        }
+        model = DuffingTransmonModel.from_config(2, params)
+        assert model.dim == 9
+        expected = 2 * np.pi * np.array([-330e6, -330e6])
+        np.testing.assert_allclose(model.anharmonicities, expected)
+
+    def test_from_config_without_anharmonicities_raises(self):
+        with pytest.raises(ValueError, match="requires anharmonicities"):
+            DuffingTransmonModel.from_config(2, {})
+
+    def test_default_config_round_trip(self):
+        config = DuffingTransmonModel.default_config(2)
+        assert config["hamiltonian_type"] == "duffing_transmon"
+        assert "anharmonicities" in config["parameters"]
+
+        # Should be constructible via from_config
+        cls = get_hamiltonian_class(config["hamiltonian_type"])
+        model = cls.from_config(len(config["qubits"]), config["parameters"])
+        assert model.dim == 9
