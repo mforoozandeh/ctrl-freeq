@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - MathJax rendering for all mathematical notation in the documentation (`pymdownx.arithmatex` with MathJax 3).
 - Documentation: step-by-step guide for adding custom Hamiltonian models (define, import, use), with registry and direct-injection workflows.
 - API demo notebook section 8d: `default_config` usage and direct model injection examples.
+- API demo notebook section 9: Duffing transmon demos — single-qubit inversion (9a), leakage measurement (9b), two-qubit iSWAP (9c), custom anharmonicities (9d), and DRAG vs ctrl-freeq comparison (9e).
 
 ### Changed
 
@@ -36,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `SuperconductingQubitModel` docstrings now explicitly document the rotating-frame convention, sign/scaling conventions (rad/s, spin-½ Paulis), and the distinction between exchange coupling (g) and static ZZ (ζ).
 - Default two-qubit gate is now Hamiltonian-type-aware: CNOT for spin chains, iSWAP for superconducting qubits.
 - Gate entry fields in the GUI are now dropdown menus (Combobox) with available gates filtered by qubit count and Hamiltonian type.
+- Plotter functions (`compute_and_store_evolution`, `get_final_rho_for_excitation_profile`) are now model-aware: they use `HamiltonianModel.build_control_ops()` and `model.dim` when available, falling back to legacy Pauli operators for standard qubit models.
+- State embedding (`_embed_states_for_model`) now also embeds raw initial states (`self.init`) and observable operators (`self.obs_op`) into the model's Hilbert space, ensuring all six plot types (IQ, amplitude/phase, history, observables, Bloch sphere, excitation profile) work correctly with higher-dimensional models like `DuffingTransmonModel`.
 - Backward compatibility is maintained: configurations without `hamiltonian_type` continue to use the legacy spin-chain code path. All new parameters (`zz_crosstalk`, `stark_shift_coeffs`) default to `None` and are fully backward-compatible.
 - API reference: constructor and `run_from_config` signatures now document the `hamiltonian_model` parameter for direct model injection.
 - Parameter reference: `hamiltonian_type` field now links to the model registry documentation and notes support for custom registered models.

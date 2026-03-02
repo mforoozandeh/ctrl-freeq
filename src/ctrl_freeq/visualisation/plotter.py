@@ -1322,12 +1322,14 @@ def linear_distribution(center, band, num_points):
 def get_final_rho_for_excitation_profile(x, p, rho_0, num_points):
     duration = p.pulse_duration
     wf_mode = p.wf_mode
-    op = p.op
     mat = p.mat
     n_qubits = p.n_qubits
     n_para = p.n_para_updated
     peak_amplitudes = p.Omega_R_max
     space = p.space
+
+    # Get per-qubit control operators (model-aware or legacy)
+    qubit_ctrl_ops = _get_control_ops_for_plotter(p)
 
     # Sample list of parameters
     parameters = torch.split(x.detach().clone(), list(n_para))
@@ -1371,7 +1373,8 @@ def get_final_rho_for_excitation_profile(x, p, rho_0, num_points):
         modulated_waveform = np.multiply(c, modulation_exponent)
         cx = modulated_waveform.real
         cy = modulated_waveform.imag
-        pulse_params.append((cx, cy, op[f"X_{i + 1}"], op[f"Y_{i + 1}"]))
+        Ix, Iy = qubit_ctrl_ops[i]
+        pulse_params.append((cx, cy, Ix, Iy))
         amps.append(amp_np)
         phis.append(phi_np)
         cxs.append(cx)
@@ -1436,6 +1439,29 @@ def calculate_observable(state, operator, n_qubits, space_type="hilbert"):
         raise ValueError("Invalid space type. Choose 'liouville' or 'hilbert'.")
 
 
+def _get_control_ops_for_plotter(p):
+    """Return per-qubit (Ix, Iy) operators for the plotter.
+
+    When a ``hamiltonian_model`` is available, uses its ``build_control_ops``
+    (which may return 3×3 or higher-dim operators).  Otherwise falls back to
+    the legacy ``p.op`` dictionary of 2×2 Pauli operators.
+    """
+    model = getattr(p, "hamiltonian_model", None)
+    if model is not None:
+        ctrl_ops = model.build_control_ops()
+        # First 2 ops per qubit are X-drive and Y-drive
+        qubit_ops = []
+        for i in range(p.n_qubits):
+            qubit_ops.append((ctrl_ops[2 * i], ctrl_ops[2 * i + 1]))
+        return qubit_ops
+
+    # Legacy path: use p.op Pauli dictionary
+    qubit_ops = []
+    for i in range(p.n_qubits):
+        qubit_ops.append((p.op[f"X_{i + 1}"], p.op[f"Y_{i + 1}"]))
+    return qubit_ops
+
+
 def compute_and_store_evolution(x, p, rho_0):
     """
     Visualize the time evolution of each element of the density matrix during pulse application in a compact manner.
@@ -1450,7 +1476,6 @@ def compute_and_store_evolution(x, p, rho_0):
     H_0 = p.H0
     t = p.t
     wf_mode = p.wf_mode
-    op = p.op
     mat = p.mat
     n_qubits = p.n_qubits
     n_para = p.n_para_updated
@@ -1458,6 +1483,9 @@ def compute_and_store_evolution(x, p, rho_0):
     H0_mean = _get_mean_H0(p)
 
     dt = t[1] - t[0]
+
+    # Get per-qubit control operators (model-aware or legacy)
+    qubit_ctrl_ops = _get_control_ops_for_plotter(p)
 
     wf_fun = []
 
@@ -1501,13 +1529,16 @@ def compute_and_store_evolution(x, p, rho_0):
         modulated_waveform = np.multiply(c, modulation_exponent)
         cx = modulated_waveform.real
         cy = modulated_waveform.imag
-        pulse_params.append((cx, cy, op[f"X_{i + 1}"], op[f"Y_{i + 1}"]))
+        Ix, Iy = qubit_ctrl_ops[i]
+        pulse_params.append((cx, cy, Ix, Iy))
         amps.append(amp_np)
         phis.append(phi_np)
         cxs.append(cx)
         cys.append(cy)
 
-    n = 2**n_qubits
+    # Use model dimension when available (e.g. 3^n for Duffing), else 2^n
+    model = getattr(p, "hamiltonian_model", None)
+    n = model.dim if model is not None else 2**n_qubits
     instances = len(H_0)
     time_steps = len(pulse_params[0][0])
     if p.space == "hilbert":

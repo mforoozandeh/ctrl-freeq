@@ -182,11 +182,23 @@ class Initialise:
             # Standard 2-level model — no embedding needed
             return
 
-        # Embed initial and target state vectors
+        # Embed initial and target state vectors (used by optimizer)
         if hasattr(self, "initials") and self.initials is not None:
-            self.initials = [model.embed_computational_state(s) for s in self.initials]
+            embedded = [model.embed_computational_state(s) for s in self.initials]
+            self.initials = np.array(embedded)
         if hasattr(self, "targets") and self.targets is not None:
-            self.targets = [model.embed_computational_state(s) for s in self.targets]
+            embedded = [model.embed_computational_state(s) for s in self.targets]
+            self.targets = np.array(embedded)
+
+        # Embed raw init states (used by plotter for evolution replay)
+        if hasattr(self, "init") and self.init is not None:
+            self.init = [model.embed_computational_state(s) for s in self.init]
+
+        # Embed observable operators into the full space so plots work
+        if hasattr(self, "obs_op") and self.obs_op is not None:
+            self.obs_op = {
+                k: model.embed_computational_gate(v) for k, v in self.obs_op.items()
+            }
 
     def __str__(self):
         return (
