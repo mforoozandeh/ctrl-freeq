@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Documentation: step-by-step guide for adding custom Hamiltonian models (define, import, use), with registry and direct-injection workflows.
 - API demo notebook section 8d: `default_config` usage and direct model injection examples.
 - API demo notebook section 9: Duffing transmon demos — single-qubit inversion (9a), leakage measurement (9b), two-qubit iSWAP (9c), custom anharmonicities (9d), and DRAG vs ctrl-freeq comparison (9e).
+- `tests/test_dissipation.py` — 20 tests covering collapse-operator construction, dephasing-rate correctness, T1/T2 input validation, dissipative + non-2-level model guard, and Lindblad dissipator algebraic properties (trace-zero, hermiticity preservation). This path previously had zero test coverage.
 
 ### Changed
 
@@ -42,6 +43,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Backward compatibility is maintained: configurations without `hamiltonian_type` continue to use the legacy spin-chain code path. All new parameters (`zz_crosstalk`, `stark_shift_coeffs`) default to `None` and are fully backward-compatible.
 - API reference: constructor and `run_from_config` signatures now document the `hamiltonian_model` parameter for direct model injection.
 - Parameter reference: `hamiltonian_type` field now links to the model registry documentation and notes support for custom registered models.
+
+### Fixed
+
+- Fixed pure-dephasing rate being off by 2×. Dephasing collapse operator changed from `√γ_φ · σ_z/2` to `√(γ_φ/2) · σ_z` so the Lindblad dissipator yields the correct off-diagonal decay rate `dρ₀₁/dt = −γ_φ · ρ₀₁` matching the physical T₂ convention.
+- Fixed model injection via `CtrlFreeQAPI` leaving state dimensions inconsistent with the injected model. The override path now calls `_embed_states_for_model()` after replacement, with an idempotency guard that skips re-embedding when states are already at the target dimension and raises `ValueError` for incompatible dimensions.
+- Fixed ZZ coupling terms being silently skipped unless `coupling_instances` was provided. Calibrated `zz_crosstalk` and runtime `zz_instances` now work independently of exchange-coupling matrices. The perturbative formula still requires `coupling_instances` (as it uses g_{ij}).
+- Fixed invalid `T1`/`T2` inputs (zero, negative, infinity, NaN) producing `NaN`/`inf` collapse operators instead of failing. Validation now enforces positive finite values before computing decay rates.
+- Fixed dissipative mode silently producing invalid results with non-2-level Hamiltonian models (e.g. `DuffingTransmonModel`). The combination now raises `ValueError` at init time, since collapse operators and Liouville-space embedding are hard-coded for 2-level systems.
+- Fixed `DuffingTransmonModel` silently accepting unsupported `coupling_type` values. The constructor now raises `ValueError` for anything other than `"XY"`.
+- Fixed inconsistent snapshot semantics across Hamiltonian models. `SpinChainModel.build_drift` now uses repeat-last-element semantics for mismatched `coupling_instances` length, matching `SuperconductingQubitModel` and `DuffingTransmonModel`.
+- Fixed `createHJ` defaulting to lowercase `"z"` which silently failed the uppercase comparison and returned a zero matrix. Input is now normalised via `.upper()`, `None` falls back to `"Z"`, and the docstring lists the actual accepted values.
+- Fixed `build_collapse_operators` docstring claiming it returns tuples `(L, L_dag, L_dag_L)` when it actually returns `np.ndarray` of shape `(n_ops, D, D)` or `None`.
 
 ## [0.2.0] — 2026-02-25
 
