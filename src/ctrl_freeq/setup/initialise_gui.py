@@ -81,10 +81,21 @@ class Initialise:
         if self.dissipation_mode == "dissipative":
             # Force Liouville space for dissipative evolution
             self.space = "liouville"
-            self.T1 = np.array(data["parameters"]["T1"])
-            self.T2 = np.array(data["parameters"]["T2"])
-            # Validate T2 <= 2*T1 (physical constraint)
+            self.T1 = np.array(data["parameters"]["T1"], dtype=float)
+            self.T2 = np.array(data["parameters"]["T2"], dtype=float)
+            # Validate T1/T2 are positive and finite
             for i in range(self.n_qubits):
+                if not (np.isfinite(self.T1[i]) and self.T1[i] > 0):
+                    raise ValueError(
+                        f"Qubit {i + 1}: T1 must be positive and finite, "
+                        f"got {self.T1[i]}"
+                    )
+                if not (np.isfinite(self.T2[i]) and self.T2[i] > 0):
+                    raise ValueError(
+                        f"Qubit {i + 1}: T2 must be positive and finite, "
+                        f"got {self.T2[i]}"
+                    )
+                # Physical constraint: T2 <= 2*T1
                 if self.T2[i] > 2 * self.T1[i]:
                     raise ValueError(
                         f"Qubit {i + 1}: T2 ({self.T2[i]:.2e}) must be <= 2*T1 ({2 * self.T1[i]:.2e})"
@@ -141,6 +152,24 @@ class Initialise:
         # Build Hamiltonian model (if hamiltonian_type is specified in config)
         self.hamiltonian_type = data.get("hamiltonian_type", None)
         self.hamiltonian_model = self._build_hamiltonian_model(data)
+
+        # Guard: dissipative mode is only supported for 2-level models.
+        # Collapse operators are built from 2×2 Pauli matrices and the
+        # liouville state-embedding path expects state vectors, not density
+        # matrices.  Block the combination until model-aware dissipation is
+        # implemented.
+        if (
+            self.hamiltonian_model is not None
+            and self.hamiltonian_model.dim != 2**self.n_qubits
+            and self.dissipation_mode == "dissipative"
+        ):
+            raise ValueError(
+                f"Dissipative mode is not yet supported for models with "
+                f"local dimension > 2 (model dim = {self.hamiltonian_model.dim}, "
+                f"computational dim = {2**self.n_qubits}). "
+                f"Collapse operators and Liouville-space embedding are "
+                f"currently hard-coded for 2-level systems."
+            )
 
         # Embed states/gates into model Hilbert space (e.g. 3-level Duffing)
         if self.hamiltonian_model is not None:
@@ -861,13 +890,17 @@ class Initialise:
 
         For qubit i:
           - Amplitude damping: L1_i = sqrt(gamma1_i) * (sigma_minus_i ⊗ I_rest)
-          - Pure dephasing:    L2_i = sqrt(gamma_phi_i) * (sigma_z_i/2 ⊗ I_rest)
+          - Pure dephasing:    L2_i = sqrt(gamma_phi_i / 2) * (sigma_z_i ⊗ I_rest)
 
         where gamma1 = 1/T1, gamma_phi = 1/T2 - 1/(2*T1).
 
+        The dephasing operator is chosen so that the Lindblad dissipator
+        D[L2]ρ = (gamma_phi/2)(σ_z ρ σ_z − ρ) yields off-diagonal decay
+        dρ_01/dt = −gamma_phi · ρ_01, matching the physical T2 convention.
+
         Returns:
-            list of tuples (L, L_dag, L_dag_L): each collapse operator with
-            its pre-computed adjoint and L†L product.
+            np.ndarray of shape ``(n_ops, D, D)`` containing the collapse
+            operators, or ``None`` if no dissipation channels are active.
         """
         identity = np.eye(2, dtype=complex)
 
@@ -895,9 +928,12 @@ class Initialise:
                 L1 = np.sqrt(gamma1) * tensor_op(sigma_minus, i)
                 collapse_ops.append(L1)
 
-            # Pure dephasing operator
+            # Pure dephasing operator:
+            # L2 = sqrt(gamma_phi / 2) * sigma_z gives
+            # D[L2]rho = (gamma_phi/2)(sigma_z rho sigma_z - rho),
+            # i.e. off-diagonal decay rate = gamma_phi.
             if gamma_phi > 0:
-                L2 = np.sqrt(gamma_phi) * tensor_op(0.5 * sigma_z, i)
+                L2 = np.sqrt(gamma_phi / 2.0) * tensor_op(sigma_z, i)
                 collapse_ops.append(L2)
 
         return np.array(collapse_ops) if collapse_ops else None

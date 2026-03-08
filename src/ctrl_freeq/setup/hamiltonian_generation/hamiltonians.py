@@ -35,8 +35,8 @@ def createHJ(Jmat, Op, coupling_type="Z"):
     Returns:
     - numpy.ndarray: The interaction sub-Hamiltonian.
     """
-    # Normalise legacy lowercase values
-    coupling_type = coupling_type.upper()
+    # Normalise legacy lowercase values; fall back to default if None
+    coupling_type = (coupling_type or "Z").upper()
 
     nspins = Jmat.shape[0]
     HJ = np.zeros_like(Op["X_1"], dtype=complex)
