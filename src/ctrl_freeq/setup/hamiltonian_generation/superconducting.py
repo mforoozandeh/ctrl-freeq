@@ -192,54 +192,52 @@ class SuperconductingQubitModel(HamiltonianModel):
             for i in range(self.n_qubits):
                 H += omega[i] * self._Z[i]
 
-            # Coupling terms
+            # XY coupling terms (require coupling_instances)
+            g = None
             if coupling_instances is not None and self.n_qubits > 1:
                 g = (
                     coupling_instances[idx]
                     if idx < len(coupling_instances)
                     else coupling_instances[-1]
                 )
-                use_xy = "XY" in self.coupling_type
-                use_zz = "ZZ" in self.coupling_type
+                if "XY" in self.coupling_type:
+                    for i in range(self.n_qubits):
+                        for j in range(i + 1, self.n_qubits):
+                            if g[i, j] != 0:
+                                # Exchange coupling: g_{ij} (X_i X_j + Y_i Y_j)
+                                H += g[i, j] * (
+                                    self._X[i] @ self._X[j] + self._Y[i] @ self._Y[j]
+                                )
+
+            # ZZ coupling (independent of coupling_instances for calibrated sources)
+            if "ZZ" in self.coupling_type and self.n_qubits > 1:
+                # ZZ priority chain: zz_instances > zz_crosstalk > formula
+                if zz_instances is not None:
+                    zz = (
+                        zz_instances[idx]
+                        if idx < len(zz_instances)
+                        else zz_instances[-1]
+                    )
+                elif self.zz_crosstalk is not None:
+                    zz = self.zz_crosstalk
+                elif self.anharmonicities is not None and g is not None:
+                    # Perturbative static ZZ from anharmonicity:
+                    # zeta_{ij} ~ 2 g_{ij}^2 (1/alpha_i + 1/alpha_j)
+                    alpha = self.anharmonicities
+                    zz = np.zeros((self.n_qubits, self.n_qubits))
+                    for i in range(self.n_qubits):
+                        for j in range(i + 1, self.n_qubits):
+                            if alpha[i] != 0 and alpha[j] != 0:
+                                zz[i, j] = (
+                                    2 * g[i, j] ** 2 * (1.0 / alpha[i] + 1.0 / alpha[j])
+                                )
+                else:
+                    zz = np.zeros((self.n_qubits, self.n_qubits))
 
                 for i in range(self.n_qubits):
                     for j in range(i + 1, self.n_qubits):
-                        if use_xy and g[i, j] != 0:
-                            # Exchange coupling: g_{ij} (X_i X_j + Y_i Y_j)
-                            H += g[i, j] * (
-                                self._X[i] @ self._X[j] + self._Y[i] @ self._Y[j]
-                            )
-
-                if use_zz:
-                    # ZZ priority chain: zz_instances > zz_crosstalk > formula
-                    if zz_instances is not None:
-                        zz = (
-                            zz_instances[idx]
-                            if idx < len(zz_instances)
-                            else zz_instances[-1]
-                        )
-                    elif self.zz_crosstalk is not None:
-                        zz = self.zz_crosstalk
-                    elif self.anharmonicities is not None:
-                        # Perturbative static ZZ from anharmonicity:
-                        # zeta_{ij} ~ 2 g_{ij}^2 (1/alpha_i + 1/alpha_j)
-                        alpha = self.anharmonicities
-                        zz = np.zeros((self.n_qubits, self.n_qubits))
-                        for i in range(self.n_qubits):
-                            for j in range(i + 1, self.n_qubits):
-                                if alpha[i] != 0 and alpha[j] != 0:
-                                    zz[i, j] = (
-                                        2
-                                        * g[i, j] ** 2
-                                        * (1.0 / alpha[i] + 1.0 / alpha[j])
-                                    )
-                    else:
-                        zz = np.zeros((self.n_qubits, self.n_qubits))
-
-                    for i in range(self.n_qubits):
-                        for j in range(i + 1, self.n_qubits):
-                            if zz[i, j] != 0:
-                                H += zz[i, j] * (self._Z[i] @ self._Z[j])
+                        if zz[i, j] != 0:
+                            H += zz[i, j] * (self._Z[i] @ self._Z[j])
 
             H0_list.append(H)
 

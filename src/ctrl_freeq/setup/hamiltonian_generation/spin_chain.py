@@ -63,7 +63,12 @@ class SpinChainModel(HamiltonianModel):
             for Delta in frequency_instances:
                 H0_list.append(createHcs(Delta, self._op))
         else:
-            for Delta, J in zip(frequency_instances, coupling_instances):
+            for idx, Delta in enumerate(frequency_instances):
+                J = (
+                    coupling_instances[idx]
+                    if idx < len(coupling_instances)
+                    else coupling_instances[-1]
+                )
                 Hcs = createHcs(Delta, self._op)
                 HJ = createHJ(J, self._op, coupling_type=self.coupling_type)
                 H0_list.append(HJ + Hcs)

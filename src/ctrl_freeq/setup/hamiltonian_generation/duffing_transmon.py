@@ -85,6 +85,11 @@ class DuffingTransmonModel(HamiltonianModel):
                 "DuffingTransmonModel requires anharmonicities — "
                 "the 3-level structure is meaningless without them."
             )
+        if coupling_type != "XY":
+            raise ValueError(
+                f"DuffingTransmonModel only supports coupling_type='XY', "
+                f"got '{coupling_type}'."
+            )
         self.n_qubits = n_qubits
         self.coupling_type = coupling_type
         self.anharmonicities = np.asarray(anharmonicities, dtype=float)

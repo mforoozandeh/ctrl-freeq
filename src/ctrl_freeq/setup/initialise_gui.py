@@ -175,30 +175,62 @@ class Initialise:
         larger local dimensions (e.g. DuffingTransmonModel with dim = 3^n),
         the ``embed_computational_state`` / ``embed_computational_gate``
         methods re-map the 2^n vectors/matrices into the full space.
+
+        Idempotent: if states are already at the model dimension, this is
+        a no-op.  Raises ``ValueError`` if states are at an incompatible
+        dimension (e.g. embedded for a different non-2-level model).
         """
         model = self.hamiltonian_model
         d_comp = 2**self.n_qubits
-        if model.dim == d_comp:
+        d_model = model.dim
+        if d_model == d_comp:
             # Standard 2-level model — no embedding needed
             return
 
+        def _check_and_embed_states(states, label):
+            """Return embedded states, or the originals if already embedded."""
+            if states is None:
+                return None
+            dim = states[0].shape[-1] if hasattr(states[0], "shape") else len(states[0])
+            if dim == d_model:
+                return states  # already at target dimension
+            if dim != d_comp:
+                raise ValueError(
+                    f"{label} have dimension {dim}, which is incompatible "
+                    f"with both the computational dimension ({d_comp}) and "
+                    f"the model dimension ({d_model}). Cannot re-embed — "
+                    f"re-initialise from the config instead."
+                )
+            return [model.embed_computational_state(s) for s in states]
+
         # Embed initial and target state vectors (used by optimizer)
         if hasattr(self, "initials") and self.initials is not None:
-            embedded = [model.embed_computational_state(s) for s in self.initials]
-            self.initials = np.array(embedded)
+            self.initials = np.array(
+                _check_and_embed_states(self.initials, "Initial states")
+            )
         if hasattr(self, "targets") and self.targets is not None:
-            embedded = [model.embed_computational_state(s) for s in self.targets]
-            self.targets = np.array(embedded)
+            self.targets = np.array(
+                _check_and_embed_states(self.targets, "Target states")
+            )
 
         # Embed raw init states (used by plotter for evolution replay)
         if hasattr(self, "init") and self.init is not None:
-            self.init = [model.embed_computational_state(s) for s in self.init]
+            self.init = _check_and_embed_states(self.init, "Raw init states")
 
         # Embed observable operators into the full space so plots work
         if hasattr(self, "obs_op") and self.obs_op is not None:
-            self.obs_op = {
-                k: model.embed_computational_gate(v) for k, v in self.obs_op.items()
-            }
+            new_ops = {}
+            for k, v in self.obs_op.items():
+                if v.shape[0] == d_model:
+                    new_ops[k] = v  # already embedded
+                elif v.shape[0] == d_comp:
+                    new_ops[k] = model.embed_computational_gate(v)
+                else:
+                    raise ValueError(
+                        f"Observable operator '{k}' has dimension {v.shape[0]}, "
+                        f"incompatible with model dimension {d_model}."
+                    )
+            self.obs_op = new_ops
 
     def __str__(self):
         return (

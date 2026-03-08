@@ -89,6 +89,7 @@ class CtrlFreeQAPI:
         # Override model if user provided one directly
         if hamiltonian_model is not None:
             self.parameters.hamiltonian_model = hamiltonian_model
+            self.parameters._embed_states_for_model()
             self.parameters.H0 = self.parameters.get_H0()
 
     def _preprocess_config(self, config: Dict[str, Any]) -> Dict[str, Any]:

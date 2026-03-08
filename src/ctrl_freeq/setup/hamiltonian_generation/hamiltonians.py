@@ -22,7 +22,7 @@ def createHcs(cs_vals, Op):
     return Hcs
 
 
-def createHJ(Jmat, Op, coupling_type="z"):
+def createHJ(Jmat, Op, coupling_type="Z"):
     """
     Generate the sub-Hamiltonian containing only the interaction part
     for either weak or strong coupling conditions.
@@ -30,11 +30,13 @@ def createHJ(Jmat, Op, coupling_type="z"):
     Args:
     - Jmat (numpy.ndarray): The interaction matrix.
     - Op (dict): The dictionary of spin operators.
-    - coupling_type (str): The type of coupling, either 'hetero' or 'homo'.
+    - coupling_type (str): The type of coupling: ``'Z'``, ``'XY'``, or ``'XYZ'``.
 
     Returns:
     - numpy.ndarray: The interaction sub-Hamiltonian.
     """
+    # Normalise legacy lowercase values
+    coupling_type = coupling_type.upper()
 
     nspins = Jmat.shape[0]
     HJ = np.zeros_like(Op["X_1"], dtype=complex)
