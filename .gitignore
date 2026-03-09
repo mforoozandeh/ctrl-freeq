@@ -80,6 +80,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+docs/release-notes.md
 
 # mypy
 .mypy_cache/

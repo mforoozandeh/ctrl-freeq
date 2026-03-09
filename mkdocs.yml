@@ -49,6 +49,9 @@ extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
+hooks:
+  - docs/hooks/changelog_copy.py
+
 nav:
   - Home: index.md
   - Installation: installation.md
@@ -60,4 +63,5 @@ nav:
     - Parameters: optimization/parameters.md
     - Compute (CPU/GPU): optimization/compute.md
   - Dashboard: dashboard.md
+  - Release Notes: release-notes.md
 
