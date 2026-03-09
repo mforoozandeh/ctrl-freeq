@@ -27,7 +27,11 @@ from ctrl_freeq.setup.hamiltonian_generation.superconducting import (
 from ctrl_freeq.setup.hamiltonian_generation.duffing_transmon import (
     DuffingTransmonModel,
 )
-from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
+from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
+    createHcs,
+    createHJ,
+    _symmetrise_coupling,
+)
 from ctrl_freeq.setup.operator_generation.generate_operators import (
     create_hamiltonian_basis,
     create_hamiltonian_basis_torch,
@@ -932,3 +936,108 @@ class TestDuffingFromConfig:
         cls = get_hamiltonian_class(config["hamiltonian_type"])
         model = cls.from_config(len(config["qubits"]), config["parameters"])
         assert model.dim == 9
+
+
+# ---------------------------------------------------------------------------
+# Coupling-matrix indexing and symmetrisation
+# ---------------------------------------------------------------------------
+
+
+class TestCouplingIndexing:
+    """Verify createHJ reads the correct triangle and symmetrises input."""
+
+    def _make_ops(self, n_qubits):
+        """Helper: build spin operators via Initialise."""
+        from ctrl_freeq.api import load_two_qubit_config
+
+        api = load_two_qubit_config()
+        return api.parameters.op
+
+    def test_upper_triangular_produces_nonzero_coupling(self):
+        """Bundled configs use upper-triangular J -- coupling must be non-zero."""
+        J = np.array([[0.0, 16.67e6], [0.0, 0.0]])
+        Op = self._make_ops(2)
+        HJ = createHJ(J, Op, coupling_type="XY")
+        assert np.linalg.norm(HJ) > 0
+
+    def test_lower_triangular_produces_same_result(self):
+        """Lower-triangular input should give the same Hamiltonian."""
+        Op = self._make_ops(2)
+        J_upper = np.array([[0.0, 16.67e6], [0.0, 0.0]])
+        J_lower = np.array([[0.0, 0.0], [16.67e6, 0.0]])
+        HJ_u = createHJ(J_upper, Op, coupling_type="XY")
+        HJ_l = createHJ(J_lower, Op, coupling_type="XY")
+        np.testing.assert_allclose(HJ_u, HJ_l)
+
+    def test_symmetric_produces_same_result(self):
+        """Fully symmetric input should give the same Hamiltonian."""
+        Op = self._make_ops(2)
+        J_upper = np.array([[0.0, 16.67e6], [0.0, 0.0]])
+        J_sym = np.array([[0.0, 16.67e6], [16.67e6, 0.0]])
+        HJ_u = createHJ(J_upper, Op, coupling_type="XY")
+        HJ_s = createHJ(J_sym, Op, coupling_type="XY")
+        np.testing.assert_allclose(HJ_u, HJ_s)
+
+    def test_all_coupling_types_nonzero(self):
+        """Z, XY, and XYZ coupling types should all produce non-zero output."""
+        J = np.array([[0.0, 16.67e6], [0.0, 0.0]])
+        Op = self._make_ops(2)
+        for ct in ("Z", "XY", "XYZ"):
+            HJ = createHJ(J, Op, coupling_type=ct)
+            assert np.linalg.norm(HJ) > 0, f"coupling_type={ct} gave zero"
+
+    def test_coupling_hamiltonian_is_hermitian(self):
+        J = np.array([[0.0, 16.67e6], [0.0, 0.0]])
+        Op = self._make_ops(2)
+        for ct in ("Z", "XY", "XYZ"):
+            HJ = createHJ(J, Op, coupling_type=ct)
+            np.testing.assert_allclose(HJ, HJ.conj().T, atol=1e-12)
+
+    def test_asymmetric_coupling_raises(self):
+        """Conflicting upper and lower entries should raise ValueError."""
+        J_bad = np.array([[0.0, 10.0], [20.0, 0.0]])
+        with pytest.raises(ValueError, match="asymmetric"):
+            _symmetrise_coupling(J_bad)
+
+    def test_consistent_equal_entries_accepted(self):
+        """Both triangles filled with the same value should be accepted."""
+        J = np.array([[0.0, 5.0], [5.0, 0.0]])
+        result = _symmetrise_coupling(J)
+        np.testing.assert_allclose(result, J)
+
+    def test_bundled_two_qubit_config_has_coupling(self):
+        """End-to-end: the bundled two_qubit_parameters.json must produce
+        a non-zero interaction Hamiltonian."""
+        from ctrl_freeq.api import load_two_qubit_config
+
+        api = load_two_qubit_config()
+        p = api.parameters
+        HJ = createHJ(p.Jmat, p.op, coupling_type=p.coupling_type)
+        assert np.linalg.norm(HJ) > 0, "Bundled two-qubit config produces zero coupling"
+
+
+class TestCouplingConsistencyAcrossModels:
+    """Verify superconducting and spin-chain models read the same triangle."""
+
+    def test_upper_triangular_nonzero_for_both_models(self):
+        """Both SpinChainModel and SuperconductingQubitModel should produce
+        non-zero drift from an upper-triangular coupling matrix."""
+        omega = np.array([2 * np.pi * 5e9, 2 * np.pi * 5.2e9])
+        g = np.array([[0.0, 2 * np.pi * 5e6], [0.0, 0.0]])
+
+        sc_model = SuperconductingQubitModel(2, coupling_type="XY")
+        H0_sc = sc_model.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+
+        spin_model = SpinChainModel(2, coupling_type="XY")
+        H0_spin = spin_model.build_drift(
+            frequency_instances=[omega], coupling_instances=[g]
+        )
+
+        # Both should have non-zero off-diagonal coupling contribution
+        # (exact values differ due to operator conventions but both must be non-zero)
+        sc_offdiag = np.linalg.norm(H0_sc[0] - np.diag(np.diag(H0_sc[0])))
+        spin_offdiag = np.linalg.norm(H0_spin[0] - np.diag(np.diag(H0_spin[0])))
+        assert sc_offdiag > 0, "SuperconductingQubitModel coupling is zero"
+        assert spin_offdiag > 0, "SpinChainModel coupling is zero"

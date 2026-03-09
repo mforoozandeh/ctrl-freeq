@@ -30,6 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - API demo notebook section 8d: `default_config` usage and direct model injection examples.
 - API demo notebook section 9: Duffing transmon demos — single-qubit inversion (9a), leakage measurement (9b), two-qubit iSWAP (9c), custom anharmonicities (9d), and DRAG vs ctrl-freeq comparison (9e).
 - `tests/test_dissipation.py` — 20 tests covering collapse-operator construction, dephasing-rate correctness, T1/T2 input validation, dissipative + non-2-level model guard, and Lindblad dissipator algebraic properties (trace-zero, hermiticity preservation). This path previously had zero test coverage.
+- `tests/test_optimizer_spaces.py` — comprehensive test of all 19 supported optimizers (9 torchmin + 10 qiskit) across Hilbert, Liouville, and dissipative spaces, plus cross-space consistency checks.
+- Coupling-matrix indexing and symmetrisation tests in `test_hamiltonian_models.py`: verifies upper/lower/symmetric inputs produce identical Hamiltonians, asymmetric matrices are rejected, and all coupling types (Z, XY, XYZ) produce non-zero output with bundled configs.
 
 ### Changed
 
@@ -59,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fixed Lindblad dissipator recomputing `L†` and `L†L` at every time step inside the propagation loop. These products are now precomputed once before the loop and passed through.
 - Fixed `pulse_para` concatenating an unused `phis` tensor into its return value. The function now returns `(amps, cxs, cys)`, avoiding a redundant allocation on every optimizer iteration.
 - Fixed brittle absolute imports in `piecewise.py` (`from src.ctrl_freeq.…`) that break when the package is installed normally. All imports now use the package-relative form `from ctrl_freeq.…`.
+- Fixed `createHJ` reading the lower triangle of the coupling matrix (`J[n,k]` with `k < n`) while all configs, the GUI, and the new Hamiltonian models populate the upper triangle (`J[i,j]` with `i < j`). This caused spin-chain inter-qubit coupling to be silently zero for every bundled and GUI-generated two-qubit configuration. The function now symmetrises the input so that upper-triangular, lower-triangular, and fully symmetric matrices all produce the correct Hamiltonian. Asymmetric matrices with conflicting entries raise `ValueError`.
 
 ## [0.2.0] — 2026-02-25
 
