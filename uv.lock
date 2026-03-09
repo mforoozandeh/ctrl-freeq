@@ -470,7 +470,7 @@ requires-dist = [
 dev = [
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "notebook", specifier = ">=7.5.1" },
-    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest", specifier = ">=9.0.2" },
     { name = "tbump", specifier = ">=6.11.0" },
 ]
 docs = [
