@@ -8,15 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Hamiltonian model abstraction layer (`HamiltonianModel` ABC) enabling platform-agnostic pulse optimization via the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k.
-- **Plugin architecture** with model registry: `@register_hamiltonian("name")` decorator, `get_hamiltonian_class()` lookup, and `list_hamiltonians()` discovery, allowing new Hamiltonian types to be added without modifying any framework files.
+- Plugin architecture with model registry: `@register_hamiltonian("name")` decorator, `get_hamiltonian_class()` lookup, and `list_hamiltonians()` discovery, allowing new Hamiltonian types to be added without modifying any framework files.
 - `from_config(n_qubits, params)` classmethod on all models for registry-driven construction from configuration dictionaries.
 - `default_config(n_qubits)` classmethod on all models returning a complete, ready-to-run configuration with sensible physical defaults (GUI-ready templates).
-- **Direct model injection** via `CtrlFreeQAPI(config, hamiltonian_model=model)` for quick experiments with custom or unregistered models.
+- Direct model injection via `CtrlFreeQAPI(config, hamiltonian_model=model)` for quick experiments with custom or unregistered models.
 - `SpinChainModel` — wraps the existing spin-chain drift and coupling Hamiltonians (Ising, XY, Heisenberg) behind the new model interface.
 - `SuperconductingQubitModel` — transmon qubit Hamiltonian with qubit-frequency drift, capacitive coupling (XY, ZZ, XY+ZZ), and anharmonicity-derived static ZZ shifts.
-- **Calibrated ZZ parameter** (`zz_crosstalk`) for `SuperconductingQubitModel`: accepts a calibrated static ZZ coupling matrix that overrides the perturbative formula, with a clear priority chain (runtime `zz_instances` > calibrated `zz_crosstalk` > perturbative formula > zero).
-- **AC Stark shift** (`stark_shift_coeffs`) for `SuperconductingQubitModel`: adds per-qubit drive-dependent Z control channels modelling the light shift H_Stark = Σ_i s_i/2 (I²+Q²) Ω_d² σ_z.
-- **`DuffingTransmonModel`** — 3-level (Duffing oscillator) transmon Hamiltonian with dim = 3^n_qubits, enabling leakage detection to the |2⟩ state. Registered as `"duffing_transmon"` in the plugin registry.
+- Calibrated ZZ parameter (`zz_crosstalk`) for `SuperconductingQubitModel`: accepts a calibrated static ZZ coupling matrix that overrides the perturbative formula, with a clear priority chain (runtime `zz_instances` > calibrated `zz_crosstalk` > perturbative formula > zero).
+- AC Stark shift (`stark_shift_coeffs`) for `SuperconductingQubitModel`: adds per-qubit drive-dependent Z control channels modelling the light shift H_Stark = Σ_i s_i/2 (I²+Q²) Ω_d² σ_z.
+- `DuffingTransmonModel` — 3-level (Duffing oscillator) transmon Hamiltonian with dim = 3^n_qubits, enabling leakage detection to the |2⟩ state. Registered as `"duffing_transmon"` in the plugin registry.
 - `embed_computational_state()` and `embed_computational_gate()` methods on `HamiltonianModel` ABC for mapping 2^n states/gates into higher-dimensional model spaces (identity for standard qubit models, active embedding for 3-level models).
 - `leakage()` method on `DuffingTransmonModel` to compute population outside the computational subspace.
 - Automatic state/gate embedding in `initialise_gui.py` for models with dim > 2^n (e.g. Duffing transmon).
