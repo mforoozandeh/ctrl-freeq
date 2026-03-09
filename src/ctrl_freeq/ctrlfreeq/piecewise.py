@@ -1,23 +1,23 @@
 import torch
 
-from src.ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
-from src.ctrl_freeq.optimizers.qiskit_optimizers import (
+from ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
+from ctrl_freeq.optimizers.qiskit_optimizers import (
     run_qiskit_optimization,
     get_supported_qiskit_optimizers,
 )
-from src.ctrl_freeq.utils.colored_logging import setup_colored_logging
-from src.ctrl_freeq.ctrlfreeq.ctrl_freeq import (
+from ctrl_freeq.utils.colored_logging import setup_colored_logging
+from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
     pulse_hamiltonian,
     simulator_optimized,
     penalty,
     modulate_waveforms,
 )
-from src.ctrl_freeq.make_pulse.waveform_gen_torch import (
+from ctrl_freeq.make_pulse.waveform_gen_torch import (
     waveform_gen_cart,
     waveform_gen_polar,
     waveform_gen_polar_phase,
 )
-from src.ctrl_freeq.make_pulse.waveform_gen_piecewise import (
+from ctrl_freeq.make_pulse.waveform_gen_piecewise import (
     create_identity_basis_for_piecewise,
     get_piecewise_parameter_count,
 )
@@ -286,7 +286,7 @@ class PiecewiseAPI:
             config: CtrlFreeQ API instance or configuration dict
             method: Piecewise method ('cart', 'polar', 'polar_phase')
         """
-        from src.ctrl_freeq.api import CtrlFreeQAPI
+        from ctrl_freeq.api import CtrlFreeQAPI
 
         if isinstance(config, CtrlFreeQAPI):
             self.ctrlfreeq_api = config
@@ -303,14 +303,14 @@ class PiecewiseAPI:
     def run_optimization(self):
         """Run piecewise optimization using CtrlFreeQ infrastructure."""
         from torchmin import minimize
-        from src.ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
-        from src.ctrl_freeq.setup.operator_generation.generate_operators import (
+        from ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
+        from ctrl_freeq.setup.operator_generation.generate_operators import (
             create_hamiltonian_basis_torch,
         )
-        from src.ctrl_freeq.setup.basis_generation.mat_x0_gen import (
+        from ctrl_freeq.setup.basis_generation.mat_x0_gen import (
             amplitude_envelope as np_amplitude_envelope,
         )
-        from src.ctrl_freeq.ctrlfreeq.ctrl_freeq import (
+        from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
             exp_mat_exact,
             exp_mat_torch,
             fidelity_hilbert,
@@ -319,8 +319,8 @@ class PiecewiseAPI:
             state_liouville,
             state_lindblad,
         )
-        from src.ctrl_freeq.utils.conversion import array_to_tensor
-        from src.ctrl_freeq.setup.iterator_generation.generate_iterator import (
+        from ctrl_freeq.utils.conversion import array_to_tensor
+        from ctrl_freeq.setup.iterator_generation.generate_iterator import (
             h0_omega_1_iterator_torch,
         )
         import torch
@@ -504,7 +504,7 @@ def create_piecewise_api(config=None, method="cart"):
         PiecewiseAPI: Configured piecewise API.
     """
     if config is None:
-        from src.ctrl_freeq.api import load_single_qubit_config
+        from ctrl_freeq.api import load_single_qubit_config
 
         config = load_single_qubit_config()
 

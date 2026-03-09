@@ -68,7 +68,7 @@ class CtrlFreeQ:
 
     def objective_function(self, para):
         parameters = torch.split(para, list(self.n_para))
-        amps, phis, cxs, cys = pulse_para(
+        amps, cxs, cys = pulse_para(
             self.n_qubits, parameters, self.mat, self.wf_fun, self.me
         )
         self.pen = penalty(amps)
@@ -164,26 +164,23 @@ class CtrlFreeQ:
 
 def pulse_para(n_qubits, parameters, mat, wf_fun, me):
     amps_list = []
-    phis_list = []
     cxs_list = []
     cys_list = []
 
     for i in range(n_qubits):
-        amp, phi, cx, cy = wf_fun[i](parameters[i], mat[i])
+        amp, _phi, cx, cy = wf_fun[i](parameters[i], mat[i])
         amps_list.append(amp)  # Each amp has shape [100, 1]
-        phis_list.append(phi)
         cxs_list.append(cx)
         cys_list.append(cy)
 
     # Concatenate along dim=1 to get shape [100, n_qubits]
     amps = torch.cat(amps_list, dim=1)
-    phis = torch.cat(phis_list, dim=1)
     cxs = torch.cat(cxs_list, dim=1)
     cys = torch.cat(cys_list, dim=1)
 
     cxs, cys = modulate_waveforms(cxs, cys, me)
 
-    return amps, phis, cxs, cys
+    return amps, cxs, cys
 
 
 def pulse_hamiltonian(cx, cy, rabi_freq, op_tensor, n_pulse, n_h0, n_rabi, n_qubits):
@@ -337,6 +334,11 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_op
     # Build extra kwargs for state_fun (only state_lindblad needs dt and collapse_ops)
     use_lindblad = collapse_ops is not None
 
+    # Precompute L†, L†L once (avoids redundant matmuls at every time step)
+    lindblad_precomputed = (
+        precompute_collapse_products(collapse_ops) if use_lindblad else None
+    )
+
     for start in range(0, n_pulse, chunk_size):
         end = min(start + chunk_size, n_pulse)
         chunk_len = end - start
@@ -357,7 +359,13 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_op
         # Apply time evolution for this chunk
         if use_lindblad:
             for n in range(chunk_len):
-                state = state_fun(U_chunk[n], state, dt, collapse_ops)
+                state = state_fun(
+                    U_chunk[n],
+                    state,
+                    dt,
+                    collapse_ops,
+                    _precomputed=lindblad_precomputed,
+                )
         else:
             for n in range(chunk_len):
                 state = state_fun(U_chunk[n], state)
@@ -419,12 +427,20 @@ def exp_mat_exact(H, dt):
     """
     Compute the exact matrix exponential of a 2x2 Hermitian matrix H.
 
+    Uses the Rodrigues-like formula:
+        exp(-i H dt) = cos(|h| dt) I  -  i sin(|h| dt) / |h| * H
+
+    where |h| is the magnitude of the Bloch vector.  The sinc-like
+    ratio sin(x)/x is evaluated via ``torch.sinc`` (which computes
+    sin(pi x)/(pi x)), so the division is safe when |h| -> 0 and
+    the result correctly reduces to the identity matrix.
+
     Parameters:
-    H (torch.Tensor): A tensor of shape (..., 2, 2) containing Hermitian matrices.
+    H (torch.Tensor): A tensor of shape (batch, 2, 2) containing Hermitian matrices.
     dt (float): Time step.
 
     Returns:
-    torch.Tensor: The matrix exponential of H.
+    torch.Tensor: The matrix exponential of H, shape (batch, 2, 2).
     """
     # Extract components from the Hermitian matrix H
     h1 = torch.real(H[:, 0, 1])
@@ -438,12 +454,12 @@ def exp_mat_exact(H, dt):
     cos_term = torch.cos(dt * h_magnitude).unsqueeze(-1).unsqueeze(-1) * torch.eye(
         2, dtype=H.dtype, device=H.device
     ).unsqueeze(0)
-    sin_term = (
-        -1j
-        * torch.sin(dt * h_magnitude).unsqueeze(-1).unsqueeze(-1)
-        / h_magnitude.unsqueeze(-1).unsqueeze(-1)
-        * H
-    )
+
+    # sin(|h| dt) / |h|  =  dt * sin(|h| dt) / (|h| dt)
+    #                     =  dt * sinc(|h| dt / pi)
+    # torch.sinc(x) computes sin(pi x) / (pi x), so we pass |h| dt / pi.
+    sinc_term = dt * torch.sinc(h_magnitude * dt / torch.pi)
+    sin_term = -1j * sinc_term.unsqueeze(-1).unsqueeze(-1) * H
 
     U_t = cos_term + sin_term
 
@@ -496,21 +512,41 @@ def state_liouville(U, state):
     return state
 
 
-def lindblad_dissipator(rho, collapse_ops):
+def precompute_collapse_products(collapse_ops):
+    """Precompute L, L†, L†L for Lindblad dissipation (call once, not per step).
+
+    Parameters:
+    collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
+
+    Returns:
+    tuple: (L, L_dag, L_dag_L) each of shape (n_ops, 1, D, D), ready for
+        batched broadcasting in :func:`lindblad_dissipator`.
+    """
+    L = collapse_ops.unsqueeze(1)  # (n_ops, 1, D, D)
+    L_dag = L.conj().transpose(-2, -1)  # (n_ops, 1, D, D)
+    L_dag_L = L_dag @ L  # (n_ops, 1, D, D)
+    return L, L_dag, L_dag_L
+
+
+def lindblad_dissipator(rho, collapse_ops, _precomputed=None):
     """
     Compute the Lindblad dissipator: sum_k (L_k rho L_k^dag - 0.5 {L_k^dag L_k, rho}).
 
     Parameters:
     rho (torch.Tensor): Density matrices of shape (batch_size, D, D).
     collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
+    _precomputed (tuple, optional): Pre-computed (L, L_dag, L_dag_L) from
+        :func:`precompute_collapse_products`.  When provided, ``collapse_ops``
+        is ignored and the pre-computed values are used directly, avoiding
+        redundant matmuls in the inner time-step loop.
 
     Returns:
     torch.Tensor: The dissipator contribution of shape (batch_size, D, D).
     """
-    # collapse_ops: (n_ops, D, D) -> unsqueeze for batch: (n_ops, 1, D, D)
-    L = collapse_ops.unsqueeze(1)  # (n_ops, 1, D, D)
-    L_dag = L.conj().transpose(-2, -1)  # (n_ops, 1, D, D)
-    L_dag_L = L_dag @ L  # (n_ops, 1, D, D)
+    if _precomputed is not None:
+        L, L_dag, L_dag_L = _precomputed
+    else:
+        L, L_dag, L_dag_L = precompute_collapse_products(collapse_ops)
 
     # rho: (batch_size, D, D) -> unsqueeze for ops: (1, batch_size, D, D)
     rho_expanded = rho.unsqueeze(0)  # (1, batch_size, D, D)
@@ -525,7 +561,7 @@ def lindblad_dissipator(rho, collapse_ops):
     return (term1 - term2).sum(dim=0)
 
 
-def state_lindblad(U, state, dt, collapse_ops):
+def state_lindblad(U, state, dt, collapse_ops, _precomputed=None):
     """
     Apply the Lindblad evolution: unitary step followed by dissipative step.
 
@@ -536,6 +572,8 @@ def state_lindblad(U, state, dt, collapse_ops):
     state (torch.Tensor): Density matrices of shape (batch_size, D, D).
     dt (float or torch.Tensor): Time step.
     collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
+    _precomputed (tuple, optional): Pre-computed (L, L_dag, L_dag_L) from
+        :func:`precompute_collapse_products`, passed through to the dissipator.
 
     Returns:
     torch.Tensor: Updated density matrices of shape (batch_size, D, D).
@@ -544,14 +582,14 @@ def state_lindblad(U, state, dt, collapse_ops):
     rho = U @ state @ U.conj().transpose(-2, -1)
 
     # Dissipative step (Euler)
-    rho = rho + dt * lindblad_dissipator(rho, collapse_ops)
+    rho = rho + dt * lindblad_dissipator(rho, collapse_ops, _precomputed=_precomputed)
 
     return rho
 
 
 def matrix_square_root(mat):
     """
-    Compute the matrix square root of a batch of matrices using eigen decomposition.
+    Compute the matrix square root of a batch of matrices via eigendecomposition.
 
     Parameters:
     mat (torch.Tensor): A tensor of shape (batch_size, D, D)

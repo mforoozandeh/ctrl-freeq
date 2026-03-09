@@ -55,6 +55,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fixed inconsistent snapshot semantics across Hamiltonian models. `SpinChainModel.build_drift` now uses repeat-last-element semantics for mismatched `coupling_instances` length, matching `SuperconductingQubitModel` and `DuffingTransmonModel`.
 - Fixed `createHJ` defaulting to lowercase `"z"` which silently failed the uppercase comparison and returned a zero matrix. Input is now normalised via `.upper()`, `None` falls back to `"Z"`, and the docstring lists the actual accepted values.
 - Fixed `build_collapse_operators` docstring claiming it returns tuples `(L, L_dag, L_dag_L)` when it actually returns `np.ndarray` of shape `(n_ops, D, D)` or `None`.
+- Fixed `exp_mat_exact` producing `NaN` for zero-magnitude Hamiltonians (e.g. identity-only drift). The `sin(x)/x` term is now computed via `torch.sinc`, which is numerically safe at `x = 0`.
+- Fixed Lindblad dissipator recomputing `L†` and `L†L` at every time step inside the propagation loop. These products are now precomputed once before the loop and passed through.
+- Fixed `pulse_para` concatenating an unused `phis` tensor into its return value. The function now returns `(amps, cxs, cys)`, avoiding a redundant allocation on every optimizer iteration.
+- Fixed brittle absolute imports in `piecewise.py` (`from src.ctrl_freeq.…`) that break when the package is installed normally. All imports now use the package-relative form `from ctrl_freeq.…`.
 
 ## [0.2.0] — 2026-02-25
 
