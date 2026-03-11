@@ -44,7 +44,6 @@ QISKIT_ALGORITHMS = [
     "qiskit-slsqp",
     "qiskit-l-bfgs-b",
     "qiskit-tnc",
-    "qiskit-p-bfgs",
     "qiskit-gsls",
     "qiskit-adam",
 ]

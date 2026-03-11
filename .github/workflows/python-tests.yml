@@ -10,9 +10,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      UV_NO_PROGRESS: "1"
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
@@ -24,10 +21,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: false
+      uses: astral-sh/setup-uv@v5
     - name: Install dependencies
-      run: uv sync --frozen --group dev
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv lock
+        uv sync --frozen --no-cache
     - name: Test with pytest and coverage
-      run: uv run pytest
+      run: |
+        source .venv/bin/activate
+        uv run pytest

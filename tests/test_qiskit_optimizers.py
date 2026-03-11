@@ -35,18 +35,19 @@ def rosenbrock_grad(x):
 # Initial guess
 x0 = [0, 0]
 
-# Use scipy's minimize with the BFGS method
-result = minimize(rosenbrock, x0=x0, jac=rosenbrock_grad, method="BFGS")
+if __name__ == "__main__":
+    # Use scipy's minimize with the BFGS method
+    result = minimize(rosenbrock, x0=x0, jac=rosenbrock_grad, method="BFGS")
 
-print(result)
+    print(result)
 
-# The minimum value is at:
-print("Minimum at:", result.x)
+    # The minimum value is at:
+    print("Minimum at:", result.x)
 
-state = OptimizerState(
-    result.x, result.fun, result.jac, result.nfev, result.njev, result.nit
-)
-print("Value of the function:", state.fun)
+    state = OptimizerState(
+        result.x, result.fun, result.jac, result.nfev, result.njev, result.nit
+    )
+    print("Value of the function:", state.fun)
 
 
 algs = [
@@ -88,13 +89,14 @@ def rosenbrock_grad(x):
 x0 = [0.0, 0.0]
 
 
-for alg in algs:
-    try:
-        # Use Qiskit's COBYLA optimizer
-        optimizer = alg()
-        result = optimizer.minimize(fun=rosenbrock, x0=x0)
+if __name__ == "__main__":
+    for alg in algs:
+        try:
+            # Use Qiskit's optimizer
+            optimizer = alg()
+            result = optimizer.minimize(fun=rosenbrock, x0=x0)
 
-        print(f"Results for {alg.__name__} is:\n{result}\n")
-    except Exception as e:  # This will catch any error that occurs
-        print(f"An error occurred with {alg.__name__}:\n{str(e)}\n")
-        continue  # This is optional as the loop will continue to the next item anyway
+            print(f"Results for {alg.__name__} is:\n{result}\n")
+        except Exception as e:  # This will catch any error that occurs
+            print(f"An error occurred with {alg.__name__}:\n{str(e)}\n")
+            continue  # Optional: continue to next optimizer
