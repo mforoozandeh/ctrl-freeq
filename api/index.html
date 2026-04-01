@@ -1,0 +1,2892 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for ctrl-freeq - Quantum Control Framework">
+      
+      
+      
+        <link rel="canonical" href="https://mforoozandeh.github.io/ctrl-freeq/api/">
+      
+      
+        <link rel="prev" href="../installation/">
+      
+      
+        <link rel="next" href="../gui/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API - ctrl-freeq Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ctrl-freeq Documentation" class="md-header__button md-logo" aria-label="ctrl-freeq Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ctrl-freeq Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/mforoozandeh/ctrl-freeq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ctrl-freeq
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../gui/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  GUI
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../optimization/" class="md-tabs__link">
+          
+  
+  
+  Optimization
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../dashboard/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Dashboard
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../release-notes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ctrl-freeq Documentation" class="md-nav__button md-logo" aria-label="ctrl-freeq Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ctrl-freeq Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/mforoozandeh/ctrl-freeq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ctrl-freeq
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ctrlfreeqapi-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CtrlFreeQAPI Class
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CtrlFreeQAPI Class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run_optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_optimization()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_config_summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_config_summary()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_parameterparameter_path-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_parameter(parameter_path, value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Properties">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helper Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run_from_configconfig-hamiltonian_modelnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_from_config(config, hamiltonian_model=None)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_configconfig_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_config(config_path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-example-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Example Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Example Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_multiple_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_multiple_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_dissipative_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_dissipative_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_multiple_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_multiple_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_four_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_four_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-workflow-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Workflow Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dissipative-lindblad-workflow-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dissipative (Lindblad) Workflow Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hamiltonian-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hamiltonian Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hamiltonian Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hamiltonianmodel-abstract-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HamiltonianModel (Abstract Base Class)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spinchainmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SpinChainModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#superconductingqubitmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SuperconductingQubitModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duffingtransmonmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DuffingTransmonModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-models-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Models in Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Configurations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-custom-hamiltonian-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Custom Hamiltonian Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding Custom Hamiltonian Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-the-model-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Define the model class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-make-sure-the-class-is-imported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Make sure the class is imported
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Use it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GUI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Optimization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute (CPU/GPU)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ctrlfreeqapi-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CtrlFreeQAPI Class
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CtrlFreeQAPI Class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run_optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_optimization()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_config_summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_config_summary()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_parameterparameter_path-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_parameter(parameter_path, value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Properties">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helper Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run_from_configconfig-hamiltonian_modelnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_from_config(config, hamiltonian_model=None)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_configconfig_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_config(config_path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-example-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Example Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Example Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_multiple_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_multiple_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_single_qubit_dissipative_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_single_qubit_dissipative_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_multiple_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_multiple_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_two_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_two_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-qubit-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Qubit Configurations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-Qubit Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_four_qubit_polar_phase_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_four_qubit_polar_phase_config()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-workflow-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Workflow Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dissipative-lindblad-workflow-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dissipative (Lindblad) Workflow Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hamiltonian-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hamiltonian Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hamiltonian Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hamiltonianmodel-abstract-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HamiltonianModel (Abstract Base Class)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spinchainmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SpinChainModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#superconductingqubitmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SuperconductingQubitModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duffingtransmonmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DuffingTransmonModel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-models-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Models in Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Configurations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-custom-hamiltonian-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Custom Hamiltonian Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding Custom Hamiltonian Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-the-model-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Define the model class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-make-sure-the-class-is-imported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Make sure the class is imported
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Use it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="api-reference">API Reference</h1>
+<p>A high-level Python API is provided for the programmatic execution of quantum control optimizations. The principal interface is the <code>CtrlFreeQAPI</code> class, defined in the <code>ctrl_freeq.api</code> module, which encapsulates the complete workflow from configuration loading through optimization to result retrieval.</p>
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span><span class="p">,</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Load a built-in example configuration</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># View configuration summary</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">())</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Run optimization (returns optimized pulse parameters as a torch.Tensor)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Access results stored on the parameters object</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final fidelity: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">final_fidelity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterations: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="ctrlfreeqapi-class">CtrlFreeQAPI Class</h2>
+<p>The <code>CtrlFreeQAPI</code> class serves as the primary interface for interacting with the ctrl-freeq optimization framework.</p>
+<h3 id="constructor">Constructor</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">hamiltonian_model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<p>An API instance may be created from a path to a JSON configuration file (provided as a string or <code>Path</code> object) or from a dictionary containing the configuration parameters directly. An optional <code>hamiltonian_model</code> argument allows a pre-built <code>HamiltonianModel</code> instance to be injected directly, bypassing the registry lookup.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config</code></td>
+<td><code>str</code>, <code>Path</code>, or <code>dict</code></td>
+<td>Configuration source</td>
+</tr>
+<tr>
+<td><code>hamiltonian_model</code></td>
+<td><code>HamiltonianModel</code> or <code>None</code></td>
+<td>Optional pre-built model instance (overrides <code>hamiltonian_type</code> in config)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">From JSON file</label><label for="__tabbed_1_2">From dictionary</label><label for="__tabbed_1_3">From built-in config</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="s2">&quot;path/to/config.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">&quot;qubits&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;q1&quot;</span><span class="p">],</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">&quot;hamiltonian_type&quot;</span><span class="p">:</span> <span class="s2">&quot;spin_chain&quot;</span><span class="p">,</span>  <span class="c1"># or &quot;superconducting&quot;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="s2">&quot;compute_resource&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="s2">&quot;Delta&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="s2">&quot;Omega_R_max&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">10000.0</span><span class="p">],</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="s2">&quot;pulse_duration&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.001</span><span class="p">],</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="s2">&quot;point_in_pulse&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">],</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="c1"># ... other parameters</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="p">},</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="s2">&quot;initial_states&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;Z&quot;</span><span class="p">]],</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="s2">&quot;target_states&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Axis&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;-Z&quot;</span><span class="p">]]},</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="s2">&quot;optimization&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="s2">&quot;space&quot;</span><span class="p">:</span> <span class="s2">&quot;hilbert&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="s2">&quot;algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;bfgs&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>        <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="s2">&quot;targ_fid&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    <span class="p">}</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="p">}</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="methods">Methods</h3>
+<h4 id="run_optimization"><code>run_optimization()</code></h4>
+<p>Executes the quantum control optimization with the loaded configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>Returns:</strong> <code>torch.Tensor</code> — The optimized pulse parameters.</p>
+<p>Upon completion of the optimization, the following attributes are stored on <code>api.parameters</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>final_fidelity</code></td>
+<td><code>float</code></td>
+<td>Final achieved fidelity</td>
+</tr>
+<tr>
+<td><code>iterations</code></td>
+<td><code>int</code></td>
+<td>Number of iterations performed</td>
+</tr>
+<tr>
+<td><code>fidelity_history</code></td>
+<td><code>list[float]</code></td>
+<td>Fidelity at each iteration</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Access results from the parameters object</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final fidelity: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">final_fidelity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterations: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fidelity history: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">fidelity_history</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h4 id="get_config_summary"><code>get_config_summary()</code></h4>
+<p>Returns a human-readable summary of the current configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">summary</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>Returns:</strong> <code>str</code> — A formatted string containing the number of qubits, optimization space (Hilbert/Liouville), algorithm name, maximum iterations, target fidelity, and the initial and target states.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_config</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">())</span>
+</code></pre></div>
+<p><strong>Output:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Number of qubits: 2
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Optimization space: hilbert
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>Algorithm: newton-cg
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>Max iterations: 1000
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Target fidelity: 0.999
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>Initial states: [[&#39;Z&#39;, &#39;-Z&#39;]]
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>Target Gate: [&#39;CNOT&#39;]
+</code></pre></div></p>
+<hr />
+<h4 id="update_parameterparameter_path-value"><code>update_parameter(parameter_path, value)</code></h4>
+<p>Updates a specific parameter in the configuration and reinitializes the internal state accordingly.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="n">parameter_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parameter_path</code></td>
+<td><code>str</code></td>
+<td>Dot-separated path to the parameter</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td><code>Any</code></td>
+<td>New value for the parameter</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Raises:</strong> <code>KeyError</code> if the parameter path is not found.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># Update optimization settings</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.max_iter&quot;</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.algorithm&quot;</span><span class="p">,</span> <span class="s2">&quot;qiskit-cobyla&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.targ_fid&quot;</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Update pulse parameters</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;parameters.pulse_duration&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.002</span><span class="p">])</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="c1"># Run with updated configuration</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>Common parameter paths:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hamiltonian_type</code></td>
+<td><code>spin_chain</code> or <code>superconducting</code></td>
+</tr>
+<tr>
+<td><code>optimization.algorithm</code></td>
+<td>Optimization algorithm</td>
+</tr>
+<tr>
+<td><code>optimization.max_iter</code></td>
+<td>Maximum iterations</td>
+</tr>
+<tr>
+<td><code>optimization.targ_fid</code></td>
+<td>Target fidelity</td>
+</tr>
+<tr>
+<td><code>optimization.space</code></td>
+<td><code>hilbert</code> or <code>liouville</code></td>
+</tr>
+<tr>
+<td><code>optimization.dissipation_mode</code></td>
+<td><code>non-dissipative</code> or <code>dissipative</code></td>
+</tr>
+<tr>
+<td><code>parameters.Delta</code></td>
+<td>Detuning / qubit frequency (Hz)</td>
+</tr>
+<tr>
+<td><code>parameters.Omega_R_max</code></td>
+<td>Maximum Rabi frequency / drive amplitude (Hz)</td>
+</tr>
+<tr>
+<td><code>parameters.pulse_duration</code></td>
+<td>Pulse duration (seconds)</td>
+</tr>
+<tr>
+<td><code>parameters.point_in_pulse</code></td>
+<td>Discretization points</td>
+</tr>
+<tr>
+<td><code>parameters.T1</code></td>
+<td>Amplitude damping time (seconds)</td>
+</tr>
+<tr>
+<td><code>parameters.T2</code></td>
+<td>Pure dephasing time (seconds)</td>
+</tr>
+<tr>
+<td><code>compute_resource</code></td>
+<td><code>cpu</code> or <code>gpu</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="properties">Properties</h3>
+<h4 id="config"><code>config</code></h4>
+<p>The raw configuration dictionary.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">raw_config</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">config</span>
+</code></pre></div>
+<h4 id="config_path"><code>config_path</code></h4>
+<p>The path to the configuration file, if the instance was created from a file; otherwise <code>None</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">path</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">config_path</span>
+</code></pre></div>
+<h4 id="parameters"><code>parameters</code></h4>
+<p>The initialized parameter object used internally by the optimization engine.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">params</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">parameters</span>
+</code></pre></div>
+<hr />
+<h2 id="helper-functions">Helper Functions</h2>
+<h3 id="run_from_configconfig-hamiltonian_modelnone"><code>run_from_config(config, hamiltonian_model=None)</code></h3>
+<p>A convenience function that creates a <code>CtrlFreeQAPI</code> instance and executes the optimization in a single call.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_from_config</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">run_from_config</span><span class="p">(</span><span class="s2">&quot;path/to/config.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config</code></td>
+<td><code>str</code>, <code>Path</code>, or <code>dict</code></td>
+<td>Configuration source</td>
+</tr>
+<tr>
+<td><code>hamiltonian_model</code></td>
+<td><code>HamiltonianModel</code> or <code>None</code></td>
+<td>Optional pre-built model instance</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>torch.Tensor</code> — The optimized pulse parameters.</p>
+<p><strong>Example with dictionary:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_from_config</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">run_from_config</span><span class="p">({</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="s2">&quot;qubits&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;q1&quot;</span><span class="p">],</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="s2">&quot;compute_resource&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">},</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="s2">&quot;initial_states&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;Z&quot;</span><span class="p">]],</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="s2">&quot;target_states&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Axis&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;-Z&quot;</span><span class="p">]]},</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="s2">&quot;optimization&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>        <span class="s2">&quot;space&quot;</span><span class="p">:</span> <span class="s2">&quot;hilbert&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>        <span class="s2">&quot;algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;bfgs&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>        <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>        <span class="s2">&quot;targ_fid&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>    <span class="p">}</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="p">})</span>
+</code></pre></div>
+<hr />
+<h3 id="load_configconfig_path"><code>load_config(config_path)</code></h3>
+<p>Loads a JSON configuration file and returns a <code>CtrlFreeQAPI</code> instance.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;path/to/config.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config_path</code></td>
+<td><code>str</code> or <code>Path</code></td>
+<td>Path to JSON configuration file</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>CtrlFreeQAPI</code> instance.</p>
+<hr />
+<h2 id="built-in-example-configurations">Built-in Example Configurations</h2>
+<p>Several pre-configured examples are bundled with the package for common use cases. These correspond to JSON files located under <code>src/ctrl_freeq/data/json_input/</code>.</p>
+<h3 id="single-qubit-configurations">Single-Qubit Configurations</h3>
+<h4 id="load_single_qubit_config"><code>load_single_qubit_config()</code></h4>
+<p>A basic single-qubit optimization configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="load_single_qubit_multiple_config"><code>load_single_qubit_multiple_config()</code></h4>
+<p>A single-qubit configuration with multiple initial/target state pairs for universal rotation design.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_multiple_config</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_multiple_config</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="load_single_qubit_polar_phase_config"><code>load_single_qubit_polar_phase_config()</code></h4>
+<p>A single-qubit configuration using the polar/phase waveform mode.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_polar_phase_config</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_polar_phase_config</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="load_single_qubit_dissipative_config"><code>load_single_qubit_dissipative_config()</code></h4>
+<p>A single-qubit configuration with dissipative (Lindblad) dynamics enabled. The evolution includes amplitude damping (T1 = 1 ms) and pure dephasing (T2 = 500 μs), and the optimization is performed in Liouville (density matrix) space.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_dissipative_config</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_dissipative_config</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="two-qubit-configurations">Two-Qubit Configurations</h3>
+<h4 id="load_two_qubit_config"><code>load_two_qubit_config()</code></h4>
+<p>A basic two-qubit optimization configuration with inter-qubit coupling.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_config</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_config</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="load_two_qubit_multiple_config"><code>load_two_qubit_multiple_config()</code></h4>
+<p>A two-qubit configuration with multiple initial/target state pairs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_multiple_config</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_multiple_config</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="load_two_qubit_polar_phase_config"><code>load_two_qubit_polar_phase_config()</code></h4>
+<p>A two-qubit configuration using the polar/phase waveform mode.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_two_qubit_polar_phase_config</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_two_qubit_polar_phase_config</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="multi-qubit-configurations">Multi-Qubit Configurations</h3>
+<h4 id="load_four_qubit_polar_phase_config"><code>load_four_qubit_polar_phase_config()</code></h4>
+<p>A four-qubit optimization configuration using the polar/phase waveform mode.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_four_qubit_polar_phase_config</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_four_qubit_polar_phase_config</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="complete-workflow-example">Complete Workflow Example</h2>
+<p>The following example illustrates a complete optimization workflow, from configuration loading through parameter customization, optimization, and result visualization:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span><span class="p">,</span> <span class="n">load_single_qubit_config</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.plotter</span><span class="w"> </span><span class="kn">import</span> <span class="n">process_and_plot</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.dashboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_dashboard</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="c1"># 1. Load configuration</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_config</span><span class="p">()</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="c1"># 2. Customize parameters</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.algorithm&quot;</span><span class="p">,</span> <span class="s2">&quot;qiskit-cobyla&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.max_iter&quot;</span><span class="p">,</span> <span class="mi">150</span><span class="p">)</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;optimization.targ_fid&quot;</span><span class="p">,</span> <span class="mf">0.995</span><span class="p">)</span>
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>
+<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="c1"># 3. Review configuration</span>
+<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">())</span>
+<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>
+<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="c1"># 4. Run optimization</span>
+<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>
+<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="c1"># 5. Check results</span>
+<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final fidelity: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">final_fidelity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterations: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>
+<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a><span class="c1"># 6. Generate plots</span>
+<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a><span class="c1"># process_and_plot takes the solution tensor and the parameters object</span>
+<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="n">waveforms</span><span class="p">,</span> <span class="n">figures</span> <span class="o">=</span> <span class="n">process_and_plot</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">save_plots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a>
+<a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a><span class="c1"># 7. Create dashboard (pass parameters for a richer sidebar)</span>
+<a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a><span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a><span class="n">dashboard_path</span> <span class="o">=</span> <span class="n">create_dashboard</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+<a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dashboard saved to: </span><span class="si">{</span><span class="n">dashboard_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="dissipative-lindblad-workflow-example">Dissipative (Lindblad) Workflow Example</h2>
+<p>The following example demonstrates a complete optimization workflow for an open quantum system subject to amplitude damping and pure dephasing. The Lindblad master equation is employed to model the dissipative channels, and the optimization is performed in Liouville (density matrix) space.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">From built-in config</label><label for="__tabbed_2_2">From dictionary</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_single_qubit_dissipative_config</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.plotter</span><span class="w"> </span><span class="kn">import</span> <span class="n">process_and_plot</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="c1"># Load the pre-configured dissipative example</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="n">api</span> <span class="o">=</span> <span class="n">load_single_qubit_dissipative_config</span><span class="p">()</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="c1"># Review configuration (includes T1/T2 information)</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">get_config_summary</span><span class="p">())</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="c1"># Run optimization</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
+<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a><span class="c1"># Check results</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final fidelity: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">final_fidelity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterations: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>
+<a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a><span class="c1"># Generate plots</span>
+<a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="n">waveforms</span> <span class="o">=</span> <span class="n">process_and_plot</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">show_plots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.visualisation.plotter</span><span class="w"> </span><span class="kn">import</span> <span class="n">process_and_plot</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>    <span class="s2">&quot;qubits&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;q1&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>    <span class="s2">&quot;compute_resource&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>        <span class="s2">&quot;Delta&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">10000000.0</span><span class="p">],</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>        <span class="s2">&quot;Omega_R_max&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">40000000.0</span><span class="p">],</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>        <span class="s2">&quot;pulse_duration&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">2e-07</span><span class="p">],</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>        <span class="s2">&quot;point_in_pulse&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">],</span>
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>        <span class="s2">&quot;wf_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;cheb&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>        <span class="s2">&quot;wf_mode&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;cart&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>        <span class="s2">&quot;amplitude_envelope&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;gn&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a>        <span class="s2">&quot;amplitude_order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+<a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>        <span class="s2">&quot;coverage&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;broadband&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>        <span class="s2">&quot;sw&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">5000000.0</span><span class="p">],</span>
+<a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>        <span class="s2">&quot;pulse_offset&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+<a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>        <span class="s2">&quot;pulse_bandwidth&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">500000.0</span><span class="p">],</span>
+<a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a>        <span class="s2">&quot;ratio_factor&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">],</span>
+<a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a>        <span class="s2">&quot;sigma_Delta&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+<a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a>        <span class="s2">&quot;sigma_Omega_R_max&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+<a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a>        <span class="s2">&quot;profile_order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+<a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a>        <span class="s2">&quot;n_para&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">16</span><span class="p">],</span>
+<a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a>        <span class="s2">&quot;J&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">0.0</span><span class="p">]],</span>
+<a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a>        <span class="s2">&quot;T1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.001</span><span class="p">],</span>           <span class="c1"># 1 ms amplitude damping</span>
+<a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a>        <span class="s2">&quot;T2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0005</span><span class="p">]</span>           <span class="c1"># 500 μs pure dephasing</span>
+<a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a>    <span class="p">},</span>
+<a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a>    <span class="s2">&quot;initial_states&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;Z&quot;</span><span class="p">]],</span>
+<a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a>    <span class="s2">&quot;target_states&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Axis&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;-Z&quot;</span><span class="p">]]},</span>
+<a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>    <span class="s2">&quot;optimization&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-28-32" name="__codelineno-28-32" href="#__codelineno-28-32"></a>        <span class="s2">&quot;space&quot;</span><span class="p">:</span> <span class="s2">&quot;liouville&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-33" name="__codelineno-28-33" href="#__codelineno-28-33"></a>        <span class="s2">&quot;dissipation_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;dissipative&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-34" name="__codelineno-28-34" href="#__codelineno-28-34"></a>        <span class="s2">&quot;H0_snapshots&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-28-35" name="__codelineno-28-35" href="#__codelineno-28-35"></a>        <span class="s2">&quot;Omega_R_snapshots&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-28-36" name="__codelineno-28-36" href="#__codelineno-28-36"></a>        <span class="s2">&quot;algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;qiskit-cobyla&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-37" name="__codelineno-28-37" href="#__codelineno-28-37"></a>        <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-28-38" name="__codelineno-28-38" href="#__codelineno-28-38"></a>        <span class="s2">&quot;targ_fid&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+<a id="__codelineno-28-39" name="__codelineno-28-39" href="#__codelineno-28-39"></a>    <span class="p">}</span>
+<a id="__codelineno-28-40" name="__codelineno-28-40" href="#__codelineno-28-40"></a><span class="p">}</span>
+<a id="__codelineno-28-41" name="__codelineno-28-41" href="#__codelineno-28-41"></a>
+<a id="__codelineno-28-42" name="__codelineno-28-42" href="#__codelineno-28-42"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-28-43" name="__codelineno-28-43" href="#__codelineno-28-43"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+<a id="__codelineno-28-44" name="__codelineno-28-44" href="#__codelineno-28-44"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final fidelity: </span><span class="si">{</span><span class="n">api</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">final_fidelity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Dissipation Requirements</p>
+<p>When <code>dissipation_mode</code> is set to <code>"dissipative"</code>, the following conditions must be satisfied:</p>
+<ul>
+<li>The optimization <code>space</code> must be <code>"liouville"</code> (density matrix mode)</li>
+<li>Per-qubit <code>T1</code> and <code>T2</code> values must be provided in the <code>parameters</code> section</li>
+<li>The physical constraint <span class="arithmatex">\(T_2 \leq 2\,T_1\)</span> must hold for each qubit</li>
+</ul>
+<p>For a detailed description of the dissipation parameters, see <a href="../optimization/parameters/#dissipation-parameters">Optimization → Parameters → Dissipation Parameters</a>.</p>
+</div>
+<hr />
+<h2 id="hamiltonian-models">Hamiltonian Models</h2>
+<p>Ctrl-freeq provides a platform-agnostic Hamiltonian model abstraction for defining quantum control problems. All models implement the <code>HamiltonianModel</code> abstract base class, which follows the standard bilinear control formulation:</p>
+<div class="arithmatex">\[
+H(t) = H_\text{drift} + \sum_k u_k(t) \, H_{\text{ctrl},k}
+\]</div>
+<p>The framework uses a <strong>plugin architecture</strong> based on a model registry. New Hamiltonian types can be added by subclassing <code>HamiltonianModel</code> and decorating with <code>@register_hamiltonian</code> — no framework files need to be modified.</p>
+<h3 id="hamiltonianmodel-abstract-base-class">HamiltonianModel (Abstract Base Class)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">HamiltonianModel</span>
+</code></pre></div>
+<p>All Hamiltonian models implement the following interface:</p>
+<table>
+<thead>
+<tr>
+<th>Method / Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build_drift(frequency_instances, coupling_instances=None, **kwargs)</code></td>
+<td>Construct drift Hamiltonian <span class="arithmatex">\(H_0\)</span> snapshots (list of <span class="arithmatex">\((D, D)\)</span> numpy arrays)</td>
+</tr>
+<tr>
+<td><code>build_control_ops()</code></td>
+<td>Return fixed control operators <span class="arithmatex">\(H_{\text{ctrl},k}\)</span> (list of <span class="arithmatex">\((D, D)\)</span> numpy arrays)</td>
+</tr>
+<tr>
+<td><code>control_amplitudes(cx, cy, rabi_freq, n_h0)</code></td>
+<td>Map waveform outputs to control amplitudes <span class="arithmatex">\(u_k(t)\)</span></td>
+</tr>
+<tr>
+<td><code>from_config(n_qubits, params)</code> (classmethod)</td>
+<td>Construct a model instance from a configuration dictionary</td>
+</tr>
+<tr>
+<td><code>default_config(n_qubits)</code> (classmethod)</td>
+<td>Return a complete runnable configuration dictionary</td>
+</tr>
+<tr>
+<td><code>dim</code> (property)</td>
+<td>Hilbert space dimension <span class="arithmatex">\(D\)</span> (e.g. <span class="arithmatex">\(2^n\)</span> for qubit models, <span class="arithmatex">\(3^n\)</span> for 3-level models)</td>
+</tr>
+<tr>
+<td><code>n_controls</code> (property)</td>
+<td>Number of independent control channels</td>
+</tr>
+<tr>
+<td><code>control_ops_tensor()</code></td>
+<td>Control operators as a stacked torch tensor <span class="arithmatex">\((n_\text{controls}, D, D)\)</span></td>
+</tr>
+<tr>
+<td><code>embed_computational_state(state)</code></td>
+<td>Embed a <span class="arithmatex">\(2^n\)</span> state into the model's Hilbert space (identity for qubit models)</td>
+</tr>
+<tr>
+<td><code>embed_computational_gate(gate)</code></td>
+<td>Embed a <span class="arithmatex">\(2^n \times 2^n\)</span> gate into the model's Hilbert space (identity for qubit models)</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>build_drift</code> method uses a <strong>standardized signature</strong> across all models: <code>frequency_instances</code> contains per-qubit frequency arrays (detunings, qubit frequencies, etc.), and <code>coupling_instances</code> contains coupling matrices. Model-specific parameters are passed via <code>**kwargs</code>.</p>
+<h3 id="model-registry">Model Registry</h3>
+<p>The registry provides automatic discovery and lookup of Hamiltonian models:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>    <span class="n">register_hamiltonian</span><span class="p">,</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>    <span class="n">get_hamiltonian_class</span><span class="p">,</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>    <span class="n">list_hamiltonians</span><span class="p">,</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="p">)</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="c1"># List all registered models</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">list_hamiltonians</span><span class="p">())</span>  <span class="c1"># [&#39;duffing_transmon&#39;, &#39;spin_chain&#39;, &#39;superconducting&#39;]</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="c1"># Look up a model class by name</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="bp">cls</span> <span class="o">=</span> <span class="n">get_hamiltonian_class</span><span class="p">(</span><span class="s2">&quot;spin_chain&quot;</span><span class="p">)</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;coupling_type&quot;</span><span class="p">:</span> <span class="s2">&quot;XY&quot;</span><span class="p">})</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register_hamiltonian(name)</code></td>
+<td>Decorator that registers a <code>HamiltonianModel</code> subclass under the given name</td>
+</tr>
+<tr>
+<td><code>get_hamiltonian_class(name)</code></td>
+<td>Look up and return the model class for a given name</td>
+</tr>
+<tr>
+<td><code>list_hamiltonians()</code></td>
+<td>Return a sorted list of all registered model names</td>
+</tr>
+</tbody>
+</table>
+<h3 id="spinchainmodel">SpinChainModel</h3>
+<p>Models spin-chain qubits with detuning-based drift and configurable inter-qubit coupling (Ising, XY, Heisenberg).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpinChainModel</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SpinChainModel</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">coupling_type</span><span class="o">=</span><span class="s2">&quot;XY&quot;</span><span class="p">)</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="c1"># Build drift Hamiltonian</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="n">Delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">1e7</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2e7</span><span class="p">])</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="n">H0_list</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build_drift</span><span class="p">(</span><span class="n">frequency_instances</span><span class="o">=</span><span class="p">[</span><span class="n">Delta</span><span class="p">],</span> <span class="n">coupling_instances</span><span class="o">=</span><span class="p">[</span><span class="n">J</span><span class="p">])</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>
+<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="c1"># Get control operators</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a><span class="n">ctrl_ops</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build_control_ops</span><span class="p">()</span>  <span class="c1"># [X_0, Y_0, X_1, Y_1]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_qubits</code></td>
+<td>Number of spin-1/2 qubits</td>
+</tr>
+<tr>
+<td><code>coupling_type</code></td>
+<td><code>"Z"</code> (Ising), <code>"XY"</code> (exchange), or <code>"XYZ"</code> (Heisenberg)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="superconductingqubitmodel">SuperconductingQubitModel</h3>
+<p>Models fixed-frequency transmon qubits in the <strong>per-qubit rotating frame</strong> (RWA applied) with capacitive coupling, supporting exchange (XY), static ZZ, and combined (XY+ZZ) coupling. The <code>frequency_instances</code> values are rotating-frame detunings <span class="arithmatex">\(\delta_i\)</span>, not bare transition frequencies.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">SuperconductingQubitModel</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SuperconductingQubitModel</span><span class="p">(</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>    <span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>    <span class="n">coupling_type</span><span class="o">=</span><span class="s2">&quot;XY+ZZ&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>    <span class="n">anharmonicities</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="o">-</span><span class="mf">330e6</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="o">-</span><span class="mf">330e6</span><span class="p">]),</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="p">)</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="c1"># Build drift Hamiltonian</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="n">omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5e9</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5.2e9</span><span class="p">])</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5e6</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="n">H0_list</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build_drift</span><span class="p">(</span><span class="n">frequency_instances</span><span class="o">=</span><span class="p">[</span><span class="n">omega</span><span class="p">],</span> <span class="n">coupling_instances</span><span class="o">=</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_qubits</code></td>
+<td>Number of transmon qubits</td>
+</tr>
+<tr>
+<td><code>coupling_type</code></td>
+<td><code>"XY"</code> (exchange), <code>"ZZ"</code> (static ZZ), or <code>"XY+ZZ"</code> (both)</td>
+</tr>
+<tr>
+<td><code>anharmonicities</code></td>
+<td>Per-qubit anharmonicities <span class="arithmatex">\(\alpha_i\)</span> (rad/s), used for perturbative ZZ computation</td>
+</tr>
+<tr>
+<td><code>zz_crosstalk</code></td>
+<td>Calibrated static ZZ coupling matrix (rad/s). Overrides the perturbative formula when provided</td>
+</tr>
+<tr>
+<td><code>stark_shift_coeffs</code></td>
+<td>Per-qubit AC Stark shift coefficients <span class="arithmatex">\(s_i\)</span>. Adds a Z control channel per qubit with amplitude <span class="arithmatex">\(s_i (I^2+Q^2) \Omega_d^2\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">ZZ coupling priority chain</p>
+<p>When <code>coupling_type</code> includes <code>"ZZ"</code>, the ZZ interaction is determined by the first available source:</p>
+<ol>
+<li>Runtime <code>zz_instances</code> kwarg to <code>build_drift</code> (per-snapshot, highest priority)</li>
+<li>Constructor <code>zz_crosstalk</code> (calibrated, fixed across snapshots)</li>
+<li>Perturbative formula: <span class="arithmatex">\(\zeta_{ij} \approx 2\,g_{ij}^2 (1/\alpha_i + 1/\alpha_j)\)</span></li>
+<li>Zero matrix</li>
+</ol>
+</div>
+<h3 id="duffingtransmonmodel">DuffingTransmonModel</h3>
+<p>A 3-level (Duffing oscillator) transmon model that captures leakage to the <span class="arithmatex">\(|2\rangle\)</span> state. Each transmon is modelled as a 3-level system, giving a Hilbert space of dimension <span class="arithmatex">\(3^{n_\text{qubits}}\)</span>. Anharmonicities are <strong>required</strong>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuffingTransmonModel</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="n">model</span> <span class="o">=</span> <span class="n">DuffingTransmonModel</span><span class="p">(</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>    <span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>    <span class="n">coupling_type</span><span class="o">=</span><span class="s2">&quot;XY&quot;</span><span class="p">,</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>    <span class="n">anharmonicities</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="o">-</span><span class="mf">330e6</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="o">-</span><span class="mf">330e6</span><span class="p">]),</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="p">)</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>
+<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a><span class="c1"># Drift: ω n̂ + (α/2) n̂(n̂−I) + g (a†a + aa†)</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="n">omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5e9</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5.2e9</span><span class="p">])</span>
+<a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a><span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">5e6</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
+<a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a><span class="n">H0_list</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build_drift</span><span class="p">(</span><span class="n">frequency_instances</span><span class="o">=</span><span class="p">[</span><span class="n">omega</span><span class="p">],</span> <span class="n">coupling_instances</span><span class="o">=</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+<a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>
+<a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a><span class="c1"># Embed 2-level states/gates into the 3-level space</span>
+<a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a><span class="n">state_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>  <span class="c1"># |00&gt;</span>
+<a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a><span class="n">state_3</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">embed_computational_state</span><span class="p">(</span><span class="n">state_2</span><span class="p">)</span>  <span class="c1"># (9,) vector</span>
+<a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a>
+<a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a><span class="n">X_gate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+<a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a><span class="n">X_embed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">embed_computational_gate</span><span class="p">(</span><span class="n">X_gate</span><span class="p">)</span>  <span class="c1"># (3,3) — identity on |2&gt;</span>
+<a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>
+<a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a><span class="c1"># Compute leakage</span>
+<a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a><span class="n">leakage</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">leakage</span><span class="p">(</span><span class="n">state_3</span><span class="p">)</span>  <span class="c1"># 0.0 for computational states</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_qubits</code></td>
+<td>Number of transmon qubits</td>
+</tr>
+<tr>
+<td><code>coupling_type</code></td>
+<td>Currently <code>"XY"</code> (exchange coupling via <span class="arithmatex">\(a^\dagger_i a_j + a_i a^\dagger_j\)</span>)</td>
+</tr>
+<tr>
+<td><code>anharmonicities</code></td>
+<td>Per-qubit anharmonicities <span class="arithmatex">\(\alpha_i\)</span> (rad/s). <strong>Required.</strong></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>embed_computational_state(state)</code></td>
+<td>Map a <span class="arithmatex">\(2^n\)</span> state vector into the <span class="arithmatex">\(3^n\)</span> Hilbert space</td>
+</tr>
+<tr>
+<td><code>embed_computational_gate(gate)</code></td>
+<td>Embed a <span class="arithmatex">\(2^n \times 2^n\)</span> gate (identity on leakage subspace)</td>
+</tr>
+<tr>
+<td><code>leakage(state)</code></td>
+<td>Compute population outside the computational subspace ({</td>
+</tr>
+</tbody>
+</table>
+<h3 id="using-models-in-configuration">Using Models in Configuration</h3>
+<p>To use a Hamiltonian model, set the <code>hamiltonian_type</code> field in the configuration:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>    <span class="s2">&quot;qubits&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;q1&quot;</span><span class="p">,</span> <span class="s2">&quot;q2&quot;</span><span class="p">],</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>    <span class="s2">&quot;hamiltonian_type&quot;</span><span class="p">:</span> <span class="s2">&quot;superconducting&quot;</span><span class="p">,</span>  <span class="c1"># or &quot;spin_chain&quot;</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>    <span class="s2">&quot;compute_resource&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">},</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>    <span class="s2">&quot;initial_states&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;Z&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]],</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>    <span class="s2">&quot;target_states&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Gate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;iSWAP&quot;</span><span class="p">]},</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>    <span class="s2">&quot;optimization&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">}</span>
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="default-configurations">Default Configurations</h3>
+<p>Each model provides a <code>default_config</code> classmethod that returns a complete, ready-to-run configuration dictionary with sensible physical defaults. This is useful for quick experiments and will also serve as the basis for GUI form population.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>    <span class="n">SpinChainModel</span><span class="p">,</span> <span class="n">SuperconductingQubitModel</span><span class="p">,</span> <span class="n">DuffingTransmonModel</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="p">)</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="c1"># Get a complete spin-chain config for 2 qubits (CNOT gate, XY coupling)</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SpinChainModel</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>
+<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a><span class="c1"># Get a complete superconducting config for 2 qubits (iSWAP gate, XY coupling)</span>
+<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SuperconductingQubitModel</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>
+<a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a><span class="c1"># Get a complete 3-level Duffing config for 2 qubits (leakage-aware)</span>
+<a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a><span class="n">config</span> <span class="o">=</span> <span class="n">DuffingTransmonModel</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="adding-custom-hamiltonian-models">Adding Custom Hamiltonian Models</h3>
+<p>A user who wants to add a new Hamiltonian needs to do just <strong>one thing</strong>: write a Python class that subclasses <code>HamiltonianModel</code> and decorate it with <code>@register_hamiltonian("name")</code>. No framework files need to be touched.</p>
+<h4 id="step-1-define-the-model-class">Step 1 — Define the model class</h4>
+<p>Implement six required members (<code>build_drift</code>, <code>build_control_ops</code>, <code>control_amplitudes</code>, <code>from_config</code>, <code>dim</code>, <code>n_controls</code>) and optionally <code>default_config</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.setup.hamiltonian_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">HamiltonianModel</span><span class="p">,</span> <span class="n">register_hamiltonian</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="nd">@register_hamiltonian</span><span class="p">(</span><span class="s2">&quot;trapped_ion&quot;</span><span class="p">)</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">TrappedIonModel</span><span class="p">(</span><span class="n">HamiltonianModel</span><span class="p">):</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">,</span> <span class="n">laser_wavelength</span><span class="o">=</span><span class="mf">729e-9</span><span class="p">):</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="n">n_qubits</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">laser_wavelength</span> <span class="o">=</span> <span class="n">laser_wavelength</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>        <span class="c1"># ... pre-compute operators, Lamb-Dicke params, etc.</span>
+<a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>
+<a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a>    <span class="nd">@property</span>
+<a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">dim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a>        <span class="k">return</span> <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span>
+<a id="__codelineno-36-14" name="__codelineno-36-14" href="#__codelineno-36-14"></a>
+<a id="__codelineno-36-15" name="__codelineno-36-15" href="#__codelineno-36-15"></a>    <span class="nd">@property</span>
+<a id="__codelineno-36-16" name="__codelineno-36-16" href="#__codelineno-36-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">n_controls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-36-17" name="__codelineno-36-17" href="#__codelineno-36-17"></a>        <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span>  <span class="c1"># I, Q per qubit</span>
+<a id="__codelineno-36-18" name="__codelineno-36-18" href="#__codelineno-36-18"></a>
+<a id="__codelineno-36-19" name="__codelineno-36-19" href="#__codelineno-36-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_drift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency_instances</span><span class="p">,</span> <span class="n">coupling_instances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-36-20" name="__codelineno-36-20" href="#__codelineno-36-20"></a>        <span class="c1"># frequency_instances: list of arrays with per-qubit trap frequencies</span>
+<a id="__codelineno-36-21" name="__codelineno-36-21" href="#__codelineno-36-21"></a>        <span class="c1"># coupling_instances: list of coupling matrices (Mølmer-Sørensen, etc.)</span>
+<a id="__codelineno-36-22" name="__codelineno-36-22" href="#__codelineno-36-22"></a>        <span class="c1"># Return: list of (D, D) numpy arrays — one per snapshot</span>
+<a id="__codelineno-36-23" name="__codelineno-36-23" href="#__codelineno-36-23"></a>        <span class="o">...</span>
+<a id="__codelineno-36-24" name="__codelineno-36-24" href="#__codelineno-36-24"></a>
+<a id="__codelineno-36-25" name="__codelineno-36-25" href="#__codelineno-36-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_control_ops</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-36-26" name="__codelineno-36-26" href="#__codelineno-36-26"></a>        <span class="c1"># Return list of (D, D) numpy arrays: [X_0, Y_0, X_1, Y_1, ...]</span>
+<a id="__codelineno-36-27" name="__codelineno-36-27" href="#__codelineno-36-27"></a>        <span class="o">...</span>
+<a id="__codelineno-36-28" name="__codelineno-36-28" href="#__codelineno-36-28"></a>
+<a id="__codelineno-36-29" name="__codelineno-36-29" href="#__codelineno-36-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">control_amplitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">rabi_freq</span><span class="p">,</span> <span class="n">n_h0</span><span class="p">):</span>
+<a id="__codelineno-36-30" name="__codelineno-36-30" href="#__codelineno-36-30"></a>        <span class="c1"># Map waveform (cx, cy) and Rabi frequency to control amplitudes u_k(t)</span>
+<a id="__codelineno-36-31" name="__codelineno-36-31" href="#__codelineno-36-31"></a>        <span class="o">...</span>
+<a id="__codelineno-36-32" name="__codelineno-36-32" href="#__codelineno-36-32"></a>
+<a id="__codelineno-36-33" name="__codelineno-36-33" href="#__codelineno-36-33"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-36-34" name="__codelineno-36-34" href="#__codelineno-36-34"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<a id="__codelineno-36-35" name="__codelineno-36-35" href="#__codelineno-36-35"></a>        <span class="c1"># Extract model-specific constructor args from the config dict</span>
+<a id="__codelineno-36-36" name="__codelineno-36-36" href="#__codelineno-36-36"></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="n">laser_wavelength</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;laser_wavelength&quot;</span><span class="p">,</span> <span class="mf">729e-9</span><span class="p">))</span>
+<a id="__codelineno-36-37" name="__codelineno-36-37" href="#__codelineno-36-37"></a>
+<a id="__codelineno-36-38" name="__codelineno-36-38" href="#__codelineno-36-38"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-36-39" name="__codelineno-36-39" href="#__codelineno-36-39"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">default_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">):</span>
+<a id="__codelineno-36-40" name="__codelineno-36-40" href="#__codelineno-36-40"></a>        <span class="c1"># Optional: return a complete, ready-to-run config with sensible defaults</span>
+<a id="__codelineno-36-41" name="__codelineno-36-41" href="#__codelineno-36-41"></a>        <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-36-42" name="__codelineno-36-42" href="#__codelineno-36-42"></a>            <span class="s2">&quot;hamiltonian_type&quot;</span><span class="p">:</span> <span class="s2">&quot;trapped_ion&quot;</span><span class="p">,</span>
+<a id="__codelineno-36-43" name="__codelineno-36-43" href="#__codelineno-36-43"></a>            <span class="s2">&quot;qubits&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;q</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)],</span>
+<a id="__codelineno-36-44" name="__codelineno-36-44" href="#__codelineno-36-44"></a>            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">},</span>
+<a id="__codelineno-36-45" name="__codelineno-36-45" href="#__codelineno-36-45"></a>            <span class="s2">&quot;initial_states&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;Z&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]],</span>
+<a id="__codelineno-36-46" name="__codelineno-36-46" href="#__codelineno-36-46"></a>            <span class="s2">&quot;target_states&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Gate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;XX&quot;</span><span class="p">]},</span>
+<a id="__codelineno-36-47" name="__codelineno-36-47" href="#__codelineno-36-47"></a>            <span class="s2">&quot;optimization&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;l-bfgs&quot;</span><span class="p">,</span> <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s2">&quot;targ_fid&quot;</span><span class="p">:</span> <span class="mf">0.999</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-36-48" name="__codelineno-36-48" href="#__codelineno-36-48"></a>        <span class="p">}</span>
+</code></pre></div>
+<h4 id="step-2-make-sure-the-class-is-imported">Step 2 — Make sure the class is imported</h4>
+<p>The <code>@register_hamiltonian</code> decorator fires at import time, so the module just needs to be imported before the config is loaded. Define it in the same script that runs the optimization, or import it from your own package.</p>
+<h4 id="step-3-use-it">Step 3 — Use it</h4>
+<p>Two workflows are available:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Via registry (main path)</label><label for="__tabbed_3_2">Via direct injection (quick experiments)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Reference the model by name in any configuration dictionary or JSON file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="c1"># Use default_config for zero-effort setup</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">TrappedIonModel</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="c1"># or: config = {&quot;hamiltonian_type&quot;: &quot;trapped_ion&quot;, ...}</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>For one-off experiments, inject a model instance directly without registration:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">TrappedIonModel</span><span class="p">(</span><span class="n">n_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">laser_wavelength</span><span class="o">=</span><span class="mf">729e-9</span><span class="p">)</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="n">config_dict</span><span class="p">,</span> <span class="n">hamiltonian_model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="n">solution</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">run_optimization</span><span class="p">()</span>
+</code></pre></div>
+<p>The injected model overrides any <code>hamiltonian_type</code> specified in the configuration.</p>
+</div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">What you get for free</p>
+<p>Everything else in the pipeline works automatically — waveform parameterisation, gradient computation (autograd), fidelity evaluation, plotting, and dashboards — because it all goes through the generic <code>pulse_hamiltonian_generic</code> path using <code>build_control_ops</code> and <code>control_amplitudes</code>. The user only defines the <em>physics</em>; the <em>optimisation machinery</em> is inherited.</p>
+</div>
+<hr />
+<h2 id="configuration-schema">Configuration Schema</h2>
+<p>For a detailed treatment of all configuration parameters, the reader is referred to:</p>
+<ul>
+<li><a href="../optimization/parameters/">Optimization Parameters</a> — Full parameter reference</li>
+<li><a href="../optimization/algorithms/">Algorithms</a> — Available optimization algorithms</li>
+<li><a href="../optimization/compute/">Compute (CPU/GPU)</a> — CPU and GPU configuration</li>
+</ul>
+<hr />
+<h2 id="error-handling">Error Handling</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ctrl_freeq.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">CtrlFreeQAPI</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>    <span class="n">api</span> <span class="o">=</span> <span class="n">CtrlFreeQAPI</span><span class="p">(</span><span class="s2">&quot;nonexistent.json&quot;</span><span class="p">)</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration file not found: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>
+<a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>    <span class="n">api</span><span class="o">.</span><span class="n">update_parameter</span><span class="p">(</span><span class="s2">&quot;invalid.path&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a><span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid parameter path: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><a href="../gui/">GUI Guide</a> — Configure and run optimization interactively</li>
+<li><a href="../dashboard/">Dashboard</a> — Visualize and export results</li>
+<li><a href="../optimization/parameters/">Optimization Parameters</a> — Detailed parameter reference</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
