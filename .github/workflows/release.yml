@@ -23,7 +23,7 @@ jobs:
           ref: ${{ inputs.version && format('refs/tags/v{0}', inputs.version) || github.ref_name }}
 
       - uses: actions/setup-python@v5
-        with: { python-version: "3.13" }
+        with: { python-version: "3.14" }
 
       - name: Build package
         run: |
