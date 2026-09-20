@@ -1,0 +1,1721 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for ctrl-freeq - Quantum Control Framework">
+      
+      
+      
+        <link rel="canonical" href="https://mforoozandeh.github.io/ctrl-freeq/release-notes/">
+      
+      
+        <link rel="prev" href="../dashboard/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Release Notes - ctrl-freeq Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ctrl-freeq Documentation" class="md-header__button md-logo" aria-label="ctrl-freeq Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ctrl-freeq Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Release Notes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/mforoozandeh/ctrl-freeq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ctrl-freeq
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../gui/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  GUI
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../optimization/" class="md-tabs__link">
+          
+  
+  
+  Optimization
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../dashboard/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Dashboard
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ctrl-freeq Documentation" class="md-nav__button md-logo" aria-label="ctrl-freeq Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ctrl-freeq Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/mforoozandeh/ctrl-freeq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ctrl-freeq
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GUI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Optimization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/objectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Objectives and Fidelity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute (CPU/GPU)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#040-2026-09-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] — 2026-09-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] — 2026-09-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking behaviour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-04-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0] — 2026-04-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0] — 2026-04-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-2026-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0] — 2026-02-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0] — 2026-02-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-2026-02-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.1] — 2026-02-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.1] — 2026-02-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-02-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2026-02-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2026-02-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#040-2026-09-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] — 2026-09-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] — 2026-09-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking behaviour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-04-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0] — 2026-04-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0] — 2026-04-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-2026-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0] — 2026-02-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0] — 2026-02-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-2026-02-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.1] — 2026-02-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.1] — 2026-02-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-02-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2026-02-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2026-02-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog</h1>
+<p>All notable changes to this project are documented in this file.
+The format is based on <a href="https://keepachangelog.com/">Keep a Changelog</a>.</p>
+<h2 id="040-2026-09-21">[0.4.0] — 2026-09-21</h2>
+<p>Several fixes change numerical results on purpose; see <strong>Breaking behaviour</strong>.</p>
+<h3 id="breaking-behaviour">Breaking behaviour</h3>
+<ul>
+<li><strong>Gate targets are now scored as an average gate fidelity over the whole
+  computational subspace.</strong> When every configured initial state names the same
+  canonical gate (aliases resolved first, e.g. <code>CX</code> → <code>CNOT</code>), the objective
+  propagates the computational basis as columns and scores
+  <code>F_avg = (Tr(M†M) + |Tr M|²) / (d(d+1))</code> with <code>M = G†V†UV</code>; in Liouville and
+  dissipative modes it uses the Pauli-transfer channel metric
+  <code>F_avg = (d·x₀ + Σⱼ xⱼ) / (d²(d+1))</code>, which also counts population lost from
+  the computational subspace. Previously only the configured input states were
+  scored, so a pulse could report fidelity 1 while implementing a different
+  operation. Reported fidelities for gate configurations will drop accordingly.
+  Configurations that name <em>different</em> gates per initial state keep
+  state-transfer scoring; that score is not certification of a coherent gate.
+  The selected mode is exposed as <code>parameters.objective_mode</code>
+  (<code>"gate"</code> / <code>"state_transfer"</code>), with <code>computational_dim</code>, <code>n_objective_rows</code>,
+  <code>gate_name</code> and <code>gate_matrix</code> alongside it.</li>
+<li><strong>Dissipative propagation now uses the exact channel <code>exp(dt·D)</code> with Strang
+  splitting</strong> (half-channel, unitary, half-channel) instead of an Euler step.
+  The Euler step left the physical state space for step sizes comparable to
+  T1/T2 (a T1=1, dt=2 step returned populations <code>[2, -1]</code>); the channel is CPTP
+  for every step size and the splitting is second-order accurate. The same
+  semantics now apply in the differentiable, NumPy, piecewise and analysis
+  paths.</li>
+<li><strong>The two-level <code>SuperconductingQubitModel</code> drift now follows the Duffing
+  convention</strong>: <code>-δᵢ Zᵢ + 2gᵢⱼ(XᵢXⱼ + YᵢYⱼ)</code>, fixed by requiring it to equal the
+  projection of <code>DuffingTransmonModel</code>'s drift onto the computational subspace.
+  The AC Stark channel amplitude is correspondingly <code>-sᵢ(I²+Q²)Ωᵢ²</code>. The
+  separate spin-chain/NMR convention (<code>createHcs</code>/<code>createHJ</code>) is unchanged.</li>
+<li><strong><code>band_selective</code> bandwidth is the FWHM of the target rotation-angle
+  profile</strong>: <code>exp[-ln2 (2|Δ-Δ₀|/bw)^(2p)]</code>, equal to 1/2 at both band edges for
+  every order. This is not a guarantee about the achieved excitation curve.</li>
+<li><strong>Waveform samples are the midpoints of the propagation intervals</strong>
+  (<code>(k+½)T/N</code>), and stored trajectories are the <code>N+1</code> state boundaries <code>kT/N</code>
+  including the initial state. The previous <code>linspace(eps, T, N)</code> grid was
+  spaced <code>T/(N-1)</code>, so carrier modulation ran fast and analysis propagated past
+  the intended duration.</li>
+<li><strong><code>compute_and_store_evolution</code> now returns five values</strong>
+  <code>(cxs, cys, history, history_mean, leakage)</code>, with <code>N+1</code> time entries.
+  Plot these against <code>Initialise.state_boundary_times()</code>.</li>
+<li><strong>Progress histories now report the physical fidelity.</strong> <code>fidelity_history</code>
+  previously stored <code>fidelity − penalty</code>. Fidelity, penalty and the penalized
+  score are now three separate series (<code>fidelity_history</code>, <code>penalty_history</code>,
+  <code>score_history</code>), with <code>final_fidelity</code>, <code>final_penalty</code> and <code>final_score</code>
+  evaluated on the solution that is actually returned. The stopping criterion
+  remains the penalized score and is now named as such.</li>
+<li><strong>Rank-deficient waveform bases are rejected</strong> instead of being silently
+  completed by QR with directions outside the requested basis (e.g. 8 chirp
+  columns on 10 sample points has numerical rank 5).</li>
+<li><strong><code>band_selective</code> coverage with <code>Axis</code> or <code>Gate</code> targets is rejected.</strong>
+  The smooth profile has no all-or-nothing interpretation for a discrete
+  target; use <code>selective</code> coverage or a <code>Phi</code>/<code>Beta</code> target.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>Gate objectives no longer score only the configured input states, and gate
+  aliases are canonicalised before the objective is chosen.</li>
+<li>Euler relaxation replaced by an exact CPTP dissipative channel; channel
+  durations are validated as finite and non-negative.</li>
+<li>Two-level and Duffing transmons now agree on detuning sign, exchange scale
+  and Stark sign.</li>
+<li>The perturbative static ZZ estimate is
+  <code>ζ = 2g²(αᵢ+αⱼ)/((Δ+αᵢ)(Δ-αⱼ))</code> with <code>Δ = δᵢ-δⱼ</code>, evaluated per snapshot, and
+  is refused near the |11⟩↔|20⟩/|02⟩ avoided crossings (mixing
+  <code>√2|g|/min(|Δ+αᵢ|,|Δ-αⱼ|) ≤ 0.1</code>, a small-mixing heuristic, not a 1% error
+  bound). The previous estimate had the wrong sign, ignored the detuning and
+  had no validity guard. Calibrated ZZ still takes priority.</li>
+<li>Coupling uncertainty alone no longer collapses the drift ensemble to a
+  single snapshot; deterministic offsets are repeated to match it. Previously
+  ten requested snapshots produced one frequency snapshot and ten coupling
+  draws, and only one pair was used.</li>
+<li>Selective coverage masks are evaluated per qubit instead of only inspecting
+  qubit 1: axis targets are built as a product over qubits, and a gate is
+  applied only when every participating qubit is in its band.</li>
+<li>Observables and density matrices embed as <code>V O V†</code>, separate from the gate
+  embedding <code>V G V† + (I − VV†)</code>. A fully leaked |2⟩ now reports 0 on the
+  computational Pauli observables instead of <code>⟨Z⟩ = +1</code>.</li>
+<li>Each qubit's selective samples are shuffled before joint snapshots are
+  formed, so the ensemble contains mixed in-band/out-of-band combinations.
+  Pairing the concatenated <code>[left | in-band | right]</code> arrays by index made
+  every qubit in-band or out-of-band at the same index.</li>
+<li>Waveform sample times, propagation step and plotted state times agree.</li>
+<li>Numerical rank and dimensions are checked for every matrix that is actually
+  factorised, including the envelope-weighted ones.</li>
+<li>Constant envelopes (one- or two-point grids) return a flat unit envelope
+  instead of <code>NaN</code> from a zero-width normalisation range; envelope inputs are
+  validated.</li>
+<li><code>band_selective</code> width uses the correct FWHM conversion; bandwidth and order
+  are validated.</li>
+<li>Coupling matrices are normalised once per physical pair, sampled once per
+  pair and mirrored, so a symmetric nominal matrix with <code>sigma_J &gt; 0</code> stays
+  symmetric instead of becoming asymmetric and being rejected downstream.
+  Superconducting and Duffing models accept upper-triangular, lower-triangular
+  and symmetric inputs, matching the legacy normaliser and the plotter.</li>
+<li>Initial-state, target and drift arrays share one canonical ordering
+  (<code>row × drift snapshot</code>, with the Rabi snapshot expanded last), with explicit
+  length validation. The two sides previously used different flattening orders,
+  so each initial state saw only a subset of the drift ensemble.</li>
+<li>Analysis replays the optimizer's physics: the model's complete control
+  operator/amplitude mapping (including extra channels such as AC Stark), the
+  same propagator and the same dissipative channel. Dynamics replay previously
+  evolved unitarily even in dissipative mode, and indexed control operators in
+  pairs, so a Stark-enabled two-qubit model drove qubit 2 with <code>Z₀</code> and <code>X₁</code>.
+  Nominal and sampled trajectories are now distinguished, and the sampled band
+  covers drift × Rabi.</li>
+<li>Duffing states embed by rank: vectors as <code>Vψ</code>, density matrices and Pauli
+  strings as <code>VρV†</code>. A Liouville-space Duffing run previously built <code>(1, 3, 2)</code>
+  states against <code>(1, 3, 3)</code> drift matrices. Dissipative Duffing remains
+  explicitly unsupported.</li>
+<li>The Uhlmann fidelity against a pure target is evaluated in closed form as
+  <code>Re Tr(ρσ)</code>, which is differentiable; target purity is validated. The
+  eigendecomposition-based version raised a complex eigenvector-phase error in
+  its backward pass.</li>
+<li>Fidelity, penalty and penalized score are reported separately in both
+  optimizer paths, and final metrics describe the returned solution rather than
+  the optimiser's last trial point.</li>
+<li>
+<p>Piecewise optimisation honours the Hamiltonian model's control mapping and
+  dimension, and selects the propagator by actual matrix dimension. A one-qutrit
+  drift previously raised a 2-versus-3 dimension error, and superconducting
+  Stark channels were omitted.</p>
+</li>
+<li>
+<p>Analysis replay used a float32 time step, so it propagated with
+  <code>dt = 9.99999993922529e-09</code> instead of <code>1e-8</code>.</p>
+</li>
+<li>Analysis now reconstructs waveforms with the representation the solution was
+  optimised in, via the new <code>WaveformSpec</code>. It previously always used the
+  configured basis parameter counts and matrices, so a piecewise solution
+  either raised a split-size error (when the counts differed) or silently
+  reconstructed a different waveform (when they happened to coincide) — an
+  eight-point piecewise solution crashed, and a two-point one replayed at
+  fidelity 0.0132 against an optimised 1.0000.</li>
+<li>The dissipative channel keeps a tensor duration in the autograd graph.
+  Substituting the validated Python scalar detached <code>exp(dt·D)</code> from the pulse
+  duration, so duration gradients were silently zero. Gradients with respect to
+  the waveform coefficients were unaffected.</li>
+<li>Selective and band-selective sampling produce exactly the requested number of
+  snapshots. Rounding the out-of-band count up to an even number and then
+  halving it for both tails dropped a sample: with <code>ratio_factor = 1</code>, requests
+  of 1/3/5 snapshots produced 0/2/4, and a one-snapshot request produced an
+  empty ensemble.</li>
+<li>The amplitude report derives the sampled physical peak range from <code>|gain|</code>.
+  A negative sampled Rabi gain is a phase reversal, not a negative drive
+  magnitude, so signed extrema reported <code>(-2, 1)</code> for gains <code>[-2, 1]</code> and
+  understated the largest drive.</li>
+<li>A piecewise waveform representation no longer leaks into a later basis run on
+  the same parameters object. Each optimizer now declares its own
+  representation, so <code>PiecewiseAPI(api).run_optimization()</code> followed by
+  <code>api.run_optimization()</code> replays the basis solution correctly instead of
+  splitting its 4 coefficients with the piecewise layout's 16. Analysing a
+  solution whose parameter count disagrees with the recorded representation
+  raises a named error instead of reconstructing the wrong waveform; see
+  <strong>Known limitations</strong> for what that check cannot catch.</li>
+<li>Piecewise <code>polar_phase</code> optimisation no longer raises <code>TypeError</code> when
+  selecting the per-qubit amplitude envelope order from a preprocessed
+  configuration.</li>
+</ul>
+<h3 id="added">Added</h3>
+<ul>
+<li><code>WaveformSpec</code> in <code>make_pulse.waveform_gen_torch</code>, describing the parameter
+  counts, basis matrices and modes a solution vector is expressed in, together
+  with <code>waveform_function()</code> / <code>waveform_functions()</code>. Analysis reads it via
+  <code>Initialise.waveform_spec()</code>, which returns the most recent run's
+  representation (the configured basis by default);
+  <code>Initialise.basis_waveform_spec()</code> always returns the configured basis, and
+  <code>Piecewise.waveform_spec()</code> the piecewise identity basis.</li>
+<li>Optional <code>waveform_spec=</code> argument on <code>process_and_plot()</code>,
+  <code>compute_and_store_evolution()</code>, <code>get_final_rho_for_excitation_profile()</code> and
+  <code>plot_excitation_profiles()</code>, so a solution can be analysed with its own
+  representation instead of whichever run finished last. Backwards compatible:
+  omitting it keeps the previous implicit behaviour.</li>
+<li><code>CtrlFreeQAPI.waveform_spec()</code> and <code>PiecewiseAPI.waveform_spec()</code> as the
+  handles to pass to those entry points. The former stays valid after another
+  optimizer has run on the same parameters object.</li>
+<li><code>Initialise.dt</code>, <code>Initialise.state_boundary_times()</code> and
+  <code>Initialise.n_drift_snapshots()</code>.</li>
+<li><code>canonical_gate_name()</code>, <code>pauli_string_basis()</code> and
+  <code>band_selective_profile()</code> in <code>setup.initialise_gui</code>.</li>
+<li><code>fidelity_gate_hilbert()</code>, <code>fidelity_gate_liouville()</code>,
+  <code>dissipator_superoperator()</code>, <code>dissipative_channel()</code>, <code>apply_channel()</code> and
+  <code>simulate_trajectory()</code> in <code>ctrlfreeq.ctrl_freeq</code>; <code>dissipator_superoperator</code>,
+  <code>dissipative_channel</code> and <code>apply_channel</code> also in <code>evolution.time_evolution</code>.</li>
+<li><code>HamiltonianModel.embed_computational_operator()</code>,
+  <code>HamiltonianModel.computational_projector()</code> and
+  <code>HamiltonianModel.computational_leakage()</code>.</li>
+<li><code>SuperconductingQubitModel.perturbative_zz()</code>.</li>
+<li>Total-leakage trajectories <code>L(t) = 1 − Tr(Π_comp ρ(t))</code> at the <code>N+1</code> state
+  boundaries, returned by <code>compute_and_store_evolution</code> and drawn by the new
+  <code>plot_leakage()</code> (nominal trace plus snapshot min/max envelope). The total is
+  per register; per-qubit leakages are not summed.</li>
+<li>
+<p><code>amplitude_limit_report()</code> / <code>format_amplitude_limit_report()</code> and
+  <code>parameters.amplitude_report</code>: per-qubit sampled peak <code>hypot(I, Q)</code> normalised
+  to <code>Omega_R_max</code>, the amount above 1, and the nominal versus sampled physical
+  peak (the sampled range uses gain magnitudes). The amplitude limit remains a
+  <strong>soft penalty</strong> — the returned waveform is not clipped or constrained to it,
+  and a sampled peak is not a bound on an independently interpolated continuous
+  waveform. Hard hardware enforcement is deferred, not implemented.</p>
+</li>
+<li>
+<p>Documentation: a new <strong>Objectives and Fidelity</strong> page defining the cost
+  function, the two objective modes, the average-gate-fidelity and channel
+  metrics, the coverage interaction and the reported quantities; an
+  <strong>Analysis and Plotting</strong> section in the API reference covering the time
+  grids, leakage series and waveform representation. The dissipative
+  splitting, AC Stark, perturbative ZZ and two-level drift conventions were
+  corrected to match the implementation, along with the <code>targ_fid</code>,
+  <code>pulse_bandwidth</code> and <code>amplitude_envelope</code> descriptions.</p>
+</li>
+<li>196 regression tests covering the fixes above, using independent analytical
+  references (exact Duffing spectra, an exact single-qubit 2-design,
+  full-Liouvillian matrix exponentials, explicit nested-loop propagation) and
+  finite-difference checks of both gradients and Hessian-vector products in
+  float64/complex128.</li>
+</ul>
+<h3 id="known-limitations">Known limitations</h3>
+<ul>
+<li>Implicit analysis replay uses the representation of the <strong>most recent run</strong>
+  on a parameters object. When two optimizers share one object and both
+  solutions are still in play, pass the owning run's representation to the
+  analysis entry points — <code>CtrlFreeQAPI.waveform_spec()</code> stays valid across
+  later runs, and <code>PiecewiseAPI.waveform_spec()</code> returns its own. The
+  parameter-count check only catches representations of <em>different</em> sizes;
+  equal-count representations (for example a two-point basis solution and a
+  two-point piecewise cart solution, both 4 parameters) are indistinguishable
+  and will replay with the latest run's representation. Optimisation metrics
+  such as <code>final_fidelity</code> live on the same shared object and are likewise
+  overwritten by a later run.</li>
+<li>RNG seeds are not yet exposed or recorded, and optimised pulses are not
+  validated on held-out drift/Rabi draws or denser offset/time grids. Reported
+  fidelities are training-batch fidelities.</li>
+<li><code>stark_shift_coeffs</code> is documented as dimensionless but multiplies <code>Ω²</code>, so
+  its effective units are inverse frequency; sensible values are far below 1.</li>
+</ul>
+<h2 id="030-2026-04-01">[0.3.0] — 2026-04-01</h2>
+<h3 id="added_1">Added</h3>
+<ul>
+<li>Hamiltonian model abstraction layer (<code>HamiltonianModel</code> ABC) enabling platform-agnostic pulse optimization via the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k.</li>
+<li>Plugin architecture with model registry: <code>@register_hamiltonian("name")</code> decorator, <code>get_hamiltonian_class()</code> lookup, and <code>list_hamiltonians()</code> discovery, allowing new Hamiltonian types to be added without modifying any framework files.</li>
+<li><code>from_config(n_qubits, params)</code> classmethod on all models for registry-driven construction from configuration dictionaries.</li>
+<li><code>default_config(n_qubits)</code> classmethod on all models returning a complete, ready-to-run configuration with sensible physical defaults (GUI-ready templates).</li>
+<li>Direct model injection via <code>CtrlFreeQAPI(config, hamiltonian_model=model)</code> for quick experiments with custom or unregistered models.</li>
+<li><code>SpinChainModel</code> — wraps the existing spin-chain drift and coupling Hamiltonians (Ising, XY, Heisenberg) behind the new model interface.</li>
+<li><code>SuperconductingQubitModel</code> — transmon qubit Hamiltonian with qubit-frequency drift, capacitive coupling (XY, ZZ, XY+ZZ), and anharmonicity-derived static ZZ shifts.</li>
+<li>Calibrated ZZ parameter (<code>zz_crosstalk</code>) for <code>SuperconductingQubitModel</code>: accepts a calibrated static ZZ coupling matrix that overrides the perturbative formula, with a clear priority chain (runtime <code>zz_instances</code> &gt; calibrated <code>zz_crosstalk</code> &gt; perturbative formula &gt; zero).</li>
+<li>AC Stark shift (<code>stark_shift_coeffs</code>) for <code>SuperconductingQubitModel</code>: adds per-qubit drive-dependent Z control channels modelling the light shift H_Stark = Σ_i s_i/2 (I²+Q²) Ω_d² σ_z.</li>
+<li><code>DuffingTransmonModel</code> — 3-level (Duffing oscillator) transmon Hamiltonian with dim = 3^n_qubits, enabling leakage detection to the |2⟩ state. Registered as <code>"duffing_transmon"</code> in the plugin registry.</li>
+<li><code>embed_computational_state()</code> and <code>embed_computational_gate()</code> methods on <code>HamiltonianModel</code> ABC for mapping 2^n states/gates into higher-dimensional model spaces (identity for standard qubit models, active embedding for 3-level models).</li>
+<li><code>leakage()</code> method on <code>DuffingTransmonModel</code> to compute population outside the computational subspace.</li>
+<li>Automatic state/gate embedding in <code>initialise_gui.py</code> for models with dim &gt; 2^n (e.g. Duffing transmon).</li>
+<li><code>pulse_hamiltonian_generic()</code> — model-agnostic pulse Hamiltonian construction via <code>einsum</code>, replacing the spin-chain-specific implementation for new model paths.</li>
+<li>GUI Hamiltonian Type selector dropdown (Spin Chain / Superconducting) that dynamically relabels fields (Δ↔ω, J↔g) and reconfigures coupling controls.</li>
+<li>Gate dropdown (Combobox) in the GUI, replacing free-text entry, with platform-aware gate lists and defaults (CNOT for Spin Chain, iSWAP for Superconducting).</li>
+<li>Two new two-qubit gates: √iSWAP and ECR (echoed cross-resonance).</li>
+<li>Superconducting coupling controls in the GUI: coupling types XY, ZZ, XY+ZZ; per-qubit anharmonicity entry.</li>
+<li>MathJax rendering for all mathematical notation in the documentation (<code>pymdownx.arithmatex</code> with MathJax 3).</li>
+<li>Documentation: step-by-step guide for adding custom Hamiltonian models (define, import, use), with registry and direct-injection workflows.</li>
+<li>API demo notebook section 8d: <code>default_config</code> usage and direct model injection examples.</li>
+<li>API demo notebook section 9: Duffing transmon demos — single-qubit inversion (9a), leakage measurement (9b), two-qubit iSWAP (9c), custom anharmonicities (9d), and DRAG vs ctrl-freeq comparison (9e).</li>
+<li><code>tests/test_dissipation.py</code> — 20 tests covering collapse-operator construction, dephasing-rate correctness, T1/T2 input validation, dissipative + non-2-level model guard, and Lindblad dissipator algebraic properties (trace-zero, hermiticity preservation). This path previously had zero test coverage.</li>
+<li><code>tests/test_optimizer_spaces.py</code> — comprehensive test of all 19 supported optimizers (9 torchmin + 10 qiskit) across Hilbert, Liouville, and dissipative spaces, plus cross-space consistency checks.</li>
+<li>Coupling-matrix indexing and symmetrisation tests in <code>test_hamiltonian_models.py</code>: verifies upper/lower/symmetric inputs produce identical Hamiltonians, asymmetric matrices are rejected, and all coupling types (Z, XY, XYZ) produce non-zero output with bundled configs.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li>Standardized <code>build_drift</code> signature across all models: <code>frequency_instances</code>, <code>coupling_instances</code> (replaces model-specific parameter names).</li>
+<li><code>initialise_gui.py</code> and <code>plotter.py</code> now use the registry for model construction and generic <code>build_drift</code> calls, eliminating all isinstance dispatch.</li>
+<li><code>SuperconductingQubitModel</code> docstrings now explicitly document the rotating-frame convention, sign/scaling conventions (rad/s, spin-½ Paulis), and the distinction between exchange coupling (g) and static ZZ (ζ).</li>
+<li>Default two-qubit gate is now Hamiltonian-type-aware: CNOT for spin chains, iSWAP for superconducting qubits.</li>
+<li>Gate entry fields in the GUI are now dropdown menus (Combobox) with available gates filtered by qubit count and Hamiltonian type.</li>
+<li>Plotter functions (<code>compute_and_store_evolution</code>, <code>get_final_rho_for_excitation_profile</code>) are now model-aware: they use <code>HamiltonianModel.build_control_ops()</code> and <code>model.dim</code> when available, falling back to legacy Pauli operators for standard qubit models.</li>
+<li>State embedding (<code>_embed_states_for_model</code>) now also embeds raw initial states (<code>self.init</code>) and observable operators (<code>self.obs_op</code>) into the model's Hilbert space, ensuring all six plot types (IQ, amplitude/phase, history, observables, Bloch sphere, excitation profile) work correctly with higher-dimensional models like <code>DuffingTransmonModel</code>.</li>
+<li>Backward compatibility is maintained: configurations without <code>hamiltonian_type</code> continue to use the legacy spin-chain code path. All new parameters (<code>zz_crosstalk</code>, <code>stark_shift_coeffs</code>) default to <code>None</code> and are fully backward-compatible.</li>
+<li>API reference: constructor and <code>run_from_config</code> signatures now document the <code>hamiltonian_model</code> parameter for direct model injection.</li>
+<li>Parameter reference: <code>hamiltonian_type</code> field now links to the model registry documentation and notes support for custom registered models.</li>
+</ul>
+<h3 id="fixed_1">Fixed</h3>
+<ul>
+<li>Fixed pure-dephasing rate being off by 2×. Dephasing collapse operator changed from <code>√γ_φ · σ_z/2</code> to <code>√(γ_φ/2) · σ_z</code> so the Lindblad dissipator yields the correct off-diagonal decay rate <code>dρ₀₁/dt = −γ_φ · ρ₀₁</code> matching the physical T₂ convention.</li>
+<li>Fixed model injection via <code>CtrlFreeQAPI</code> leaving state dimensions inconsistent with the injected model. The override path now calls <code>_embed_states_for_model()</code> after replacement, with an idempotency guard that skips re-embedding when states are already at the target dimension and raises <code>ValueError</code> for incompatible dimensions.</li>
+<li>Fixed ZZ coupling terms being silently skipped unless <code>coupling_instances</code> was provided. Calibrated <code>zz_crosstalk</code> and runtime <code>zz_instances</code> now work independently of exchange-coupling matrices. The perturbative formula still requires <code>coupling_instances</code> (as it uses g_{ij}).</li>
+<li>Fixed invalid <code>T1</code>/<code>T2</code> inputs (zero, negative, infinity, NaN) producing <code>NaN</code>/<code>inf</code> collapse operators instead of failing. Validation now enforces positive finite values before computing decay rates.</li>
+<li>Fixed dissipative mode silently producing invalid results with non-2-level Hamiltonian models (e.g. <code>DuffingTransmonModel</code>). The combination now raises <code>ValueError</code> at init time, since collapse operators and Liouville-space embedding are hard-coded for 2-level systems.</li>
+<li>Fixed <code>DuffingTransmonModel</code> silently accepting unsupported <code>coupling_type</code> values. The constructor now raises <code>ValueError</code> for anything other than <code>"XY"</code>.</li>
+<li>Fixed inconsistent snapshot semantics across Hamiltonian models. <code>SpinChainModel.build_drift</code> now uses repeat-last-element semantics for mismatched <code>coupling_instances</code> length, matching <code>SuperconductingQubitModel</code> and <code>DuffingTransmonModel</code>.</li>
+<li>Fixed <code>createHJ</code> defaulting to lowercase <code>"z"</code> which silently failed the uppercase comparison and returned a zero matrix. Input is now normalised via <code>.upper()</code>, <code>None</code> falls back to <code>"Z"</code>, and the docstring lists the actual accepted values.</li>
+<li>Fixed <code>build_collapse_operators</code> docstring claiming it returns tuples <code>(L, L_dag, L_dag_L)</code> when it actually returns <code>np.ndarray</code> of shape <code>(n_ops, D, D)</code> or <code>None</code>.</li>
+<li>Fixed <code>exp_mat_exact</code> producing <code>NaN</code> for zero-magnitude Hamiltonians (e.g. identity-only drift). The <code>sin(x)/x</code> term is now computed via <code>torch.sinc</code>, which is numerically safe at <code>x = 0</code>.</li>
+<li>Fixed Lindblad dissipator recomputing <code>L†</code> and <code>L†L</code> at every time step inside the propagation loop. These products are now precomputed once before the loop and passed through.</li>
+<li>Fixed <code>pulse_para</code> concatenating an unused <code>phis</code> tensor into its return value. The function now returns <code>(amps, cxs, cys)</code>, avoiding a redundant allocation on every optimizer iteration.</li>
+<li>Fixed brittle absolute imports in <code>piecewise.py</code> (<code>from src.ctrl_freeq.…</code>) that break when the package is installed normally. All imports now use the package-relative form <code>from ctrl_freeq.…</code>.</li>
+<li>Fixed <code>createHJ</code> reading the lower triangle of the coupling matrix (<code>J[n,k]</code> with <code>k &lt; n</code>) while all configs, the GUI, and the new Hamiltonian models populate the upper triangle (<code>J[i,j]</code> with <code>i &lt; j</code>). This caused spin-chain inter-qubit coupling to be silently zero for every bundled and GUI-generated two-qubit configuration. The function now symmetrises the input so that upper-triangular, lower-triangular, and fully symmetric matrices all produce the correct Hamiltonian. Asymmetric matrices with conflicting entries raise <code>ValueError</code>.</li>
+</ul>
+<h2 id="020-2026-02-25">[0.2.0] — 2026-02-25</h2>
+<h3 id="added_2">Added</h3>
+<ul>
+<li>Support for dissipative evolution in the optimization process with Lindblad master equation.</li>
+<li>Documentation of Lindblad master equation support for dissipative open quantum systems (T1/T2 relaxation channels, GUI controls, API workflow, configuration schema).</li>
+</ul>
+<h3 id="fixed_2">Fixed</h3>
+<ul>
+<li>Fixed a bug in the calculation of density matrix.</li>
+<li>Fixed a normalisation bug in the plotter for observable dynamics visualisation in the Liouville space.</li>
+</ul>
+<h2 id="011-2026-02-17">[0.1.1] — 2026-02-17</h2>
+<h3 id="changed_1">Changed</h3>
+<ul>
+<li>Broadened Python version support from 3.13-only to 3.11–3.13.</li>
+<li>CI test matrix now covers Python 3.11, 3.12, and 3.13.</li>
+<li>GitHub Actions updated to actions/checkout v4 and actions/setup-python v5.</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li>Hard dependency on a system LaTeX installation; text rendering now falls back gracefully when LaTeX is unavailable.</li>
+<li>Unused <code>tqdm</code> dependency.</li>
+</ul>
+<h3 id="fixed_3">Fixed</h3>
+<ul>
+<li>Corrected an invalid <code>tqdm</code> version pin that referenced the non-existent 3.x series.</li>
+<li>Resolved a broken relative link to the example dashboard in the documentation.</li>
+</ul>
+<h2 id="010-2026-02-17">[0.1.0] — 2026-02-17</h2>
+<p>Initial public release.</p>
+<h3 id="added_3">Added</h3>
+<ul>
+<li>Quantum gate and pulse optimization via automatic differentiation (PyTorch).</li>
+<li>Programmatic Python API for loading configurations, executing optimizations, and post-processing results.</li>
+<li>Tkinter-based graphical user interface, launched via the <code>freeq-gui</code> CLI entry point.</li>
+<li>Interactive Plotly dashboards exported as standalone HTML files.</li>
+<li>Multiple optimizer families: BFGS, L-BFGS, CG, Newton-CG, Newton-Exact, Dogleg, Trust-NCG, Trust-Krylov, Trust-Exact, and Qiskit-provided algorithms.</li>
+<li>Polynomial-based and piecewise-constant waveform parameterisations.</li>
+<li>Selective and band-selective coverage modes.</li>
+<li>CPU thread management and optional GPU acceleration via CUDA.</li>
+<li>Comprehensive documentation built with MkDocs Material.</li>
+<li>CI/CD pipelines: GitHub Actions for testing, PyPI publishing, and Docker/GHCR image builds.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
