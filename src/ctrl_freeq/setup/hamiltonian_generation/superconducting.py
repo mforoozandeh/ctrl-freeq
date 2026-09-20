@@ -3,10 +3,17 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+
 from ctrl_freeq.setup.hamiltonian_generation.base import (
     HamiltonianModel,
     register_hamiltonian,
 )
+from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import _symmetrise_coupling
+
+# Largest tolerated |11> <-> |20> / |02> mixing before the perturbative ZZ
+# estimate is refused.  This is a small-mixing heuristic, not a uniform 1%
+# error bound on zeta.
+_MAX_ZZ_MIXING = 0.1
 
 
 @register_hamiltonian("superconducting")
@@ -36,13 +43,23 @@ class SuperconductingQubitModel(HamiltonianModel):
       :math:`Z_i = \tfrac{1}{2}\sigma_z^{(i)}`.
       Therefore ``omega * Z[i]`` contributes :math:`(\omega/2)\,\sigma_z`.
 
+
     Drift Hamiltonian
     -----------------
     .. math::
 
-        H_{\text{drift}} = \sum_i \frac{\delta_i}{2}\,\sigma_z^{(i)}
-            \;+\; \sum_{i<j} g_{ij}\bigl(X_i X_j + Y_i Y_j\bigr)
+        H_{\text{drift}} = -\sum_i \delta_i\,Z_i
+            \;+\; \sum_{i<j} 2 g_{ij}\bigl(X_i X_j + Y_i Y_j\bigr)
             \;+\; \sum_{i<j} \zeta_{ij}\,Z_i Z_j
+
+    The detuning sign and the exchange scale are fixed by requiring that this
+    Hamiltonian equal the projection of :class:`DuffingTransmonModel`'s drift
+    onto the computational subspace (up to a scalar identity).  Projecting
+    :math:`\delta_i n_i` gives :math:`\delta_i(I/2 - Z_i)`, and projecting
+    :math:`g(a_i^\dagger a_j + \mathrm{h.c.})` gives
+    :math:`2g(X_iX_j + Y_iY_j)`.  This is *not* the spin-chain / NMR
+    convention used by :func:`~ctrl_freeq.setup.hamiltonian_generation.hamiltonians.createHcs`,
+    which is unchanged.
 
     * :math:`\delta_i` — qubit detuning in the rotating frame (rad/s).
     * :math:`g_{ij}` — exchange (XY) coupling from the capacitive interaction
@@ -50,9 +67,8 @@ class SuperconductingQubitModel(HamiltonianModel):
     * :math:`\zeta_{ij}` — residual static ZZ rate (cross-Kerr).  Physically
       distinct from *g*: it is a perturbative diagonal shift, not an exchange
       term.  Can be supplied as a calibrated matrix (``zz_crosstalk``), per-
-      snapshot values (``zz_instances`` kwarg), or approximated from
-      anharmonicities via
-      :math:`\zeta_{ij} \approx 2\,g_{ij}^2 (1/\alpha_i + 1/\alpha_j)`.
+      snapshot values (``zz_instances`` kwarg), or estimated from
+      anharmonicities and detunings via :meth:`perturbative_zz`.
 
     Control Hamiltonian
     -------------------
@@ -68,13 +84,16 @@ class SuperconductingQubitModel(HamiltonianModel):
     When ``stark_shift_coeffs`` is provided, an additional AC Stark (light-
     shift) term is included:
 
+
     .. math::
 
-        H_{\text{Stark}}(t) = \sum_i \frac{s_i}{2}\,
-            \bigl(I_i^2(t) + Q_i^2(t)\bigr)\,\Omega_{d,i}^2\;\sigma_z^{(i)}
+        H_{\text{Stark}}(t) = -\sum_i s_i\,
+            \bigl(I_i^2(t) + Q_i^2(t)\bigr)\,\Omega_{d,i}^2\;Z_i
 
-    This is implemented as an extra Z control channel per qubit whose
-    amplitude is :math:`s_i\,(I_i^2+Q_i^2)\,\Omega_{d,i}^2`.
+    ``s_i`` is defined as a shift of the qubit *frequency*, so it enters the
+    two-level drift with the same minus sign as the detuning.  This is
+    implemented as an extra Z control channel per qubit whose amplitude is
+    :math:`-s_i\,(I_i^2+Q_i^2)\,\Omega_{d,i}^2`.
     """
 
     def __init__(
@@ -188,14 +207,17 @@ class SuperconductingQubitModel(HamiltonianModel):
         for idx, omega in enumerate(frequency_instances):
             H = np.zeros((D, D), dtype=complex)
 
-            # Qubit detunings: sum_i delta_i * Z_i  (= delta_i/2 * sigma_z)
+            # Qubit detunings: -sum_i delta_i * Z_i  (= -delta_i/2 * sigma_z).
+            # Sign and scale follow the Duffing convention: projecting
+            # delta_i * n_i onto {|0>, |1>} gives delta_i (I/2 - Z_i), i.e.
+            # -delta_i Z_i up to a constant.
             for i in range(self.n_qubits):
-                H += omega[i] * self._Z[i]
+                H -= omega[i] * self._Z[i]
 
             # XY coupling terms (require coupling_instances)
             g = None
             if coupling_instances is not None and self.n_qubits > 1:
-                g = (
+                g = _symmetrise_coupling(
                     coupling_instances[idx]
                     if idx < len(coupling_instances)
                     else coupling_instances[-1]
@@ -204,9 +226,18 @@ class SuperconductingQubitModel(HamiltonianModel):
                     for i in range(self.n_qubits):
                         for j in range(i + 1, self.n_qubits):
                             if g[i, j] != 0:
-                                # Exchange coupling: g_{ij} (X_i X_j + Y_i Y_j)
-                                H += g[i, j] * (
-                                    self._X[i] @ self._X[j] + self._Y[i] @ self._Y[j]
+                                # Exchange coupling: 2 g_{ij} (X_i X_j + Y_i Y_j).
+                                # Projecting g (a†_i a_j + h.c.) onto the
+                                # computational subspace gives
+                                # g (sigma_+^i sigma_-^j + h.c.)
+                                #   = 2 g (X_i X_j + Y_i Y_j)  with X = sigma_x/2.
+                                H += (
+                                    2
+                                    * g[i, j]
+                                    * (
+                                        self._X[i] @ self._X[j]
+                                        + self._Y[i] @ self._Y[j]
+                                    )
                                 )
 
             # ZZ coupling (independent of coupling_instances for calibrated sources)
@@ -221,16 +252,7 @@ class SuperconductingQubitModel(HamiltonianModel):
                 elif self.zz_crosstalk is not None:
                     zz = self.zz_crosstalk
                 elif self.anharmonicities is not None and g is not None:
-                    # Perturbative static ZZ from anharmonicity:
-                    # zeta_{ij} ~ 2 g_{ij}^2 (1/alpha_i + 1/alpha_j)
-                    alpha = self.anharmonicities
-                    zz = np.zeros((self.n_qubits, self.n_qubits))
-                    for i in range(self.n_qubits):
-                        for j in range(i + 1, self.n_qubits):
-                            if alpha[i] != 0 and alpha[j] != 0:
-                                zz[i, j] = (
-                                    2 * g[i, j] ** 2 * (1.0 / alpha[i] + 1.0 / alpha[j])
-                                )
+                    zz = self.perturbative_zz(omega, g)
                 else:
                     zz = np.zeros((self.n_qubits, self.n_qubits))
 
@@ -242,6 +264,60 @@ class SuperconductingQubitModel(HamiltonianModel):
             H0_list.append(H)
 
         return H0_list
+
+    def perturbative_zz(self, detunings, coupling):
+        r"""Second-order static ZZ from anharmonicity, per qubit pair.
+
+        .. math::
+
+            \zeta_{ij} = \frac{2 g_{ij}^2\,(\alpha_i + \alpha_j)}
+                              {(\Delta + \alpha_i)(\Delta - \alpha_j)},
+            \qquad \Delta = \delta_i - \delta_j
+
+        The estimate comes from second-order perturbation theory in the
+        :math:`|11\rangle \leftrightarrow |20\rangle` and
+        :math:`|11\rangle \leftrightarrow |02\rangle` couplings, so it is only
+        meaningful away from those avoided crossings.  The mixing angle
+        :math:`\sqrt{2}|g| / \min(|\Delta+\alpha_i|, |\Delta-\alpha_j|)` must
+        not exceed :data:`_MAX_ZZ_MIXING`; otherwise the estimate is refused
+        and a calibrated ZZ matrix (``zz_crosstalk`` / ``zz_instances``) or the
+        3-level :class:`DuffingTransmonModel` should be used instead.
+
+        Args:
+            detunings: per-qubit rotating-frame detunings ``(n_qubits,)``
+                for this snapshot (rad/s).
+            coupling: exchange-coupling matrix ``(n_qubits, n_qubits)``
+                for this snapshot (rad/s).
+
+        Returns:
+            Upper-triangular ``(n_qubits, n_qubits)`` array of ZZ rates.
+        """
+        alpha = self.anharmonicities
+        zz = np.zeros((self.n_qubits, self.n_qubits))
+        for i in range(self.n_qubits):
+            for j in range(i + 1, self.n_qubits):
+                g = coupling[i, j]
+                if g == 0:
+                    continue
+                if alpha[i] == 0 or alpha[j] == 0:
+                    continue
+                delta = detunings[i] - detunings[j]
+                den_i = delta + alpha[i]
+                den_j = delta - alpha[j]
+                smallest = min(abs(den_i), abs(den_j))
+                if smallest == 0 or np.sqrt(2) * abs(g) / smallest > _MAX_ZZ_MIXING:
+                    raise ValueError(
+                        f"Perturbative ZZ estimate is invalid for qubits "
+                        f"({i}, {j}): |11>-|20>/|02> mixing "
+                        f"{np.sqrt(2) * abs(g) / smallest if smallest else np.inf:.3g} "
+                        f"exceeds the {_MAX_ZZ_MIXING} small-mixing limit "
+                        f"(g={g:.4g}, Delta={delta:.4g}, "
+                        f"alpha_i={alpha[i]:.4g}, alpha_j={alpha[j]:.4g} rad/s). "
+                        f"Supply a calibrated 'zz_crosstalk'/'zz_instances' "
+                        f"matrix, or use the 3-level 'duffing_transmon' model."
+                    )
+                zz[i, j] = 2 * g**2 * (alpha[i] + alpha[j]) / (den_i * den_j)
+        return zz
 
     def build_control_ops(self) -> list[np.ndarray]:
         """Return control operators for each channel.
@@ -295,7 +371,10 @@ class SuperconductingQubitModel(HamiltonianModel):
             for i in range(self.n_qubits):
                 channels.append(cx[:, i : i + 1])  # I_i
                 channels.append(cy[:, i : i + 1])  # Q_i
-                channels.append(s[i] * iq_power[:, i : i + 1])  # s_i*(I²+Q²)
+                # s_i adds to the qubit *frequency*, and a frequency shift
+                # enters the two-level drift as -shift * Z (same convention as
+                # the detuning), hence the minus sign.
+                channels.append(-s[i] * iq_power[:, i : i + 1])
             u = torch.cat(channels, dim=-1)  # (n_pulse, 3*n_qubits)
 
             # Build rabi scaling: [Ω_0, Ω_0, Ω_0², Ω_1, Ω_1, Ω_1², ...]

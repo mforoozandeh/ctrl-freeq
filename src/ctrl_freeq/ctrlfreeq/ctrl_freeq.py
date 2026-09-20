@@ -1,7 +1,15 @@
+import math
+
 import torch
 
 from ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
+
 from ctrl_freeq.utils.colored_logging import setup_colored_logging
+
+
+def _as_float(value):
+    """Return *value* as a plain Python float, detaching tensors if needed."""
+    return value.item() if hasattr(value, "item") else float(value)
 
 
 class CtrlFreeQ:
@@ -57,7 +65,11 @@ class CtrlFreeQ:
 
         self.fid = None
         self.pen = None
-        self.fidelity_history = []  # Track fidelity per iteration
+        # Physical fidelity, amplitude penalty and the penalized score
+        # (fidelity - penalty) are tracked as three separate series.
+        self.fidelity_history = []
+        self.penalty_history = []
+        self.score_history = []
 
         # Flag for COBYLA early termination (avoids exception-based termination)
         self.early_termination_flag = False
@@ -68,10 +80,15 @@ class CtrlFreeQ:
 
     def objective_function(self, para):
         parameters = torch.split(para, list(self.n_para))
+
         amps, cxs, cys = pulse_para(
             self.n_qubits, parameters, self.mat, self.wf_fun, self.me
         )
         self.pen = penalty(amps)
+        # Kept for the amplitude-limit report; the modulation carrier has unit
+        # magnitude, so |I+iQ| is the command amplitude either way.
+        self.last_cx = cxs.detach()
+        self.last_cy = cys.detach()
 
         if self.hamiltonian_model is not None:
             # Generic path: works for any HamiltonianModel
@@ -106,26 +123,48 @@ class CtrlFreeQ:
         self.cost = -self.fid + self.pen
         return self.cost
 
-    def callback_function(self, para):
+    def _record_iteration(self):
+        """Record physical fidelity, penalty and penalized score separately.
+
+        ``cost = -fidelity + penalty``, so ``-cost`` is the *penalized score*,
+        not the fidelity.  Reporting it under the name "fidelity" understates
+        the physical fidelity by exactly the penalty.
+
+        Returns:
+            tuple: ``(fidelity, penalty, score)`` as plain floats.
+        """
         if self.iter == 0:
-            self.logger.info("=" * 33)
-            self.logger.info(f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10}")
-            self.logger.info("=" * 33)
+            self.logger.info("=" * 46)
+            self.logger.info(
+                f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10} | "
+                f"{'Score':<10}"
+            )
+            self.logger.info("=" * 46)
 
         self.iter += 1
-        current_fidelity = -self.cost  # cost = -fidelity + penalty, so fidelity = -cost
-        self.fidelity_history.append(
-            current_fidelity.item()
-            if hasattr(current_fidelity, "item")
-            else float(current_fidelity)
-        )
-        self.logger.info(
-            f"{self.iter:<10} | {current_fidelity:<10.4f} | {self.pen:<10.4f}"
-        )
+        fidelity = _as_float(self.fid)
+        penalty_value = _as_float(self.pen)
+        score = fidelity - penalty_value
 
-        if current_fidelity >= self.exit_val:
+        self.fidelity_history.append(fidelity)
+        self.penalty_history.append(penalty_value)
+        self.score_history.append(score)
+
+        self.logger.info(
+            f"{self.iter:<10} | {fidelity:<10.4f} | {penalty_value:<10.4f} | "
+            f"{score:<10.4f}"
+        )
+        return fidelity, penalty_value, score
+
+    def callback_function(self, para):
+        _fidelity, _penalty, score = self._record_iteration()
+
+        # The stopping criterion is deliberately the *penalized* score, so a
+        # solution that only reaches the target by exceeding the amplitude
+        # limit does not stop the optimisation early.
+        if score >= self.exit_val:
             raise OptimizationInterrupted(
-                f"Objective function reached target fidelity = {self.exit_val}, exiting optimization...",
+                f"Penalized score reached target = {self.exit_val}, exiting optimization...",
                 para,
             )
 
@@ -138,27 +177,13 @@ class CtrlFreeQ:
         if self.early_termination_flag:
             return
 
-        if self.iter == 0:
-            self.logger.info("=" * 33)
-            self.logger.info(f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10}")
-            self.logger.info("=" * 33)
+        _fidelity, _penalty, score = self._record_iteration()
 
-        self.iter += 1
-        current_fidelity = -self.cost  # cost = -fidelity + penalty, so fidelity = -cost
-        self.fidelity_history.append(
-            current_fidelity.item()
-            if hasattr(current_fidelity, "item")
-            else float(current_fidelity)
-        )
-        self.logger.info(
-            f"{self.iter:<10} | {current_fidelity:<10.4f} | {self.pen:<10.4f}"
-        )
-
-        if current_fidelity >= self.exit_val:
+        if score >= self.exit_val:
             self.early_termination_flag = True
             self.early_termination_solution = para
             self.logger.warning(
-                f"Objective function reached target fidelity = {self.exit_val}, exiting optimization..."
+                f"Penalized score reached target = {self.exit_val}, exiting optimization..."
             )
 
 
@@ -334,10 +359,15 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_op
     # Build extra kwargs for state_fun (only state_lindblad needs dt and collapse_ops)
     use_lindblad = collapse_ops is not None
 
-    # Precompute L†, L†L once (avoids redundant matmuls at every time step)
-    lindblad_precomputed = (
-        precompute_collapse_products(collapse_ops) if use_lindblad else None
-    )
+    # Strang splitting: (C_half U C_half)^N = C_half U (C_full U)^(N-1) C_half.
+    # The interior half-channels merge into full-step channels, so N unitary
+    # steps need only N+1 channel applications.  Both channels are built once.
+    half_channel = None
+    full_channel = None
+    if use_lindblad:
+        half_channel = dissipative_channel(collapse_ops, dt / 2)
+        full_channel = dissipative_channel(collapse_ops, dt)
+        state = apply_channel(half_channel, state)
 
     for start in range(0, n_pulse, chunk_size):
         end = min(start + chunk_size, n_pulse)
@@ -359,18 +389,58 @@ def simulator_optimized(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_op
         # Apply time evolution for this chunk
         if use_lindblad:
             for n in range(chunk_len):
-                state = state_fun(
-                    U_chunk[n],
-                    state,
-                    dt,
-                    collapse_ops,
-                    _precomputed=lindblad_precomputed,
-                )
+                U = U_chunk[n]
+                state = U @ state @ U.conj().transpose(-2, -1)
+                if start + n < n_pulse - 1:
+                    state = apply_channel(full_channel, state)
         else:
             for n in range(chunk_len):
                 state = state_fun(U_chunk[n], state)
 
+    if use_lindblad:
+        state = apply_channel(half_channel, state)
+
     return state
+
+
+def simulate_trajectory(H0, Hp, dt, initial_state, u_fun, state_fun, collapse_ops=None):
+    """Propagate and record every state boundary, including the initial state.
+
+    Uses exactly the same propagator, control Hamiltonian and dissipative
+    channel as :func:`simulator_optimized`, so an analysis replay reproduces
+    the optimizer's physics rather than a second, divergent implementation.
+    The interior dissipative half-channels are *not* merged here: each of the
+    ``n_pulse + 1`` recorded states is the physical state at time ``k * dt``.
+
+    Parameters:
+    - H0: ``(batch, D, D)`` drift Hamiltonians.
+    - Hp: ``(n_pulse, batch, D, D)`` pulse Hamiltonians.
+    - dt: time step ``T / n_pulse``.
+    - initial_state: ``(batch, D)`` or ``(batch, D, D)``.
+    - collapse_ops: optional ``(n_ops, D, D)`` collapse operators.
+
+    Returns:
+        torch.Tensor of shape ``(n_pulse + 1, batch, ...)``; entry 0 is the
+        initial state and entry ``n_pulse`` the state at exactly ``T``.
+    """
+    n_pulse = Hp.shape[0]
+    half_channel = (
+        dissipative_channel(collapse_ops, dt / 2) if collapse_ops is not None else None
+    )
+
+    state = initial_state
+    states = [state]
+    for n in range(n_pulse):
+        U = u_fun(H0 + Hp[n], dt)
+        if half_channel is not None:
+            state = apply_channel(half_channel, state)
+            state = U @ state @ U.conj().transpose(-2, -1)
+            state = apply_channel(half_channel, state)
+        else:
+            state = state_fun(U, state)
+        states.append(state)
+
+    return torch.stack(states)
 
 
 def fidelity_hilbert(a_mat, b_mat):
@@ -389,27 +459,240 @@ def fidelity_hilbert(a_mat, b_mat):
     return torch.mean(fidelity)
 
 
+def _assert_pure_targets(sigma, atol=1e-6):
+    """Raise unless every target density matrix is pure with unit trace."""
+    trace = torch.diagonal(sigma, dim1=-2, dim2=-1).sum(-1)
+    purity = torch.einsum("bij,bji->b", sigma, sigma)
+    if not torch.allclose(
+        trace.real, torch.ones_like(trace.real), atol=atol
+    ) or not torch.allclose(purity.real, torch.ones_like(purity.real), atol=atol):
+        raise ValueError(
+            "fidelity_liouville implements the Uhlmann fidelity against a "
+            "*pure* target, for which it reduces to Re Tr(rho sigma). The "
+            "supplied targets are not pure unit-trace density matrices "
+            f"(max |Tr - 1| = {(trace.real - 1).abs().max():.3e}, "
+            f"max |Tr(sigma^2) - 1| = {(purity.real - 1).abs().max():.3e}). "
+            "A mixed-target Uhlmann fidelity needs an explicit API decision; "
+            "gate objectives use the channel metric in fidelity_gate_liouville."
+        )
+
+
 def fidelity_liouville(rho, sigma):
-    """
-    Computes the Uhlmann-Jozsa fidelity for two batches of density matrices.
+    r"""Uhlmann-Jozsa fidelity against **pure** target density matrices.
+
+    For a pure target :math:`\sigma = |\psi\rangle\langle\psi|` the general
+    expression :math:`\bigl(\mathrm{Tr}\sqrt{\sqrt\rho\,\sigma\sqrt\rho}\bigr)^2`
+    reduces exactly to :math:`\langle\psi|\rho|\psi\rangle =
+    \mathrm{Re}\,\mathrm{Tr}(\rho\sigma)`.  Evaluating the closed form
+    directly avoids the eigendecomposition of a rank-deficient intermediate,
+    whose ``torch.linalg.eig`` backward pass fails with a complex
+    eigenvector-phase error — the objective is smooth even where that
+    intermediate is not.
 
     Parameters:
     rho (torch.Tensor): A tensor of shape (batch_size, D, D)
-    sigma (torch.Tensor): A tensor of shape (batch_size, D, D)
+    sigma (torch.Tensor): Pure target density matrices, shape (batch_size, D, D)
 
     Returns:
     torch.Tensor: A tensor containing the mean fidelity over the batch.
     """
-    sqrt_rho = matrix_square_root(rho)  # shape: (batch_size, D, D)
-    intermediate = torch.bmm(sqrt_rho, torch.bmm(sigma, sqrt_rho))
-    sqrtm = matrix_square_root(intermediate)
-    trace_sqrtm = torch.diagonal(sqrtm, dim1=-2, dim2=-1).sum(
-        -1
-    )  # shape: (batch_size,)
-
-    fidelity = trace_sqrtm.real**2  # shape: (batch_size,)
-
+    _assert_pure_targets(sigma)
+    fidelity = torch.einsum("bij,bji->b", rho, sigma).real
     return torch.mean(fidelity)
+
+
+def fidelity_gate_hilbert(states, targets, n_rows, d, projector=None):
+    r"""Average gate fidelity over the whole computational subspace.
+
+    The computational basis is propagated as *columns*, so relative phases
+    are preserved.  With :math:`V` the isometry embedding the ``d`` computational
+    states in the model Hilbert space, :math:`U` the full-space evolution and
+    :math:`G` the target gate, :math:`M = G^\dagger V^\dagger U V` and
+
+    .. math::
+
+        F_{\text{avg}} = \frac{\mathrm{Tr}(M^\dagger M) + |\mathrm{Tr}\,M|^2}
+                              {d\,(d+1)}
+
+    Population that leaks out of the computational subspace is *not*
+    renormalised away: it simply reduces :math:`\mathrm{Tr}(M^\dagger M)`.
+
+    Args:
+        states: ``(n_rows * n_batch, D)`` propagated basis columns, ordered
+            row-major (``row * n_batch + batch``).
+        targets: ``(n_rows * n_batch, D)`` embedded ``G|r>`` targets.
+        n_rows: number of computational basis columns (must equal ``d``).
+        d: computational dimension ``2**n_qubits``.
+        projector: optional ``(D, d)`` isometry ``V``; ``None`` when ``D == d``.
+
+    Returns:
+        torch.Tensor: mean average gate fidelity over the ensemble.
+    """
+    if n_rows != d:
+        raise ValueError(
+            f"Average gate fidelity needs all {d} computational basis columns, "
+            f"got {n_rows} rows."
+        )
+    total = states.shape[0]
+    if total % n_rows:
+        raise ValueError(
+            f"State batch of {total} is not divisible by {n_rows} rows; the "
+            f"objective arrays are misaligned."
+        )
+    n_batch = total // n_rows
+    psi = states.reshape(n_rows, n_batch, -1)
+    tgt = targets.reshape(n_rows, n_batch, -1)
+
+    if projector is None:
+        comp = psi
+    else:
+        comp = torch.einsum("rbi,ia->rba", psi, projector.conj())
+
+    tr_MdagM = (comp.conj() * comp).real.sum(-1).sum(0)  # (n_batch,)
+    tr_M = (tgt.conj() * psi).sum(-1).sum(0)  # (n_batch,)
+
+    fidelity = (tr_MdagM + tr_M.abs() ** 2) / (d * (d + 1))
+    return torch.mean(fidelity)
+
+
+def fidelity_gate_liouville(states, targets, n_rows, d):
+    r"""Average gate fidelity of a channel, from Pauli-string overlaps.
+
+    With unnormalised Pauli strings :math:`P_j` (``Tr(P_j P_k) = d delta_jk``,
+    :math:`P_0 = I`) and :math:`x_j = \mathrm{Tr}[(G P_j G^\dagger)\,
+    \mathcal{E}_{\text{comp}}(P_j)]`,
+
+    .. math::
+
+        F_{\text{avg}} = \frac{d\,x_0 + \sum_j x_j}{d^2 (d+1)}
+
+    The :math:`d\,x_0` term replaces the usual constant :math:`d^2` and so
+    also counts population lost from the computational subspace.  State
+    fidelity on a handful of input states cannot detect that, and Pauli
+    strings are not density matrices: they must never be passed to an
+    Uhlmann fidelity.
+
+    Args:
+        states: ``(n_rows * n_batch, D, D)`` propagated embedded Pauli strings,
+            ordered row-major, with the identity string first.
+        targets: ``(n_rows * n_batch, D, D)`` embedded ``G P_j G^dag``.
+        n_rows: number of Pauli strings (must equal ``d**2``).
+        d: computational dimension ``2**n_qubits``.
+
+    Returns:
+        torch.Tensor: mean average gate fidelity over the ensemble.
+    """
+    if n_rows != d * d:
+        raise ValueError(
+            f"Channel gate fidelity needs all {d * d} Pauli strings, got {n_rows} rows."
+        )
+    total = states.shape[0]
+    if total % n_rows:
+        raise ValueError(
+            f"State batch of {total} is not divisible by {n_rows} rows; the "
+            f"objective arrays are misaligned."
+        )
+    n_batch = total // n_rows
+    D = states.shape[-1]
+    fin = states.reshape(n_rows, n_batch, D, D)
+    tgt = targets.reshape(n_rows, n_batch, D, D)
+
+    x = torch.einsum("rbij,rbji->rb", tgt, fin).real  # (n_rows, n_batch)
+    fidelity = (d * x[0] + x.sum(0)) / (d * d * (d + 1))
+    return torch.mean(fidelity)
+
+
+def amplitude_limit_report(cx, cy, omega_r_max, rabi_samples=None):
+    r"""Per-qubit report of the sampled peak drive amplitude against its limit.
+
+    The amplitude limit in this optimiser is a **soft penalty** (see
+    :func:`penalty`): exceeding it costs objective value but nothing prevents
+    the returned waveform from doing so.  This report makes the actual
+    violation explicit instead of leaving it folded into the objective.
+
+    The peak is taken as :math:`\max_t \sqrt{I(t)^2 + Q(t)^2}`, which is the
+    magnitude of the command amplitude.  Taking a signed polar amplitude at
+    face value would understate the peak of a waveform whose amplitude
+    coefficient goes negative.
+
+    The peak is over the **sampled** waveform.  It is not automatically a
+    bound on an independently interpolated continuous waveform, which can
+    overshoot between samples.
+
+    Args:
+        cx: ``(n_pulse, n_qubits)`` in-phase command amplitudes.
+        cy: ``(n_pulse, n_qubits)`` quadrature command amplitudes.
+        omega_r_max: per-qubit configured maximum Rabi rate (rad/s).
+        rabi_samples: optional ``(n_rabi, n_qubits)`` sampled Rabi gains, used
+            to report the uncertain *physical* peak separately from the
+            nominal command amplitude.
+
+    Returns:
+        list[dict]: one entry per qubit with ``normalized_peak`` (1.0 is the
+        limit), ``excess`` (amount above 1, else 0), ``within_limit``,
+        ``nominal_peak_rad_per_s`` and, when sampled gains are supplied,
+        ``sampled_peak_rad_per_s`` as a ``(min, max)`` pair.
+    """
+    magnitude = torch.sqrt(cx**2 + cy**2)
+    peaks = magnitude.max(dim=0).values.detach().cpu()
+    omega = torch.as_tensor(omega_r_max, dtype=peaks.dtype).reshape(-1)
+
+    report = []
+    for i in range(peaks.shape[0]):
+        normalized = float(peaks[i])
+        entry = {
+            "qubit": i,
+            "normalized_peak": normalized,
+            "excess": max(0.0, normalized - 1.0),
+            "within_limit": normalized <= 1.0,
+            "omega_r_max": float(omega[i]),
+            "nominal_peak_rad_per_s": normalized * float(omega[i]),
+        }
+
+        if rabi_samples is not None:
+            # A negative sampled gain is a phase reversal, not a negative drive
+            # magnitude, so the physical peak range comes from |gain|.  Signed
+            # extrema would report (-2, 1) for gains [-2, 1] and understate the
+            # largest drive the pulse actually reaches.
+            gains = (
+                torch.as_tensor(rabi_samples, dtype=peaks.dtype)
+                .reshape(-1, peaks.shape[0])[:, i]
+                .abs()
+            )
+            entry["sampled_peak_rad_per_s"] = (
+                normalized * float(gains.min()),
+                normalized * float(gains.max()),
+            )
+        report.append(entry)
+    return report
+
+
+def format_amplitude_limit_report(report):
+    """Render :func:`amplitude_limit_report` as human-readable lines."""
+    lines = [
+        "Amplitude limit is a SOFT penalty: the returned waveform is not "
+        "clipped or constrained to it.",
+        "Peaks are over the sampled waveform and do not bound an "
+        "independently interpolated continuous waveform.",
+    ]
+    for entry in report:
+        status = "OK" if entry["within_limit"] else "EXCEEDS LIMIT"
+        line = (
+            f"  qubit {entry['qubit']}: peak |I+iQ| = "
+            f"{entry['normalized_peak']:.4f} x Omega_R_max "
+            f"({entry['nominal_peak_rad_per_s']:.4g} rad/s) "
+            f"[{status}"
+        )
+        if not entry["within_limit"]:
+            line += f", {entry['excess']:.4f} above the limit"
+        line += "]"
+        if "sampled_peak_rad_per_s" in entry:
+            low, high = entry["sampled_peak_rad_per_s"]
+            line += (
+                f" | physical peak over sampled Rabi gains: {low:.4g}-{high:.4g} rad/s"
+            )
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def penalty(amp):
@@ -561,30 +844,122 @@ def lindblad_dissipator(rho, collapse_ops, _precomputed=None):
     return (term1 - term2).sum(dim=0)
 
 
+def _validate_step(dt, name="dt"):
+    """Reject non-finite or negative channel durations.
+
+    Only inspects *dt*; callers must keep using the original object so that a
+    duration carrying ``requires_grad`` stays connected to the graph.  A zero
+    step is allowed (it yields the identity channel); pulse durations
+    themselves remain strictly positive and are validated by the setup code.
+    """
+    value = dt.item() if isinstance(dt, torch.Tensor) else float(dt)
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value!r}.")
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value!r}.")
+
+
+def dissipator_superoperator(collapse_ops):
+    r"""Build the Lindblad dissipator as a superoperator matrix.
+
+    Returns ``S`` of shape ``(D**2, D**2)`` acting on the **row-major**
+    vectorisation of the density matrix, i.e. ``vec(D[rho]) = S vec(rho)``
+    with ``vec`` = ``rho.reshape(D*D)``.  With that convention
+    ``vec(A rho B) = (A kron B^T) vec(rho)``, so
+
+    .. math::
+
+        S = \sum_k L_k \otimes L_k^{*}
+            - \tfrac12 (L_k^\dagger L_k) \otimes I
+            - \tfrac12 I \otimes (L_k^\dagger L_k)^{T}
+
+    Args:
+        collapse_ops (torch.Tensor): ``(n_ops, D, D)`` collapse operators.
+
+    Returns:
+        torch.Tensor: ``(D**2, D**2)`` superoperator matrix.
+    """
+    n_ops, D, _ = collapse_ops.shape
+    eye = torch.eye(D, dtype=collapse_ops.dtype, device=collapse_ops.device)
+    S = torch.zeros(D * D, D * D, dtype=collapse_ops.dtype, device=collapse_ops.device)
+    for k in range(n_ops):
+        L = collapse_ops[k]
+        L_dag_L = L.conj().transpose(-2, -1) @ L
+        S = (
+            S
+            + torch.kron(L, L.conj())
+            - 0.5 * torch.kron(L_dag_L, eye)
+            - 0.5 * torch.kron(eye, L_dag_L.transpose(-2, -1).contiguous())
+        )
+    return S
+
+
+def dissipative_channel(collapse_ops, dt):
+    r"""Return the exact dissipative channel ``exp(dt * D)``.
+
+    Unlike an Euler step ``rho + dt * D[rho]``, the matrix exponential of the
+    dissipator is completely positive and trace preserving for *every* step
+    size.  The Euler step is only an approximation to it and produces
+    unphysical states (negative populations, trace > 1) as soon as
+    ``dt`` is comparable to the relaxation times.
+
+
+    Args:
+        collapse_ops (torch.Tensor): ``(n_ops, D, D)`` collapse operators.
+        dt (float or torch.Tensor): channel duration, finite and non-negative.
+            A tensor duration is used as-is, so gradients with respect to the
+            pulse duration propagate through the channel; substituting the
+            validated Python scalar would silently detach them.
+
+    Returns:
+        torch.Tensor: ``(D**2, D**2)`` channel in the row-major vec convention.
+    """
+    _validate_step(dt)
+    return torch.linalg.matrix_exp(dissipator_superoperator(collapse_ops) * dt)
+
+
+def apply_channel(channel, rho):
+    """Apply a row-major vec superoperator to a batch of density matrices.
+
+    Args:
+        channel (torch.Tensor): ``(D**2, D**2)`` superoperator.
+        rho (torch.Tensor): ``(batch, D, D)`` density matrices.
+
+    Returns:
+        torch.Tensor: ``(batch, D, D)`` transformed density matrices.
+    """
+    batch, D, _ = rho.shape
+    flat = rho.reshape(batch, D * D)
+    return (flat @ channel.transpose(-2, -1)).reshape(batch, D, D)
+
+
 def state_lindblad(U, state, dt, collapse_ops, _precomputed=None):
     """
-    Apply the Lindblad evolution: unitary step followed by dissipative step.
+    Apply one Strang-split Lindblad step: half-channel, unitary, half-channel.
 
-    Uses Euler splitting: rho(t+dt) = U rho U^dag + dt * L[U rho U^dag]
+    The dissipative half-steps use the exact channel ``exp((dt/2) * D)``, so
+    the result is completely positive and trace preserving, and the splitting
+    is second-order accurate in ``dt``.
 
     Parameters:
     U (torch.Tensor): Unitary operators of shape (batch_size, D, D).
     state (torch.Tensor): Density matrices of shape (batch_size, D, D).
     dt (float or torch.Tensor): Time step.
     collapse_ops (torch.Tensor): Collapse operators of shape (n_ops, D, D).
-    _precomputed (tuple, optional): Pre-computed (L, L_dag, L_dag_L) from
-        :func:`precompute_collapse_products`, passed through to the dissipator.
+    _precomputed (torch.Tensor, optional): Pre-built half-step channel from
+        :func:`dissipative_channel`, reused to avoid rebuilding it per step.
 
     Returns:
     torch.Tensor: Updated density matrices of shape (batch_size, D, D).
     """
-    # Unitary evolution step
-    rho = U @ state @ U.conj().transpose(-2, -1)
-
-    # Dissipative step (Euler)
-    rho = rho + dt * lindblad_dissipator(rho, collapse_ops, _precomputed=_precomputed)
-
-    return rho
+    half = (
+        _precomputed
+        if _precomputed is not None
+        else dissipative_channel(collapse_ops, dt / 2)
+    )
+    rho = apply_channel(half, state)
+    rho = U @ rho @ U.conj().transpose(-2, -1)
+    return apply_channel(half, rho)
 
 
 def matrix_square_root(mat):

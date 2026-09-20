@@ -92,6 +92,17 @@ class CtrlFreeQAPI:
             self.parameters._embed_states_for_model()
             self.parameters.H0 = self.parameters.get_H0()
 
+    def waveform_spec(self):
+        """Return the representation this API's solutions are expressed in.
+
+        Always the configured basis, since this API runs the basis path, so it
+        stays valid even after another optimizer has run on the same
+        parameters object.  Pass it to the analysis entry points when the
+        parameters object is shared, so the solution is reconstructed with its
+        own representation instead of whichever run finished last.
+        """
+        return self.parameters.basis_waveform_spec()
+
     def _preprocess_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Preprocess the configuration to ensure compatibility with Initialise class.

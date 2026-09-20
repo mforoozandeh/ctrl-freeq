@@ -1,9 +1,15 @@
+import itertools
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.linalg import expm
 
-from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import createHcs, createHJ
+
+from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
+    createHcs,
+    createHJ,
+    _symmetrise_coupling,
+)
 from ctrl_freeq.setup.hamiltonian_generation import get_hamiltonian_class
 from ctrl_freeq.setup.basis_generation.mat_x0_gen import (
     generate_mat_x0_from_basis,
@@ -15,12 +21,91 @@ from ctrl_freeq.setup.operator_generation.generate_operators import (
     create_density_matrices,
     create_observable_operators,
 )
+
+
+from ctrl_freeq.make_pulse.waveform_gen_torch import WaveformSpec
 from ctrl_freeq.utils.utility_functions import generate_instances
+
+# Gate-name aliases mapped onto their canonical name.  Two configurations that
+# name the same physical gate must select the same objective, so aliases are
+# resolved before anything compares gate names.
+_GATE_ALIASES = {
+    "CX": "CNOT",
+    "SQRTISWAP": "√iSWAP",
+    "TOFFOLI": "Toff",
+    "CCX": "Toff",
+}
+
+
+def canonical_gate_name(gate):
+    """Return the canonical name for *gate*, resolving known aliases."""
+    if not isinstance(gate, str):
+        raise ValueError(f"Gate name must be a string, got {gate!r}.")
+    return _GATE_ALIASES.get(gate.upper(), gate)
+
+
+def pauli_string_basis(n_qubits):
+    r"""Return the ``4**n`` unnormalised Pauli strings, identity first.
+
+    They satisfy :math:`\mathrm{Tr}(P_j P_k) = d\,\delta_{jk}` with
+    :math:`d = 2^n`, which is the normalisation the average-gate-fidelity
+    channel formula assumes.  These are operators, not density matrices: they
+    are traceless (except :math:`P_0 = I`) and generally indefinite, so they
+    must never be fed to a state fidelity.
+    """
+    singles = [
+        np.eye(2, dtype=complex),
+        np.array([[0, 1], [1, 0]], dtype=complex),
+        np.array([[0, -1j], [1j, 0]], dtype=complex),
+        np.array([[1, 0], [0, -1]], dtype=complex),
+    ]
+    basis = []
+    for indices in itertools.product(range(4), repeat=n_qubits):
+        op = np.array([[1.0 + 0j]])
+        for i in indices:
+            op = np.kron(op, singles[i])
+        basis.append(op)
+    return basis
+
+
+def band_selective_profile(offsets, centre, bandwidth, order):
+    r"""Target rotation-angle profile for ``band_selective`` coverage.
+
+    .. math::
+
+        p(\Delta) = \exp\!\left[-\ln 2
+            \left(\frac{2\,|\Delta - \Delta_0|}{\text{bw}}\right)^{2p}\right]
+
+    ``bandwidth`` is the **FWHM of this target rotation-angle profile**: the
+    profile equals 1 at the centre and exactly 1/2 at ``centre ± bw/2``, for
+    every order *p*.  It is *not* a guarantee that the achieved excitation
+    curve of the optimised pulse has that FWHM.
+
+    Args:
+        offsets: offsets at which to evaluate the profile (rad/s).
+        centre: band centre (rad/s).
+        bandwidth: FWHM of the target profile (rad/s), strictly positive.
+        order: super-Gaussian order *p*, a positive integer.
+    """
+    if not np.isfinite(bandwidth) or bandwidth <= 0:
+        raise ValueError(
+            f"band_selective bandwidth must be positive and finite, got {bandwidth!r}."
+        )
+    order_int = int(order)
+    if order_int != order or order_int <= 0:
+        raise ValueError(
+            f"band_selective profile_order must be a positive integer, got {order!r}."
+        )
+    scaled = 2.0 * np.abs(np.asarray(offsets, dtype=float) - centre) / bandwidth
+    return np.exp(-np.log(2.0) * scaled ** (2 * order_int))
 
 
 @dataclass
 class Initialise:
     def __init__(self, data):
+        # Set by an optimizer whose solution vector is not in the configured
+        # basis representation; see waveform_spec().
+        self._waveform_spec = None
         self.qubits = data["qubits"]
         self.n_qubits = len(self.qubits)
         self.space = data["optimization"]["space"]
@@ -124,6 +209,24 @@ class Initialise:
             self.init_ax = data["initial_states"]
             self.init = self.get_initial_state_from_ax()
 
+            # ``band_selective`` produces a smooth rotation-angle profile, so
+            # almost every drawn offset sits strictly between 0 and 1.  An Axis
+            # or Gate target is all-or-nothing: there is no partial version of
+            # "apply CNOT".  Silently handing such an offset the initial state
+            # as its target requests the identity nearly everywhere, which is
+            # not what the configuration asks for.
+            if any(cov == "band_selective" for cov in self.coverage) and (
+                "Axis" in data["target_states"] or "Gate" in data["target_states"]
+            ):
+                raise ValueError(
+                    "band_selective coverage is not supported with Axis or Gate "
+                    "targets: the smooth rotation-angle profile has no "
+                    "all-or-nothing interpretation for a discrete target. "
+                    "Use 'selective' coverage for hard in-band/out-of-band "
+                    "targets, or a Phi/Beta (rotation-angle) target, which "
+                    "scales smoothly with the profile."
+                )
+
             if "Axis" in data["target_states"]:
                 self.targ_ax = data["target_states"]["Axis"]
                 self.targ = self.get_target_state_from_ax()
@@ -217,10 +320,25 @@ class Initialise:
             return
 
         def _check_and_embed_states(states, label):
-            """Return embedded states, or the originals if already embedded."""
+            """Return embedded states, or the originals if already embedded.
+
+            State *vectors* embed as ``V psi``; density matrices and Pauli
+            strings embed as ``V rho V^dag``.  The two are distinguished by
+            array rank, never by a trailing dimension: a ``(d, d)`` density
+            matrix and a ``(d,)`` vector both end in ``d``, and applying the
+            vector rule to a density matrix produces a ``(D, d)`` object that
+            no longer matches the ``(D, D)`` drift matrices.
+            """
             if states is None:
                 return None
-            dim = states[0].shape[-1] if hasattr(states[0], "shape") else len(states[0])
+            first = np.asarray(states[0])
+            ndim = first.ndim
+            if ndim not in (1, 2):
+                raise ValueError(
+                    f"{label} must be state vectors (1-D) or operators (2-D), "
+                    f"got rank {ndim}."
+                )
+            dim = first.shape[-1]
             if dim == d_model:
                 return states  # already at target dimension
             if dim != d_comp:
@@ -230,7 +348,14 @@ class Initialise:
                     f"the model dimension ({d_model}). Cannot re-embed — "
                     f"re-initialise from the config instead."
                 )
-            return [model.embed_computational_state(s) for s in states]
+            if ndim == 1:
+                return [model.embed_computational_state(s) for s in states]
+            if first.shape[0] != d_comp:
+                raise ValueError(
+                    f"{label} must be square in the computational dimension "
+                    f"({d_comp}), got shape {first.shape}."
+                )
+            return [model.embed_computational_operator(np.asarray(s)) for s in states]
 
         # Embed initial and target state vectors (used by optimizer)
         if hasattr(self, "initials") and self.initials is not None:
@@ -246,14 +371,17 @@ class Initialise:
         if hasattr(self, "init") and self.init is not None:
             self.init = _check_and_embed_states(self.init, "Raw init states")
 
-        # Embed observable operators into the full space so plots work
+        # Embed observable operators into the full space so plots work.
+        # Observables embed as V O V^dag — the gate embedding adds identity on
+        # the leakage subspace, which would make a fully leaked state report
+        # <Z> = +1 instead of 0 and corrupt <X> and <Y> the same way.
         if hasattr(self, "obs_op") and self.obs_op is not None:
             new_ops = {}
             for k, v in self.obs_op.items():
                 if v.shape[0] == d_model:
                     new_ops[k] = v  # already embedded
                 elif v.shape[0] == d_comp:
-                    new_ops[k] = model.embed_computational_gate(v)
+                    new_ops[k] = model.embed_computational_operator(v)
                 else:
                     raise ValueError(
                         f"Observable operator '{k}' has dimension {v.shape[0]}, "
@@ -289,14 +417,67 @@ class Initialise:
             f"x0 Concatenated: {self.x0_con}\n"
         )
 
+    @property
+    def dt(self):
+        """Propagation time step used by every evolution path: ``T / N``."""
+        return self.pulse_duration / self.np_pulse
+
     def generate_time_sequence(self):
-        return np.linspace(np.finfo(float).eps, self.pulse_duration, self.np_pulse)
+        """Waveform sample times: the midpoint of each propagation interval.
+
+        The optimiser advances the state by ``dt = T / N`` for each of the
+        ``N`` samples, so sample ``k`` represents the interval
+        ``[k*dt, (k+1)*dt]`` and is evaluated at its midpoint
+        ``(k + 1/2) * dt``.  The previous ``linspace(eps, T, N)`` grid was
+        spaced by ``T / (N - 1)``, which made the carrier modulation advance
+        faster than the propagation and pushed analysis past the intended
+        pulse duration.
+        """
+        return (np.arange(self.np_pulse) + 0.5) * self.dt
+
+    def state_boundary_times(self):
+        """The ``N + 1`` times at which a propagated state exists: ``k * dt``.
+
+        These are the times for stored trajectories (including the initial
+        state at ``t = 0`` and the final state at exactly ``T``), and are
+        distinct from the waveform sample times returned by
+        :meth:`generate_time_sequence`.
+        """
+        return np.arange(self.np_pulse + 1) * self.dt
 
     def generate_initial_x0(self):
         self.x0 = []
         for i in range(self.n_qubits):
             self.x0.append(np.random.uniform(-1, 1, size=self.n_para[i]))
         return self.x0
+
+    def basis_waveform_spec(self):
+        """Return the configured orthonormal-basis representation.
+
+        This is what a basis-path solution is expressed in, independent of
+        which optimizer last ran on this object.
+        """
+        return WaveformSpec(
+            n_para=tuple(self.n_para_updated),
+            mat=tuple(self.mat),
+            wf_mode=tuple(self.wf_mode),
+        )
+
+    def waveform_spec(self):
+        """Return the representation of the most recent run's solution.
+
+        Defaults to the configured basis.  An optimizer that uses a different
+        parameterisation (e.g. the piecewise identity basis) records its own
+        via ``_waveform_spec`` so that analysis reconstructs the waveform that
+        optimiser evaluated.
+
+        This tracks the *latest* run only.  When several optimizers share one
+        parameters object, pass the owning run's spec to the analysis entry
+        points rather than relying on this.
+        """
+        if self._waveform_spec is not None:
+            return self._waveform_spec
+        return self.basis_waveform_spec()
 
     def generate_matrices_from_basis(self):
         self.mat = []
@@ -459,93 +640,105 @@ class Initialise:
                 ]
             )
 
+    def _coupling_is_deterministic(self):
+        """True when the coupling part of the drift carries no uncertainty."""
+        if self.n_qubits < 2:
+            return True
+        if self.sigma_J is None or self.sigma_J == 0:
+            return True
+        # Uncertainty is only applied to non-zero nominal couplings.
+        return not np.any(np.asarray(self.Jmat) != 0)
+
+    def _offsets_are_deterministic(self):
+        """True when every qubit's frequency offset is a fixed single value."""
+        return all(cov == "single" for cov in self.coverage) and all(
+            sig == 0 for sig in self.sigma_Delta
+        )
+
+    def _sample_banded_offsets(self, om, sig, sw, fb, rf, in_band_normal):
+        """Draw ``H0_snapshots`` offsets split between in-band and out-of-band.
+
+        ``in_band_normal`` selects a normal draw about *om* (``selective``)
+        rather than a uniform draw across the band (``band_selective``).
+
+        The completed per-qubit sample array is shuffled before it is
+        returned.  Joint snapshots are formed by pairing each qubit's samples
+        by index, so leaving the arrays in ``[left | in-band | right]`` order
+        would make every qubit in-band or out-of-band at the same index and
+        the ensemble would never contain a mixed combination.
+        """
+
+        num_outside_band = int(np.round(self.H0_snapshots * rf))
+        num_outside_band = min(max(num_outside_band, 0), self.H0_snapshots)
+        num_in_band = self.H0_snapshots - num_outside_band
+
+        # Split the out-of-band samples as evenly as the count allows and give
+        # the remainder to one tail.  Rounding the count up to an even number
+        # and then halving it for *both* tails drops a sample: with
+        # ratio_factor 1, requests of 1/3/5 snapshots produced 0/2/4.
+        num_left = num_outside_band // 2
+        num_right = num_outside_band - num_left
+
+        offs_in_left_band = np.random.uniform(om - sw / 2, fb[0], num_left)
+        offs_in_right_band = np.random.uniform(fb[1], om + sw / 2, num_right)
+        if in_band_normal:
+            offs_in_middle_band = np.random.normal(om, sig, num_in_band)
+        else:
+            offs_in_middle_band = np.random.uniform(fb[0], fb[1], num_in_band)
+
+        offset = np.concatenate(
+            [offs_in_left_band, offs_in_middle_band, offs_in_right_band]
+        )
+        if offset.size != self.H0_snapshots:
+            raise ValueError(
+                f"Selective sampling produced {offset.size} offsets for "
+                f"{self.H0_snapshots} requested snapshots."
+            )
+        np.random.shuffle(offset)
+        return offset
+
     def get_offset(self):
         offset_results = []
 
-        if all(cov == "single" for cov in self.coverage) and all(
-            sig == 0 for sig in self.sigma_Delta
-        ):
+        if self._offsets_are_deterministic():
+            # The offsets themselves carry no uncertainty.  Collapse to a
+            # single drift snapshot only when the *whole* drift is
+            # deterministic; if the coupling is uncertain the requested
+            # ensemble still needs H0_snapshots drift matrices, so the fixed
+            # offsets are repeated to match it.
+            n_snapshots = 1 if self._coupling_is_deterministic() else self.H0_snapshots
             for om in self.Delta:
-                offset = [om]
-                offset_results.append(offset)
+                offset_results.append(np.full(n_snapshots, om, dtype=float))
+            return offset_results
 
-        else:
-            for coverage, om, sig, sw, fb, rf in zip(
-                self.coverage,
-                self.Delta,
-                self.sigma_Delta,
-                self.sw,
-                self.frq_band,
-                self.ratio_factor,
-            ):
-                if coverage == "broadband":
-                    offset = np.random.uniform(
-                        om - sw / 2, om + sw / 2, self.H0_snapshots
-                    )
+        for coverage, om, sig, sw, fb, rf in zip(
+            self.coverage,
+            self.Delta,
+            self.sigma_Delta,
+            self.sw,
+            self.frq_band,
+            self.ratio_factor,
+        ):
+            if coverage == "broadband":
+                offset = np.random.uniform(om - sw / 2, om + sw / 2, self.H0_snapshots)
 
-                elif coverage == "band_selective":
-                    num_outside_band = np.round(self.H0_snapshots * rf)
-                    if num_outside_band % 2 == 0:
-                        num_outside_band = int(num_outside_band)
-                    else:
-                        num_outside_band = (
-                            int(num_outside_band) + 1
-                            if num_outside_band % 2 == 1
-                            else int(num_outside_band) - 1
-                        )
+            elif coverage == "band_selective":
+                offset = self._sample_banded_offsets(
+                    om, sig, sw, fb, rf, in_band_normal=False
+                )
 
-                    num_in_band = int(self.H0_snapshots - num_outside_band)
+            elif coverage == "single":
+                offset = np.random.normal(om, sig, self.H0_snapshots)
 
-                    left_sw = [om - sw / 2, fb[0]]
-                    right_sw = [fb[1], om + sw / 2]
+            elif coverage == "selective":
+                offset = self._sample_banded_offsets(
+                    om, sig, sw, fb, rf, in_band_normal=True
+                )
 
-                    offs_in_left_band = np.random.uniform(
-                        left_sw[0], left_sw[1], int(num_outside_band / 2)
-                    )
-                    offs_in_right_band = np.random.uniform(
-                        right_sw[0], right_sw[1], int(num_outside_band / 2)
-                    )
-                    offs_in_middle_band = np.random.uniform(fb[0], fb[1], num_in_band)
+            else:
+                raise ValueError(f"Unknown coverage type: {coverage}")
 
-                    offset = np.concatenate(
-                        [offs_in_left_band, offs_in_middle_band, offs_in_right_band]
-                    )
-
-                elif coverage == "single":
-                    offset = np.random.normal(om, sig, self.H0_snapshots)
-
-                elif coverage == "selective":
-                    num_outside_band = np.round(self.H0_snapshots * rf)
-                    if num_outside_band % 2 == 0:
-                        num_outside_band = int(num_outside_band)
-                    else:
-                        num_outside_band = (
-                            int(num_outside_band) + 1
-                            if num_outside_band % 2 == 1
-                            else int(num_outside_band) - 1
-                        )
-
-                    num_in_band = int(self.H0_snapshots - num_outside_band)
-
-                    left_sw = [om - sw / 2, fb[0]]
-                    right_sw = [fb[1], om + sw / 2]
-
-                    offs_in_left_band = np.random.uniform(
-                        left_sw[0], left_sw[1], int(num_outside_band / 2)
-                    )
-                    offs_in_right_band = np.random.uniform(
-                        right_sw[0], right_sw[1], int(num_outside_band / 2)
-                    )
-                    offs_in_middle_band = np.random.normal(om, sig, num_in_band)
-
-                    offset = np.concatenate(
-                        [offs_in_left_band, offs_in_middle_band, offs_in_right_band]
-                    )
-
-                else:
-                    raise ValueError(f"Unknown coverage type: {coverage}")
-
-                offset_results.append(offset)
+            offset_results.append(offset)
 
         return offset_results
 
@@ -589,10 +782,28 @@ class Initialise:
 
             H0 = [HJ + HCS for HJ, HCS in zip(HJs, HCSs)]
 
-        H0_stacked = []
-        for _ in range(len(self.initial)):
-            H0_stacked.extend(H0)
+        return self._stack_H0_rows(H0)
 
+    def _stack_H0_rows(self, H0):
+        """Repeat the drift ensemble once per objective row (row-major order).
+
+        The resulting flat index is ``row * n_drift_snapshots + snapshot``,
+        matching the ordering the initial/target arrays are built in.
+        """
+        n_snapshots = self.n_drift_snapshots()
+        if len(H0) != n_snapshots:
+            raise ValueError(
+                f"Drift ensemble has {len(H0)} matrices but "
+                f"{n_snapshots} drift snapshots were requested."
+            )
+        n_rows = getattr(self, "n_objective_rows", None)
+        if n_rows is None:
+            raise ValueError(
+                "Objective rows are unknown; targets must be computed before H0."
+            )
+        H0_stacked = []
+        for _ in range(n_rows):
+            H0_stacked.extend(H0)
         return H0_stacked
 
     def _get_H0_from_model(self):
@@ -604,11 +815,7 @@ class Initialise:
             coupling_instances=coupling,
         )
 
-        H0_stacked = []
-        for _ in range(len(self.initial)):
-            H0_stacked.extend(H0)
-
-        return H0_stacked
+        return self._stack_H0_rows(H0)
 
     def create_state_vector_pure(self, ax):
         """
@@ -679,17 +886,17 @@ class Initialise:
             self.pulse_bandwidth,
             self.offs,
         ):
+            offs = np.asarray(offs, dtype=float)
             if cov == "broadband":
-                profile = np.ones(self.H0_snapshots)
+                profile = np.ones(len(offs))
             elif cov == "single":
-                profile = np.ones(len(self.offs[0]))
+                profile = np.ones(len(offs))
             elif cov == "selective":
                 profile = np.where(
                     (offs >= om - pbw / 2) & (offs <= om + pbw / 2), 1, 0
                 )
             elif cov == "band_selective":
-                sigma = pbw / (2 * np.sqrt(2 * np.log(2)))
-                profile = np.exp(-(((offs - om) / sigma) ** (2 * ord)))
+                profile = band_selective_profile(offs, om, pbw, ord)
             else:
                 raise ValueError(f"Unknown coverage type: {cov}")
 
@@ -697,20 +904,50 @@ class Initialise:
 
         return profiles
 
+    def n_drift_snapshots(self):
+        """Number of drift (H0) snapshots in the requested ensemble."""
+        return len(self.Omega_instances)
+
     def generate_Omega_instances(self):
+        lengths = {len(o) for o in self.offs}
+        if len(lengths) != 1:
+            raise ValueError(
+                f"Per-qubit offset sample arrays have inconsistent lengths "
+                f"{sorted(len(o) for o in self.offs)}; they are paired by index "
+                f"to form joint drift snapshots and must all match."
+            )
         return [list(group) for group in zip(*self.offs)]
 
     def generate_Jmat_instances(self):
-        Jmat_instances = []
-        sigma = self.sigma_J if self.sigma_J is not None else 0
+        """Draw one coupling matrix per drift snapshot.
 
-        for _ in range(self.H0_snapshots):
-            Jmat_instance = np.where(
-                self.Jmat != 0,
-                np.random.normal(self.Jmat, sigma),
-                0.0,
-            )
-            Jmat_instances.append(Jmat_instance)
+        The nominal coupling matrix is normalised once (upper-triangular,
+        lower-triangular and symmetric inputs all give the same result), then
+        exactly one random value is drawn per *physical pair* and mirrored
+        into both triangles.  Sampling each triangle independently would turn
+        a symmetric nominal matrix into an asymmetric one and the downstream
+        builders would reject it.
+        """
+        n_snapshots = self.n_drift_snapshots()
+        if self.n_qubits < 2:
+            return [
+                np.zeros((self.n_qubits, self.n_qubits)) for _ in range(n_snapshots)
+            ]
+
+        J = _symmetrise_coupling(self.Jmat)
+        sigma = self.sigma_J if self.sigma_J is not None else 0.0
+        iu = np.triu_indices(self.n_qubits, k=1)
+        nominal = J[iu]
+
+        Jmat_instances = []
+        for _ in range(n_snapshots):
+            if sigma:
+                drawn = np.where(nominal != 0, np.random.normal(nominal, sigma), 0.0)
+            else:
+                drawn = nominal
+            instance = np.zeros_like(J)
+            instance[iu] = drawn
+            Jmat_instances.append(instance + instance.T)
         return Jmat_instances
 
     def get_Jmat(self):
@@ -751,74 +988,162 @@ class Initialise:
                 n_para_updated[i] += 1
         return n_para_updated
 
-    def compute_targets_targ(self):
-        targets = []
-        inits = []
+    # ------------------------------------------------------------------
+    # Target construction
+    #
+    # Every objective array is built in one canonical ordering:
+    #
+    #     flat index = row * n_drift_snapshots + drift_snapshot
+    #
+    # where ``row`` indexes the objective's rows (configured initial states
+    # for state transfer, computational basis columns or Pauli strings for a
+    # gate objective).  ``get_H0`` stacks the drift snapshots row-major to
+    # match, and ``h0_omega_1_iterator_torch`` then expands the Rabi snapshot
+    # as the fastest-varying index.  Building any of these arrays in a
+    # different order silently pairs each row with a subset of the ensemble.
+    # ------------------------------------------------------------------
 
-        M = len(self.excitation_profile[0])  # Number of offsets
+    def _qubit_in_band(self, qubit, snapshot):
+        """True when *qubit* lies inside its selective band for *snapshot*."""
+        return bool(self.excitation_profile[qubit][snapshot] == 1)
 
-        for offs in range(M):
-            target_set = []
-            init_set = []
-            for target, init in zip(self.target, self.initial):
-                if self.excitation_profile[0][offs] == 1:
-                    target_set.append(target)
-                else:
-                    target_set.append(init)
-                init_set.append(init)
-            targets.append(target_set)
-            inits.append(init_set)
+    def _snapshot_all_in_band(self, snapshot):
+        """True when every qubit is inside its band for *snapshot*."""
+        return all(self._qubit_in_band(q, snapshot) for q in range(self.n_qubits))
 
+    def _state_from_ax(self, ax):
+        """Build a state (vector or density matrix) from per-qubit axis labels."""
+        if self.space == "hilbert":
+            return self.create_state_vector_pure(ax)
+        return self.create_state_vector_mixed(ax)
+
+    def _finalise_objective_arrays(self, inits, targets, n_rows):
+        """Validate and stack row-major ``(row, snapshot)`` objective arrays."""
+        n_snapshots = self.n_drift_snapshots()
+        expected = n_rows * n_snapshots
+        if len(inits) != expected or len(targets) != expected:
+            raise ValueError(
+                f"Objective arrays have {len(inits)} initial and {len(targets)} "
+                f"target entries; expected {expected} "
+                f"({n_rows} rows x {n_snapshots} drift snapshots)."
+            )
+        self.n_objective_rows = n_rows
         inits = np.array(inits)
         targets = np.array(targets)
-        if self.space == "hilbert":
-            (N, P, Q) = inits.shape
-            inits = inits.reshape(N * P, Q)
-            targets = targets.reshape(N * P, Q)
-        elif self.space == "liouville":
-            (N, P, Q, R) = inits.shape
-            inits = inits.reshape(N * P, Q, R)
-            targets = targets.reshape(N * P, Q, R)
-
+        if inits.shape != targets.shape:
+            raise ValueError(
+                f"Initial states {inits.shape} and targets {targets.shape} "
+                f"must have the same shape."
+            )
         return inits, targets
+
+    def compute_targets_targ(self):
+        """Axis targets, built as a product over qubits of per-qubit coverage.
+
+        A qubit inside its selective band is driven to its target axis; a
+        qubit outside it must be left where it started.  Inspecting only
+        qubit 1's coverage applied (or withheld) the whole product target
+        regardless of what the other qubits' bands were doing.
+        """
+        self.objective_mode = "state_transfer"
+        n_snapshots = self.n_drift_snapshots()
+        inits = []
+        targets = []
+
+        for r, init in enumerate(self.initial):
+            for s in range(n_snapshots):
+                ax = [
+                    self.targ_ax[r][q]
+                    if self._qubit_in_band(q, s)
+                    else self.init_ax[r][q]
+                    for q in range(self.n_qubits)
+                ]
+                inits.append(init)
+                targets.append(self._state_from_ax(ax))
+
+        return self._finalise_objective_arrays(inits, targets, len(self.initial))
 
     def compute_targets_gate(self):
-        targets = []
+        """Dispatch between the average gate objective and state transfer.
+
+        When every configured initial state names the same canonical gate the
+        request is for *that gate*, so the objective covers the whole
+        computational subspace.  Scoring a gate only on the configured input
+        states lets a pulse reach fidelity 1 while implementing a different
+        operation on the states that were not scored.
+
+        When the initial states name *different* gates the request is not a
+        single coherent gate, so state-transfer scoring is retained.
+        """
+        gates = [canonical_gate_name(g) for g in self.gate]
+        self.gate_canonical = gates
+        if len(set(gates)) == 1:
+            return self._compute_targets_gate_average(gates[0])
+        return self._compute_targets_gate_state_transfer(gates)
+
+    def _compute_targets_gate_average(self, gate_name):
+        """Rows spanning the computational subspace for an average gate fidelity.
+
+        In Hilbert space the rows are the ``d`` computational basis vectors,
+        propagated as columns so that relative phases are preserved.  In
+        Liouville space the rows are the ``d**2`` unnormalised Pauli strings
+        (identity first), which the channel metric in
+        :func:`~ctrl_freeq.ctrlfreeq.ctrl_freeq.fidelity_gate_liouville`
+        contracts against ``G P_j G^dag``.
+        """
+        self.objective_mode = "gate"
+        d = 2**self.n_qubits
+        self.computational_dim = d
+        self.gate_name = gate_name
+        gate = np.asarray(self.get_gate(gate_name), dtype=complex)
+        self.gate_matrix = gate
+        identity = np.eye(d, dtype=complex)
+
+        n_snapshots = self.n_drift_snapshots()
         inits = []
+        targets = []
 
-        M = len(self.excitation_profile[0])  # Number of offsets
-
-        for offs in range(M):
-            target_set = []
-            init_set = []
-            for gate, init in zip(self.gate, self.initial):
-                total_U = self.get_gate(gate)
-                if self.space == "hilbert":
-                    if self.excitation_profile[0][offs] == 1:
-                        target_set.append(total_U @ init)
-                    else:
-                        target_set.append(init)
-                elif self.space == "liouville":
-                    if self.excitation_profile[0][offs] == 1:
-                        target_set.append(total_U @ init @ total_U.conj().T)
-                    else:
-                        target_set.append(init)
-                init_set.append(init)
-            targets.append(target_set)
-            inits.append(init_set)
-
-        inits = np.array(inits)
-        targets = np.array(targets)
         if self.space == "hilbert":
-            (N, P, Q) = inits.shape
-            inits = inits.reshape(N * P, Q)
-            targets = targets.reshape(N * P, Q)
-        elif self.space == "liouville":
-            (N, P, Q, R) = inits.shape
-            inits = inits.reshape(N * P, Q, R)
-            targets = targets.reshape(N * P, Q, R)
+            rows = [identity[:, r].copy() for r in range(d)]
+            for row in rows:
+                for s in range(n_snapshots):
+                    g = gate if self._snapshot_all_in_band(s) else identity
+                    inits.append(row)
+                    targets.append(g @ row)
+        else:
+            rows = pauli_string_basis(self.n_qubits)
+            for row in rows:
+                for s in range(n_snapshots):
+                    g = gate if self._snapshot_all_in_band(s) else identity
+                    inits.append(row)
+                    targets.append(g @ row @ g.conj().T)
 
-        return inits, targets
+        return self._finalise_objective_arrays(inits, targets, len(rows))
+
+    def _compute_targets_gate_state_transfer(self, gates):
+        """Per-initial-state gate targets scored as state transfer.
+
+        This is *not* certification of a coherent conditional gate: it scores
+        only the configured input states.
+        """
+        self.objective_mode = "state_transfer"
+        d = 2**self.n_qubits
+        identity = np.eye(d, dtype=complex)
+        n_snapshots = self.n_drift_snapshots()
+        inits = []
+        targets = []
+
+        for gate_name, init in zip(gates, self.initial):
+            total_U = np.asarray(self.get_gate(gate_name), dtype=complex)
+            for s in range(n_snapshots):
+                u = total_U if self._snapshot_all_in_band(s) else identity
+                inits.append(init)
+                if self.space == "hilbert":
+                    targets.append(u @ init)
+                else:
+                    targets.append(u @ init @ u.conj().T)
+
+        return self._finalise_objective_arrays(inits, targets, len(self.initial))
 
     def get_betas(self):
         bs = []
@@ -856,32 +1181,31 @@ class Initialise:
         return u_tot_for_offset_instances
 
     def compute_targets_beta_axis(self):
-        targets = []
+        """Rotation-angle targets; smooth per-qubit coverage scaling is kept.
+
+        ``self.u_tot`` is indexed ``[snapshot][row]``; the objective arrays are
+        built row-major to match the drift stacking.
+        """
+        self.objective_mode = "state_transfer"
+        n_snapshots = self.n_drift_snapshots()
+        if len(self.u_tot) != n_snapshots:
+            raise ValueError(
+                f"Rotation targets were built for {len(self.u_tot)} snapshots "
+                f"but the drift ensemble has {n_snapshots}."
+            )
+
         inits = []
-        for uts in self.u_tot:
-            target_set = []
-            init_set = []
-            for ut, init in zip(uts, self.initial):
+        targets = []
+        for r, init in enumerate(self.initial):
+            for s in range(n_snapshots):
+                ut = self.u_tot[s][r]
+                inits.append(init)
                 if self.space == "hilbert":
-                    target_set.append(ut @ init)
-                elif self.space == "liouville":
-                    target_set.append(ut @ init @ ut.conj().T)
-                init_set.append(init)
-            targets.append(target_set)
-            inits.append(init_set)
+                    targets.append(ut @ init)
+                else:
+                    targets.append(ut @ init @ ut.conj().T)
 
-        inits = np.array(inits)
-        targets = np.array(targets)
-        if self.space == "hilbert":
-            (N, P, Q) = inits.shape
-            inits = inits.reshape(N * P, Q)
-            targets = targets.reshape(N * P, Q)
-        elif self.space == "liouville":
-            (N, P, Q, R) = inits.shape
-            inits = inits.reshape(N * P, Q, R)
-            targets = targets.reshape(N * P, Q, R)
-
-        return inits, targets
+        return self._finalise_objective_arrays(inits, targets, len(self.initial))
 
     def build_collapse_operators(self):
         """

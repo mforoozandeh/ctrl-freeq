@@ -3,6 +3,235 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+Several fixes change numerical results on purpose; see **Breaking behaviour**.
+
+### Breaking behaviour
+
+- **Gate targets are now scored as an average gate fidelity over the whole
+  computational subspace.** When every configured initial state names the same
+  canonical gate (aliases resolved first, e.g. `CX` → `CNOT`), the objective
+  propagates the computational basis as columns and scores
+  `F_avg = (Tr(M†M) + |Tr M|²) / (d(d+1))` with `M = G†V†UV`; in Liouville and
+  dissipative modes it uses the Pauli-transfer channel metric
+  `F_avg = (d·x₀ + Σⱼ xⱼ) / (d²(d+1))`, which also counts population lost from
+  the computational subspace. Previously only the configured input states were
+  scored, so a pulse could report fidelity 1 while implementing a different
+  operation. Reported fidelities for gate configurations will drop accordingly.
+  Configurations that name *different* gates per initial state keep
+  state-transfer scoring; that score is not certification of a coherent gate.
+  The selected mode is exposed as `parameters.objective_mode`
+  (`"gate"` / `"state_transfer"`), with `computational_dim`, `n_objective_rows`,
+  `gate_name` and `gate_matrix` alongside it.
+- **Dissipative propagation now uses the exact channel `exp(dt·D)` with Strang
+  splitting** (half-channel, unitary, half-channel) instead of an Euler step.
+  The Euler step left the physical state space for step sizes comparable to
+  T1/T2 (a T1=1, dt=2 step returned populations `[2, -1]`); the channel is CPTP
+  for every step size and the splitting is second-order accurate. The same
+  semantics now apply in the differentiable, NumPy, piecewise and analysis
+  paths.
+- **The two-level `SuperconductingQubitModel` drift now follows the Duffing
+  convention**: `-δᵢ Zᵢ + 2gᵢⱼ(XᵢXⱼ + YᵢYⱼ)`, fixed by requiring it to equal the
+  projection of `DuffingTransmonModel`'s drift onto the computational subspace.
+  The AC Stark channel amplitude is correspondingly `-sᵢ(I²+Q²)Ωᵢ²`. The
+  separate spin-chain/NMR convention (`createHcs`/`createHJ`) is unchanged.
+- **`band_selective` bandwidth is the FWHM of the target rotation-angle
+  profile**: `exp[-ln2 (2|Δ-Δ₀|/bw)^(2p)]`, equal to 1/2 at both band edges for
+  every order. This is not a guarantee about the achieved excitation curve.
+- **Waveform samples are the midpoints of the propagation intervals**
+  (`(k+½)T/N`), and stored trajectories are the `N+1` state boundaries `kT/N`
+  including the initial state. The previous `linspace(eps, T, N)` grid was
+  spaced `T/(N-1)`, so carrier modulation ran fast and analysis propagated past
+  the intended duration.
+- **`compute_and_store_evolution` now returns five values**
+  `(cxs, cys, history, history_mean, leakage)`, with `N+1` time entries.
+  Plot these against `Initialise.state_boundary_times()`.
+- **Progress histories now report the physical fidelity.** `fidelity_history`
+  previously stored `fidelity − penalty`. Fidelity, penalty and the penalized
+  score are now three separate series (`fidelity_history`, `penalty_history`,
+  `score_history`), with `final_fidelity`, `final_penalty` and `final_score`
+  evaluated on the solution that is actually returned. The stopping criterion
+  remains the penalized score and is now named as such.
+- **Rank-deficient waveform bases are rejected** instead of being silently
+  completed by QR with directions outside the requested basis (e.g. 8 chirp
+  columns on 10 sample points has numerical rank 5).
+- **`band_selective` coverage with `Axis` or `Gate` targets is rejected.**
+  The smooth profile has no all-or-nothing interpretation for a discrete
+  target; use `selective` coverage or a `Phi`/`Beta` target.
+
+### Fixed
+
+- Gate objectives no longer score only the configured input states, and gate
+  aliases are canonicalised before the objective is chosen.
+- Euler relaxation replaced by an exact CPTP dissipative channel; channel
+  durations are validated as finite and non-negative.
+- Two-level and Duffing transmons now agree on detuning sign, exchange scale
+  and Stark sign.
+- The perturbative static ZZ estimate is
+  `ζ = 2g²(αᵢ+αⱼ)/((Δ+αᵢ)(Δ-αⱼ))` with `Δ = δᵢ-δⱼ`, evaluated per snapshot, and
+  is refused near the |11⟩↔|20⟩/|02⟩ avoided crossings (mixing
+  `√2|g|/min(|Δ+αᵢ|,|Δ-αⱼ|) ≤ 0.1`, a small-mixing heuristic, not a 1% error
+  bound). The previous estimate had the wrong sign, ignored the detuning and
+  had no validity guard. Calibrated ZZ still takes priority.
+- Coupling uncertainty alone no longer collapses the drift ensemble to a
+  single snapshot; deterministic offsets are repeated to match it. Previously
+  ten requested snapshots produced one frequency snapshot and ten coupling
+  draws, and only one pair was used.
+- Selective coverage masks are evaluated per qubit instead of only inspecting
+  qubit 1: axis targets are built as a product over qubits, and a gate is
+  applied only when every participating qubit is in its band.
+- Observables and density matrices embed as `V O V†`, separate from the gate
+  embedding `V G V† + (I − VV†)`. A fully leaked |2⟩ now reports 0 on the
+  computational Pauli observables instead of `⟨Z⟩ = +1`.
+- Each qubit's selective samples are shuffled before joint snapshots are
+  formed, so the ensemble contains mixed in-band/out-of-band combinations.
+  Pairing the concatenated `[left | in-band | right]` arrays by index made
+  every qubit in-band or out-of-band at the same index.
+- Waveform sample times, propagation step and plotted state times agree.
+- Numerical rank and dimensions are checked for every matrix that is actually
+  factorised, including the envelope-weighted ones.
+- Constant envelopes (one- or two-point grids) return a flat unit envelope
+  instead of `NaN` from a zero-width normalisation range; envelope inputs are
+  validated.
+- `band_selective` width uses the correct FWHM conversion; bandwidth and order
+  are validated.
+- Coupling matrices are normalised once per physical pair, sampled once per
+  pair and mirrored, so a symmetric nominal matrix with `sigma_J > 0` stays
+  symmetric instead of becoming asymmetric and being rejected downstream.
+  Superconducting and Duffing models accept upper-triangular, lower-triangular
+  and symmetric inputs, matching the legacy normaliser and the plotter.
+- Initial-state, target and drift arrays share one canonical ordering
+  (`row × drift snapshot`, with the Rabi snapshot expanded last), with explicit
+  length validation. The two sides previously used different flattening orders,
+  so each initial state saw only a subset of the drift ensemble.
+- Analysis replays the optimizer's physics: the model's complete control
+  operator/amplitude mapping (including extra channels such as AC Stark), the
+  same propagator and the same dissipative channel. Dynamics replay previously
+  evolved unitarily even in dissipative mode, and indexed control operators in
+  pairs, so a Stark-enabled two-qubit model drove qubit 2 with `Z₀` and `X₁`.
+  Nominal and sampled trajectories are now distinguished, and the sampled band
+  covers drift × Rabi.
+- Duffing states embed by rank: vectors as `Vψ`, density matrices and Pauli
+  strings as `VρV†`. A Liouville-space Duffing run previously built `(1, 3, 2)`
+  states against `(1, 3, 3)` drift matrices. Dissipative Duffing remains
+  explicitly unsupported.
+- The Uhlmann fidelity against a pure target is evaluated in closed form as
+  `Re Tr(ρσ)`, which is differentiable; target purity is validated. The
+  eigendecomposition-based version raised a complex eigenvector-phase error in
+  its backward pass.
+- Fidelity, penalty and penalized score are reported separately in both
+  optimizer paths, and final metrics describe the returned solution rather than
+  the optimiser's last trial point.
+- Piecewise optimisation honours the Hamiltonian model's control mapping and
+  dimension, and selects the propagator by actual matrix dimension. A one-qutrit
+  drift previously raised a 2-versus-3 dimension error, and superconducting
+  Stark channels were omitted.
+
+- Analysis replay used a float32 time step, so it propagated with
+  `dt = 9.99999993922529e-09` instead of `1e-8`.
+- Analysis now reconstructs waveforms with the representation the solution was
+  optimised in, via the new `WaveformSpec`. It previously always used the
+  configured basis parameter counts and matrices, so a piecewise solution
+  either raised a split-size error (when the counts differed) or silently
+  reconstructed a different waveform (when they happened to coincide) — an
+  eight-point piecewise solution crashed, and a two-point one replayed at
+  fidelity 0.0132 against an optimised 1.0000.
+- The dissipative channel keeps a tensor duration in the autograd graph.
+  Substituting the validated Python scalar detached `exp(dt·D)` from the pulse
+  duration, so duration gradients were silently zero. Gradients with respect to
+  the waveform coefficients were unaffected.
+- Selective and band-selective sampling produce exactly the requested number of
+  snapshots. Rounding the out-of-band count up to an even number and then
+  halving it for both tails dropped a sample: with `ratio_factor = 1`, requests
+  of 1/3/5 snapshots produced 0/2/4, and a one-snapshot request produced an
+  empty ensemble.
+- The amplitude report derives the sampled physical peak range from `|gain|`.
+  A negative sampled Rabi gain is a phase reversal, not a negative drive
+  magnitude, so signed extrema reported `(-2, 1)` for gains `[-2, 1]` and
+  understated the largest drive.
+- A piecewise waveform representation no longer leaks into a later basis run on
+  the same parameters object. Each optimizer now declares its own
+  representation, so `PiecewiseAPI(api).run_optimization()` followed by
+  `api.run_optimization()` replays the basis solution correctly instead of
+  splitting its 4 coefficients with the piecewise layout's 16. Analysing a
+  solution whose parameter count disagrees with the recorded representation
+  raises a named error instead of reconstructing the wrong waveform; see
+  **Known limitations** for what that check cannot catch.
+- Piecewise `polar_phase` optimisation no longer raises `TypeError` when
+  selecting the per-qubit amplitude envelope order from a preprocessed
+  configuration.
+
+### Added
+
+
+
+- `WaveformSpec` in `make_pulse.waveform_gen_torch`, describing the parameter
+  counts, basis matrices and modes a solution vector is expressed in, together
+  with `waveform_function()` / `waveform_functions()`. Analysis reads it via
+  `Initialise.waveform_spec()`, which returns the most recent run's
+  representation (the configured basis by default);
+  `Initialise.basis_waveform_spec()` always returns the configured basis, and
+  `Piecewise.waveform_spec()` the piecewise identity basis.
+- Optional `waveform_spec=` argument on `process_and_plot()`,
+  `compute_and_store_evolution()`, `get_final_rho_for_excitation_profile()` and
+  `plot_excitation_profiles()`, so a solution can be analysed with its own
+  representation instead of whichever run finished last. Backwards compatible:
+  omitting it keeps the previous implicit behaviour.
+- `CtrlFreeQAPI.waveform_spec()` and `PiecewiseAPI.waveform_spec()` as the
+  handles to pass to those entry points. The former stays valid after another
+  optimizer has run on the same parameters object.
+- `Initialise.dt`, `Initialise.state_boundary_times()` and
+  `Initialise.n_drift_snapshots()`.
+- `canonical_gate_name()`, `pauli_string_basis()` and
+  `band_selective_profile()` in `setup.initialise_gui`.
+- `fidelity_gate_hilbert()`, `fidelity_gate_liouville()`,
+  `dissipator_superoperator()`, `dissipative_channel()`, `apply_channel()` and
+  `simulate_trajectory()` in `ctrlfreeq.ctrl_freeq`; `dissipator_superoperator`,
+  `dissipative_channel` and `apply_channel` also in `evolution.time_evolution`.
+- `HamiltonianModel.embed_computational_operator()`,
+  `HamiltonianModel.computational_projector()` and
+  `HamiltonianModel.computational_leakage()`.
+- `SuperconductingQubitModel.perturbative_zz()`.
+- Total-leakage trajectories `L(t) = 1 − Tr(Π_comp ρ(t))` at the `N+1` state
+  boundaries, returned by `compute_and_store_evolution` and drawn by the new
+  `plot_leakage()` (nominal trace plus snapshot min/max envelope). The total is
+  per register; per-qubit leakages are not summed.
+- `amplitude_limit_report()` / `format_amplitude_limit_report()` and
+  `parameters.amplitude_report`: per-qubit sampled peak `hypot(I, Q)` normalised
+  to `Omega_R_max`, the amount above 1, and the nominal versus sampled physical
+  peak (the sampled range uses gain magnitudes). The amplitude limit remains a
+  **soft penalty** — the returned waveform is not clipped or constrained to it,
+  and a sampled peak is not a bound on an independently interpolated continuous
+  waveform. Hard hardware enforcement is deferred, not implemented.
+
+
+- 196 regression tests covering the fixes above, using independent analytical
+  references (exact Duffing spectra, an exact single-qubit 2-design,
+  full-Liouvillian matrix exponentials, explicit nested-loop propagation) and
+  finite-difference checks of both gradients and Hessian-vector products in
+  float64/complex128.
+
+
+### Known limitations
+
+- Implicit analysis replay uses the representation of the **most recent run**
+  on a parameters object. When two optimizers share one object and both
+  solutions are still in play, pass the owning run's representation to the
+  analysis entry points — `CtrlFreeQAPI.waveform_spec()` stays valid across
+  later runs, and `PiecewiseAPI.waveform_spec()` returns its own. The
+  parameter-count check only catches representations of *different* sizes;
+  equal-count representations (for example a two-point basis solution and a
+  two-point piecewise cart solution, both 4 parameters) are indistinguishable
+  and will replay with the latest run's representation. Optimisation metrics
+  such as `final_fidelity` live on the same shared object and are likewise
+  overwritten by a later run.
+- RNG seeds are not yet exposed or recorded, and optimised pulses are not
+  validated on held-out drift/Rabi draws or denser offset/time grids. Reported
+  fidelities are training-batch fidelities.
+- `stark_shift_coeffs` is documented as dimensionless but multiplies `Ω²`, so
+  its effective units are inverse frequency; sensible values are far below 1.
+
 ## [0.3.0] — 2026-04-01
 
 ### Added

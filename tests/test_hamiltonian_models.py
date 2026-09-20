@@ -664,7 +664,12 @@ class TestACStarkShift:
         assert u.shape == (n_pulse, n_rabi * n_h0, 6)
 
     def test_z_amplitude_is_quadratic(self):
-        """Z channel amplitude should be s*(I²+Q²)*Ω²."""
+        """Z channel amplitude should be -s*(I²+Q²)*Ω².
+
+        ``s`` is a shift of the qubit *frequency*, and a frequency shift enters
+        the two-level drift as ``-shift * Z`` (the same convention as the
+        detuning, fixed by the projection of the Duffing drift).
+        """
         s = np.array([0.5, 0.3])
         model = SuperconductingQubitModel(2, stark_shift_coeffs=s)
 
@@ -673,14 +678,15 @@ class TestACStarkShift:
         rabi = torch.tensor([[10.0, 10.0]])
 
         u = model.control_amplitudes(cx, cy, rabi, n_h0=1)
-        # u has shape (1, 1, 6): [I_0*Ω, Q_0*Ω, s_0*(I²+Q²)*Ω², I_1*Ω, Q_1*Ω, s_1*(I²+Q²)*Ω²]
+        # u has shape (1, 1, 6):
+        # [I_0*Ω, Q_0*Ω, -s_0*(I²+Q²)*Ω², I_1*Ω, Q_1*Ω, -s_1*(I²+Q²)*Ω²]
 
-        # Qubit 0: s=0.5, I=1, Q=3, Ω=10  → Z = 0.5*(1+9)*100 = 500
-        expected_z0 = s[0] * (1.0**2 + 3.0**2) * 10.0**2
+        # Qubit 0: s=0.5, I=1, Q=3, Ω=10  → Z = -0.5*(1+9)*100 = -500
+        expected_z0 = -s[0] * (1.0**2 + 3.0**2) * 10.0**2
         assert abs(u[0, 0, 2].item() - expected_z0) < 1e-6
 
-        # Qubit 1: s=0.3, I=2, Q=4, Ω=10  → Z = 0.3*(4+16)*100 = 600
-        expected_z1 = s[1] * (2.0**2 + 4.0**2) * 10.0**2
+        # Qubit 1: s=0.3, I=2, Q=4, Ω=10  → Z = -0.3*(4+16)*100 = -600
+        expected_z1 = -s[1] * (2.0**2 + 4.0**2) * 10.0**2
         assert abs(u[0, 0, 5].item() - expected_z1) < 1e-6
 
     def test_stark_compatible_with_pulse_hamiltonian_generic(self):

@@ -1,4 +1,53 @@
+from dataclasses import dataclass
+from typing import Sequence
+
 import torch
+
+
+@dataclass(frozen=True)
+class WaveformSpec:
+    """How a solution vector maps onto per-qubit I/Q waveforms.
+
+    A solution vector is meaningless without the representation it was
+    optimised in: a basis-mode solution holds basis coefficients against the
+    orthonormalised waveform basis, while a piecewise solution holds one value
+    per pulse segment against an identity basis.  Interpreting one with the
+    other's parameter counts and matrices either raises a split-size error or,
+    when the counts happen to coincide, silently reconstructs a different
+    waveform.  Optimisation and analysis therefore share this object rather
+    than each reaching for the configuration's basis attributes.
+
+    Attributes:
+        n_para: per-qubit parameter counts the solution vector splits into.
+        mat: per-qubit pair of basis matrices consumed by the generator.
+        wf_mode: per-qubit waveform mode (``"cart"``, ``"polar"`` or
+            ``"polar_phase"``).
+    """
+
+    n_para: tuple
+    mat: tuple
+    wf_mode: tuple
+
+    @property
+    def functions(self) -> list:
+        """Per-qubit waveform generator matching each mode."""
+        return [waveform_function(mode) for mode in self.wf_mode]
+
+
+def waveform_function(mode: str):
+    """Return the waveform generator for *mode*."""
+    try:
+        return WAVEFORM_GENERATORS[mode]
+    except KeyError:
+        raise ValueError(
+            f"Unknown waveform mode {mode!r}. Choose "
+            f"{', '.join(sorted(WAVEFORM_GENERATORS))}."
+        ) from None
+
+
+def waveform_functions(modes: Sequence[str]) -> list:
+    """Return the waveform generators for a sequence of per-qubit modes."""
+    return [waveform_function(mode) for mode in modes]
 
 
 def waveform_gen_polar_phase(para: torch.Tensor, mat: list) -> tuple:
@@ -87,3 +136,10 @@ def waveform_gen_cart(para: torch.Tensor, mat: list) -> tuple:
     phi = torch.atan2(cy, cx)
 
     return amp, phi, cx, cy
+
+
+WAVEFORM_GENERATORS = {
+    "cart": waveform_gen_cart,
+    "polar": waveform_gen_polar,
+    "polar_phase": waveform_gen_polar_phase,
+}

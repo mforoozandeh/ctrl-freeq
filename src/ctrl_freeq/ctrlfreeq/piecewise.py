@@ -6,13 +6,20 @@ from ctrl_freeq.optimizers.qiskit_optimizers import (
     get_supported_qiskit_optimizers,
 )
 from ctrl_freeq.utils.colored_logging import setup_colored_logging
+
 from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
     pulse_hamiltonian,
+    pulse_hamiltonian_generic,
     simulator_optimized,
     penalty,
     modulate_waveforms,
+    amplitude_limit_report,
+    format_amplitude_limit_report,
+    _as_float,
 )
+
 from ctrl_freeq.make_pulse.waveform_gen_torch import (
+    WaveformSpec,
     waveform_gen_cart,
     waveform_gen_polar,
     waveform_gen_polar_phase,
@@ -54,9 +61,16 @@ class Piecewise:
         fixed_amplitude=1.0,  # Only used for polar_phase method
         dtype=torch.float32,  # Add dtype parameter for consistency
         collapse_ops=None,
+        hamiltonian_model=None,
+        control_ops=None,
     ):
         self.n_qubits = n_qubits
         self.op = op
+        # Model-based (generic) path: when a HamiltonianModel is provided,
+        # pulse_hamiltonian_generic is used with the model's *complete* control
+        # mapping, including channels beyond the two I/Q ones (e.g. AC Stark).
+        self.hamiltonian_model = hamiltonian_model
+        self.control_ops = control_ops
         self.rabi_freq = rabi_freq
         self.n_pulse = n_pulse
         self.n_h0 = n_h0
@@ -123,7 +137,11 @@ class Piecewise:
 
         self.fid = None
         self.pen = None
-        self.fidelity_history = []  # Track fidelity per iteration
+        # Physical fidelity, amplitude penalty and the penalized score
+        # (fidelity - penalty) are tracked as three separate series.
+        self.fidelity_history = []
+        self.penalty_history = []
+        self.score_history = []
 
         # Flag for COBYLA early termination (avoids exception-based termination)
         self.early_termination_flag = False
@@ -144,18 +162,26 @@ class Piecewise:
 
         # Calculate penalty for amplitude violations
         self.pen = penalty(amps)
+        self.last_cx = cxs.detach()
+        self.last_cy = cys.detach()
 
         # Generate pulse Hamiltonian (reuse from CtrlFreeQ)
-        Hp = pulse_hamiltonian(
-            cxs,
-            cys,
-            self.rabi_freq,
-            self.op,
-            self.n_pulse,
-            self.n_h0,
-            self.n_rabi,
-            self.n_qubits,
-        )
+        if self.hamiltonian_model is not None:
+            u = self.hamiltonian_model.control_amplitudes(
+                cxs, cys, self.rabi_freq, self.n_h0
+            )
+            Hp = pulse_hamiltonian_generic(u, self.control_ops)
+        else:
+            Hp = pulse_hamiltonian(
+                cxs,
+                cys,
+                self.rabi_freq,
+                self.op,
+                self.n_pulse,
+                self.n_h0,
+                self.n_rabi,
+                self.n_qubits,
+            )
 
         # Simulate evolution (reuse optimized simulator from CtrlFreeQ)
         state = simulator_optimized(
@@ -173,29 +199,59 @@ class Piecewise:
         self.cost = -self.fid + self.pen
         return self.cost
 
-    def callback_function(self, para):
-        """Callback function for monitoring optimization progress."""
+    def waveform_spec(self):
+        """Return the representation this optimizer's solution is expressed in.
+
+        Piecewise solutions hold one value per pulse segment against an
+        identity basis, which is not the configured waveform basis.  Analysis
+        reads this so it reconstructs the waveform the optimiser evaluated
+        rather than reinterpreting the vector as basis coefficients.
+        """
+        return WaveformSpec(
+            n_para=tuple(self.n_para),
+            mat=tuple(tuple(basis) for basis in self.identity_basis),
+            wf_mode=(self.wf_method,) * self.n_qubits,
+        )
+
+    def _record_iteration(self):
+        """Record physical fidelity, penalty and penalized score separately.
+
+        ``cost = -fidelity + penalty``, so ``-cost`` is the penalized score,
+        not the fidelity.
+        """
         if self.iter == 0:
-            self.logger.info("=" * 40)
+            self.logger.info("=" * 52)
             self.logger.info(f"PIECEWISE {self.wf_method.upper()} OPTIMIZATION")
-            self.logger.info("=" * 40)
-            self.logger.info(f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10}")
-            self.logger.info("=" * 40)
+            self.logger.info("=" * 52)
+            self.logger.info(
+                f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10} | "
+                f"{'Score':<10}"
+            )
+            self.logger.info("=" * 52)
 
         self.iter += 1
-        current_fidelity = -self.cost  # cost = -fidelity + penalty
-        self.fidelity_history.append(
-            current_fidelity.item()
-            if hasattr(current_fidelity, "item")
-            else float(current_fidelity)
-        )
-        self.logger.info(
-            f"{self.iter:<10} | {current_fidelity:<10.4f} | {self.pen:<10.4f}"
-        )
+        fidelity = _as_float(self.fid)
+        penalty_value = _as_float(self.pen)
+        score = fidelity - penalty_value
 
-        if current_fidelity >= self.exit_val:
+        self.fidelity_history.append(fidelity)
+        self.penalty_history.append(penalty_value)
+        self.score_history.append(score)
+
+        self.logger.info(
+            f"{self.iter:<10} | {fidelity:<10.4f} | {penalty_value:<10.4f} | "
+            f"{score:<10.4f}"
+        )
+        return fidelity, penalty_value, score
+
+    def callback_function(self, para):
+        """Callback function for monitoring optimization progress."""
+        _fidelity, _penalty, score = self._record_iteration()
+
+        # Deliberately a *penalized* stopping criterion.
+        if score >= self.exit_val:
             raise OptimizationInterrupted(
-                f"Objective function reached target fidelity = {self.exit_val}, exiting optimization...",
+                f"Penalized score reached target = {self.exit_val}, exiting optimization...",
                 para,
             )
 
@@ -208,29 +264,13 @@ class Piecewise:
         if self.early_termination_flag:
             return
 
-        if self.iter == 0:
-            self.logger.info("=" * 40)
-            self.logger.info(f"PIECEWISE {self.wf_method.upper()} OPTIMIZATION")
-            self.logger.info("=" * 40)
-            self.logger.info(f"{'Iteration':<10} | {'Fidelity':<10} | {'Penalty':<10}")
-            self.logger.info("=" * 40)
+        _fidelity, _penalty, score = self._record_iteration()
 
-        self.iter += 1
-        current_fidelity = -self.cost  # cost = -fidelity + penalty
-        self.fidelity_history.append(
-            current_fidelity.item()
-            if hasattr(current_fidelity, "item")
-            else float(current_fidelity)
-        )
-        self.logger.info(
-            f"{self.iter:<10} | {current_fidelity:<10.4f} | {self.pen:<10.4f}"
-        )
-
-        if current_fidelity >= self.exit_val:
+        if score >= self.exit_val:
             self.early_termination_flag = True
             self.early_termination_solution = para
             self.logger.warning(
-                f"Objective function reached target fidelity = {self.exit_val}, exiting optimization..."
+                f"Penalized score reached target = {self.exit_val}, exiting optimization..."
             )
 
 
@@ -310,15 +350,15 @@ class PiecewiseAPI:
         from ctrl_freeq.setup.basis_generation.mat_x0_gen import (
             amplitude_envelope as np_amplitude_envelope,
         )
+
         from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
             exp_mat_exact,
             exp_mat_torch,
-            fidelity_hilbert,
-            fidelity_liouville,
             state_hilbert,
             state_liouville,
             state_lindblad,
         )
+        from ctrl_freeq.run.run_ctrl import build_fidelity_function
         from ctrl_freeq.utils.conversion import array_to_tensor
         from ctrl_freeq.setup.iterator_generation.generate_iterator import (
             h0_omega_1_iterator_torch,
@@ -342,24 +382,34 @@ class PiecewiseAPI:
 
         H0, initials, targets = h0_omega_1_iterator_torch(H0, n_rabi, initials, targets)
 
-        # Set up functions
-        op = create_hamiltonian_basis_torch(p.n_qubits)
-        u_fun = exp_mat_exact if p.n_qubits == 1 else exp_mat_torch
+        # Set up functions.  The propagator is chosen by the *actual* matrix
+        # dimension, not by qubit count: a 3-level model has 3^n x 3^n
+        # matrices, for which the analytical 2x2 exponential is wrong.
+        hamiltonian_model = getattr(p, "hamiltonian_model", None)
+        if hamiltonian_model is not None:
+            D = hamiltonian_model.dim
+            control_ops = hamiltonian_model.control_ops_tensor()
+            op = None
+        else:
+            D = 2**p.n_qubits
+            control_ops = None
+            op = create_hamiltonian_basis_torch(p.n_qubits)
+
+        u_fun = exp_mat_exact if D == 2 else exp_mat_torch
 
         dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
 
         if dissipation_mode == "dissipative":
-            fid_fun = fidelity_liouville
             state_fun = state_lindblad
             collapse_ops = array_to_tensor(p.collapse_operators)
         elif p.space == "hilbert":
-            fid_fun = fidelity_hilbert
             state_fun = state_hilbert
             collapse_ops = None
         elif p.space == "liouville":
-            fid_fun = fidelity_liouville
             state_fun = state_liouville
             collapse_ops = None
+
+        fid_fun = build_fidelity_function(p, p.space, torch.device("cpu"))
 
         # Create piecewise optimizer
         # Use float64 for qiskit-cobyla to avoid dtype mismatch, float32 for others
@@ -371,15 +421,19 @@ class PiecewiseAPI:
             # p.amplitude_order: list of ints per qubit
             amp_env_tensors = []
             x = np.linspace(-1, 1, p.np_pulse)
+
             for qi in range(p.n_qubits):
+                # These arrive as numpy arrays once the config has been
+                # preprocessed, so the per-qubit entry has to be selected by
+                # rank rather than by list/tuple type.
                 env_type = (
                     p.amplitude_envelope[qi]
-                    if isinstance(p.amplitude_envelope, (list, tuple))
+                    if np.ndim(p.amplitude_envelope)
                     else p.amplitude_envelope
                 )
                 order = (
                     p.amplitude_order[qi]
-                    if isinstance(p.amplitude_order, (list, tuple))
+                    if np.ndim(p.amplitude_order)
                     else p.amplitude_order
                 )
                 env_np = np_amplitude_envelope(
@@ -408,7 +462,13 @@ class PiecewiseAPI:
             amp_envelopes=amp_env_tensors,
             dtype=dtype,
             collapse_ops=collapse_ops,
+            hamiltonian_model=hamiltonian_model,
+            control_ops=control_ops,
         )
+
+        # Analysis must reconstruct waveforms with the piecewise parameter
+        # layout and identity basis, not the configured waveform basis.
+        p._waveform_spec = self._piecewise_instance.waveform_spec()
 
         # Initialize parameters with same dtype as piecewise instance
         total_params = sum(self._piecewise_instance.n_para)
@@ -437,9 +497,9 @@ class PiecewiseAPI:
                     callback=self._piecewise_instance.callback_function,
                     max_iter=p.max_iter,
                 )
-                return soln.x
+                return self._finalise(p, soln.x)
             except OptimizationInterrupted as e:
-                return e.solution
+                return self._finalise(p, e.solution)
 
         else:
             # Get supported Qiskit optimizers for error message
@@ -469,14 +529,61 @@ class PiecewiseAPI:
                         callback=self._piecewise_instance.callback_function,
                         max_iter=p.max_iter,
                     )
-                    return sol
+                    return self._finalise(p, sol)
 
                 except OptimizationInterrupted as e:
-                    return e.solution
+                    return self._finalise(p, e.solution)
             else:
                 raise ValueError(
                     f"Algorithm '{algorithm}' not supported. Supported algorithms: {', '.join(supported_algorithms)}"
                 )
+
+    def _finalise(self, p, solution):
+        """Record final metrics for the solution that is actually returned.
+
+        The optimiser's last objective evaluation is generally a rejected
+        trial point, so the returned solution is re-evaluated here.
+        """
+        instance = self._piecewise_instance
+        with torch.no_grad():
+            instance.objective_function(solution.detach())
+
+        p.iterations = instance.iter
+        p.fidelity_history = instance.fidelity_history
+        p.penalty_history = instance.penalty_history
+        p.score_history = instance.score_history
+
+        p.final_fidelity = _as_float(instance.fid)
+        p.final_penalty = _as_float(instance.pen)
+        p.final_score = p.final_fidelity - p.final_penalty
+
+        p.amplitude_report = amplitude_limit_report(
+            instance.last_cx,
+            instance.last_cy,
+            p.Omega_R_max,
+            rabi_samples=instance.rabi_freq,
+        )
+        report_text = format_amplitude_limit_report(p.amplitude_report)
+        if any(not entry["within_limit"] for entry in p.amplitude_report):
+            instance.logger.warning("Amplitude limit exceeded:\n%s", report_text)
+        else:
+            instance.logger.info("Amplitude limit check:\n%s", report_text)
+        return solution
+
+    def waveform_spec(self):
+        """Return the representation this API's solutions are expressed in.
+
+        Pass this to the analysis entry points (``process_and_plot``,
+        ``compute_and_store_evolution``, ``get_final_rho_for_excitation_profile``)
+        when the parameters object is shared with another optimizer, so the
+        solution is reconstructed with its own representation instead of
+        whichever run happened to finish last.
+        """
+        if self._piecewise_instance is None:
+            raise RuntimeError(
+                "Run the optimization before asking for its waveform spec."
+            )
+        return self._piecewise_instance.waveform_spec()
 
     def get_config_summary(self):
         """Get configuration summary with piecewise method info."""

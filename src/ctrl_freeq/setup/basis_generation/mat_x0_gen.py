@@ -4,9 +4,44 @@ import numpy as np
 from numpy.polynomial import hermite_e
 
 
+def _validate_envelope_grid(x, n):
+    """Validate the sample grid and power factor shared by all envelopes."""
+    x = np.asarray(x, dtype=float)
+    if x.ndim != 1 or x.size == 0:
+        raise ValueError(
+            f"Envelope grid must be a non-empty 1-D array, got shape {x.shape}."
+        )
+    if not np.all(np.isfinite(x)):
+        raise ValueError("Envelope grid must contain only finite values.")
+    if np.ndim(n) != 0 or not np.isfinite(n) or n <= 0:
+        raise ValueError(f"Envelope order must be positive and finite, got {n!r}.")
+    return x
+
+
+def _normalise_envelope(envelope, eps):
+    """Scale *envelope* onto ``[eps, 1]``.
+
+    When the envelope is constant over the grid (``max == min``) the usual
+    ``(e - min) / (max - min)`` normalisation is a 0/0 division.  A constant
+    envelope carries no shape information, so the agreed behaviour is a flat
+    unit envelope.  This happens for grids with one or two points, where every
+    sample sits at the same ``|x|`` and therefore has the same envelope value.
+    """
+    lo = np.min(envelope)
+    hi = np.max(envelope)
+    span = hi - lo
+    if span == 0:
+        return np.ones_like(envelope)
+    envelope_norm = (envelope - lo) / span
+    return envelope_norm * (1 - eps) + eps
+
+
 def hs_envelope(x, beta=10.6 / 2, n=1, eps=sys.float_info.epsilon):
     """
     Normalized envelope function to scale between eps and 1.
+
+    A constant envelope (e.g. a one- or two-point grid) is returned flat at 1
+    instead of producing ``NaN`` from a zero-width normalisation range.
 
     :param x: Time array.
     :param beta: Scaling factor, typically 10.6 / duration.
@@ -14,19 +49,13 @@ def hs_envelope(x, beta=10.6 / 2, n=1, eps=sys.float_info.epsilon):
     :param eps: A small number to ensure the minimum value at extremities.
     :return: Normalized envelope values scaled between eps and 1.
     """
+    x = _validate_envelope_grid(x, n)
+
     # Compute the original envelope function
     argument = beta * (x**n)
     envelope = 2 / (np.exp(argument) + np.exp(-argument))
 
-    # Normalize envelope to have its maximum at 1
-    envelope_norm = (envelope - np.min(envelope)) / (
-        np.max(envelope) - np.min(envelope)
-    )
-
-    # Scale between eps and 1
-    envelope_scaled = envelope_norm * (1 - eps) + eps
-
-    return envelope_scaled
+    return _normalise_envelope(envelope, eps)
 
 
 def g_envelope(x, n=1, sigma=1 / 4, eps=sys.float_info.epsilon):
@@ -54,19 +83,18 @@ def g_envelope(x, n=1, sigma=1 / 4, eps=sys.float_info.epsilon):
     >>> envelope = g_envelope(x, n=2, sigma=0.25)
     >>> import matplotlib.pyplot as plt
     >>> plt.plot(x, envelope)
+
     >>> plt.show()
     """
+    x = _validate_envelope_grid(x, n)
+    if not np.isfinite(sigma) or sigma <= 0:
+        raise ValueError(f"Envelope sigma must be positive and finite, got {sigma!r}.")
+
     g_ext = np.exp(-(((1**2) / (2 * sigma**2)) ** 1))
     sigma_updated = np.sqrt(1 / (2 * ((-np.log(g_ext)) ** (1 / n))))
     envelope = np.exp(-((x**2 / (2 * sigma_updated**2)) ** n))
 
-    envelope_norm = (envelope - np.min(envelope)) / (
-        np.max(envelope) - np.min(envelope)
-    )
-
-    envelope_scaled = (envelope_norm * (1 - eps)) + eps
-
-    return envelope_scaled
+    return _normalise_envelope(envelope, eps)
 
 
 def chebyshev_matrix(x, n):
@@ -220,11 +248,46 @@ def generate_mat_x0_from_fourier_basis(para, ntp, wf_mode):
 
 def amplitude_envelope(x, envelope="gn", order=1):
     if envelope == "quad":
-        return 1 - x**2 + sys.float_info.epsilon
+        x = _validate_envelope_grid(x, order)
+        return _normalise_envelope(1 - x**2, sys.float_info.epsilon)
     elif envelope == "gn":
         return g_envelope(x, n=order)
     elif envelope == "hs":
         return hs_envelope(x, n=order)
+    raise ValueError(
+        f"Unknown amplitude envelope {envelope!r}. Choose 'quad', 'gn', or 'hs'."
+    )
+
+
+def _qr_checked(matrix, label):
+    """Orthonormalise *matrix* by QR, rejecting rank-deficient inputs.
+
+    ``np.linalg.qr`` happily returns a full set of orthonormal columns for a
+    rank-deficient matrix: the columns spanning the null directions are chosen
+    arbitrarily.  Using them silently adds waveform directions that the
+    requested basis never contained, so a numerically rank-deficient (or
+    over-determined) request is rejected instead.
+
+    The tolerance is NumPy's default SVD tolerance from
+    :func:`numpy.linalg.matrix_rank`.
+    """
+    n_rows, n_cols = matrix.shape
+    if n_cols > n_rows:
+        raise ValueError(
+            f"{label}: cannot build {n_cols} independent basis functions from "
+            f"{n_rows} sample points. Increase point_in_pulse or reduce n_para."
+        )
+    rank = np.linalg.matrix_rank(matrix)
+    if rank < n_cols:
+        raise ValueError(
+            f"{label}: the requested basis is numerically rank deficient "
+            f"(rank {rank} < {n_cols} columns on {n_rows} sample points). "
+            f"QR would silently complete it with directions outside the "
+            f"requested basis. Increase point_in_pulse, reduce n_para, or "
+            f"choose a better-conditioned wf_type."
+        )
+    q, _ = np.linalg.qr(matrix)
+    return q
 
 
 def mat_with_amplitude_and_qr(mat, x0, wf_mode, envelope, order):
@@ -237,16 +300,22 @@ def mat_with_amplitude_and_qr(mat, x0, wf_mode, envelope, order):
     if wf_mode == "polar_phase":
         x0_new = np.append(x0, x0[-1])
         mat_new[0] = np.tile(amp, len(x0))
-        mat_new[1], _ = np.linalg.qr(mat)
+        mat_new[1] = _qr_checked(mat, "phase basis")
 
     elif wf_mode == "polar":
         x0_new = x0
-        mat_new[0], _ = np.linalg.qr(mat * amp)
-        mat_new[1], _ = np.linalg.qr(mat)
+        mat_new[0] = _qr_checked(mat * amp, "amplitude-weighted basis")
+        mat_new[1] = _qr_checked(mat, "phase basis")
 
     elif wf_mode == "cart":
         x0_new = x0
-        mat_new[0], _ = np.linalg.qr(mat * amp)
-        mat_new[1], _ = np.linalg.qr(mat * amp)
+        mat_new[0] = _qr_checked(mat * amp, "amplitude-weighted basis (I)")
+        mat_new[1] = _qr_checked(mat * amp, "amplitude-weighted basis (Q)")
+
+    else:
+        raise ValueError(
+            f"Unknown waveform mode {wf_mode!r}. Choose 'cart', 'polar', or "
+            f"'polar_phase'."
+        )
 
     return mat_new, x0_new

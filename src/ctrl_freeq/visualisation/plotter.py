@@ -1,21 +1,28 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.linalg import expm
 
-from ctrl_freeq.evolution.time_evolution import (
-    apply_multi_pulse_multi_qubits_hilbert,
-    apply_multi_pulse_multi_qubits_liouville,
-    apply_multi_pulse_multi_qubits_lindblad,
-)
+
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
     create_H_total,
     createHcs,
     createHJ,
+    _symmetrise_coupling,
 )
-from ctrl_freeq.make_pulse.waveform_gen_torch import (
-    waveform_gen_cart,
-    waveform_gen_polar,
-    waveform_gen_polar_phase,
+
+
+from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
+    exp_mat_exact,
+    exp_mat_torch,
+    pulse_para,
+    pulse_hamiltonian,
+    pulse_hamiltonian_generic,
+    simulate_trajectory,
+    state_hilbert,
+    state_lindblad,
+    state_liouville,
+)
+from ctrl_freeq.setup.operator_generation.generate_operators import (
+    create_hamiltonian_basis_torch,
 )
 import torch
 
@@ -27,6 +34,15 @@ from ctrl_freeq.visualisation.plot_settings import plot_style, plotly_style
 # from tikzplotlib import save as tikz_save
 
 
+def _waveform_sample_times(T, n_pulse):
+    """Midpoint sample times ``(k + 1/2) T / N`` of the propagation intervals.
+
+    Matches ``Initialise.generate_time_sequence``; state boundaries live at
+    ``k T / N`` instead and are returned by ``Initialise.state_boundary_times``.
+    """
+    return (np.arange(n_pulse) + 0.5) * (T / n_pulse)
+
+
 @plot_style()
 def plot_pulses_iq(cxs, cys, T, plot_step=True, plot_line=True):
     """
@@ -35,10 +51,11 @@ def plot_pulses_iq(cxs, cys, T, plot_step=True, plot_line=True):
     :param T: Total duration.
     :param plot_step: Boolean to control plotting of step graphs.
     :param plot_line: Boolean to control plotting of line graphs.
+
     :return: The figure object containing the plot.
     """
-    t = np.linspace(np.finfo(float).eps, T, len(cxs[0]))
-    t = t * 1e9  # Convert to ns
+    # Waveform samples are the midpoints of the N propagation intervals.
+    t = _waveform_sample_times(T, len(cxs[0])) * 1e9  # Convert to ns
 
     # Create a subplot for each pair of cx and cy
     fig, axes = plt.subplots(len(cxs), 1, sharex="all")
@@ -92,8 +109,9 @@ def plot_pulses_amp_phi(cxs, cys, T, plot_step=True, plot_line=True):
     :param plot_line: Boolean to control plotting of line graphs.
     :return: The figure object containing the plot.
     """
-    t = np.linspace(np.finfo(float).eps, T, len(cxs[0]))
-    t = t * 1e9  # Convert to ns
+
+    # Waveform samples are the midpoints of the N propagation intervals.
+    t = _waveform_sample_times(T, len(cxs[0])) * 1e9  # Convert to ns
 
     global_ymax_phi = 1.05 * np.pi
     global_ymin_phi = -global_ymax_phi
@@ -582,7 +600,7 @@ def plot_observable_dynamics_hilbert(history, history_mean, time_vector, ops, n_
 
 
 @plot_style()
-def plot_excitation_profiles(x, p, rho_0, num_points):
+def plot_excitation_profiles(x, p, rho_0, num_points, waveform_spec=None):
     """
     Plot excitation profiles in a 3 by n_qubits subplot layout.
 
@@ -596,7 +614,10 @@ def plot_excitation_profiles(x, p, rho_0, num_points):
     matplotlib.figure.Figure: The figure object containing the plot.
     """
     # Obtain the final density matrices for the range of frequencies
-    rho_end = get_final_rho_for_excitation_profile(x, p, rho_0, num_points)
+
+    rho_end = get_final_rho_for_excitation_profile(
+        x, p, rho_0, num_points, waveform_spec
+    )
 
     # Prepare the frequency ranges for each qubit
     frequencies = []
@@ -1014,7 +1035,7 @@ def plot_bloch_sphere_dynamics_liouville(
     return fig
 
 
-def process_and_plot(x, p, save_plots=False, show_plots=False):
+def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=None):
     """
     Process the optimization solution and generate plots.
 
@@ -1051,7 +1072,11 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
     # Generate waveforms once (they are identical for all initial states)
     # Use the first initial state as reference since waveforms don't depend on initial state
     first_rho_0 = p.init[0]
-    cxs, cys, _, _ = compute_and_store_evolution(x, p, first_rho_0)
+
+    cxs, cys, _, _, _ = compute_and_store_evolution(x, p, first_rho_0, waveform_spec)
+
+    # State trajectories are recorded at the N+1 propagation boundaries.
+    boundary_times = p.state_boundary_times()
 
     # Waveforms are always identical since there is one set of parameters that generate them
     waveforms_identical = True
@@ -1096,7 +1121,27 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
 
     for rho_idx, rho_0 in enumerate(p.init):
         # Compute evolution for this specific initial state (needed for other plots)
-        _, _, history, history_mean = compute_and_store_evolution(x, p, rho_0)
+
+        _, _, history, history_mean, leakage = compute_and_store_evolution(
+            x, p, rho_0, waveform_spec
+        )
+
+        if _leakage_is_visible(leakage):
+            fig_leak = plot_leakage(
+                leakage,
+                boundary_times,
+                additional_settings={"figsize": (3.35, 2.5)},
+            )
+            figures.append(fig_leak)
+            if show_plots:
+                plt.show()
+            if save_plots:
+                plt.figure(fig_leak.number)
+                plt.savefig(
+                    f"{plots_dir}/leakage_{timestamp}_rho{rho_idx}.png",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
 
         # Store the waveforms for this initial state
         all_waveforms["waveforms"].append({"rho_idx": rho_idx, "cxs": cxs, "cys": cys})
@@ -1106,7 +1151,7 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
             fig_history = plot_history_with_mean_lu_liouville(
                 history=history,
                 history_mean=history_mean,
-                time_vector=p.t,
+                time_vector=boundary_times,
                 additional_settings={"figsize": (3.35 * p.n_qubits, 3.35 * p.n_qubits)},
             )
             figures.append(fig_history)
@@ -1124,7 +1169,7 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
             fig_obs = plot_observable_dynamics_liouville(
                 history,
                 history_mean,
-                p.t,
+                boundary_times,
                 p.obs_op,
                 p.n_qubits,
             )
@@ -1144,7 +1189,7 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
             fig_history = plot_history_with_mean_lu_hilbert(
                 history=history,
                 history_mean=history_mean,
-                time_vector=p.t,
+                time_vector=boundary_times,
                 additional_settings={"figsize": (3.35, 3.35 * p.n_qubits)},
             )
             figures.append(fig_history)
@@ -1162,7 +1207,7 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
             fig_obs = plot_observable_dynamics_hilbert(
                 history,
                 history_mean,
-                p.t,
+                boundary_times,
                 p.obs_op,
                 p.n_qubits,
             )
@@ -1211,11 +1256,13 @@ def process_and_plot(x, p, save_plots=False, show_plots=False):
                     )
 
         # Plot excitation profiles
+
         fig_excitation = plot_excitation_profiles(
             x,
             p,
             rho_0,
             1000,
+            waveform_spec,
         )
         figures.append(fig_excitation)
         if show_plots:
@@ -1295,16 +1342,31 @@ def get_H0_for_plotter(p, num_points):
 
 
 def get_Jmat_for_plotter(p, num_points):
-    Jmat_instances = []
-    sigma = p.sigma_J if p.sigma_J is not None else 0
+    """Coupling draws for analysis, using the same normalisation as setup.
 
+    One random value per *physical pair*, mirrored into both triangles, so a
+    symmetric nominal matrix stays symmetric and the Hamiltonian builders
+    accept it.
+    """
+    n_qubits = p.n_qubits
+    if n_qubits < 2:
+        return [np.zeros((n_qubits, n_qubits)) for _ in range(num_points)]
+
+    J = _symmetrise_coupling(p.Jmat)
+    sigma = p.sigma_J if p.sigma_J is not None else 0.0
+    iu = np.triu_indices(n_qubits, k=1)
+    nominal = J[iu]
+
+    Jmat_instances = []
     for _ in range(num_points):
-        Jmat_instance = np.where(
-            p.Jmat != 0,
-            np.random.normal(p.Jmat, sigma),
-            0.0,
+        drawn = (
+            np.where(nominal != 0, np.random.normal(nominal, sigma), 0.0)
+            if sigma
+            else nominal
         )
-        Jmat_instances.append(Jmat_instance)
+        instance = np.zeros_like(J)
+        instance[iu] = drawn
+        Jmat_instances.append(instance + instance.T)
     return Jmat_instances
 
 
@@ -1319,99 +1381,22 @@ def linear_distribution(center, band, num_points):
     return [start + step * i for i in range(num_points)]
 
 
-def get_final_rho_for_excitation_profile(x, p, rho_0, num_points):
-    duration = p.pulse_duration
-    wf_mode = p.wf_mode
-    mat = p.mat
-    n_qubits = p.n_qubits
-    n_para = p.n_para_updated
-    peak_amplitudes = p.Omega_R_max
-    space = p.space
+def get_final_rho_for_excitation_profile(x, p, rho_0, num_points, waveform_spec=None):
+    """Final states over a frequency sweep, replaying the optimizer's physics.
 
-    # Get per-qubit control operators (model-aware or legacy)
-    qubit_ctrl_ops = _get_control_ops_for_plotter(p)
+    The sweep is a *nominal* trajectory: one drift per swept offset at the
+    nominal Rabi amplitude, not a sampled ensemble.
 
-    # Sample list of parameters
-    parameters = torch.split(x.detach().clone(), list(n_para))
-
-    # Lists to store the results
-    amps = []
-    phis = []
-    cxs = []
-    cys = []
-    pulse_params = []
-
-    wf_fun = []
-
-    for mode in wf_mode:
-        if mode == "polar_phase":
-            wf_fun.append(waveform_gen_polar_phase)
-        elif mode == "polar":
-            wf_fun.append(waveform_gen_polar)
-        elif mode == "cart":
-            wf_fun.append(waveform_gen_cart)
-
-    # Loop through each parameter and call waveform_gen
-    for i in range(n_qubits):
-        # Ensure mats have same dtype as parameters x
-        mat_i = []
-        for m in mat[i]:
-            if isinstance(m, np.ndarray):
-                mat_i.append(torch.tensor(m, dtype=x.dtype))
-            else:
-                mat_i.append(m.to(dtype=x.dtype))
-        amp, phi, cx, cy = wf_fun[i](parameters[i], mat_i)
-        # Convert PyTorch tensors to NumPy arrays
-        amp_np = amp.detach().cpu().numpy()
-        phi_np = phi.detach().cpu().numpy()
-        cx_np = cx.detach().cpu().numpy()
-        cy_np = cy.detach().cpu().numpy()
-        c = (cx_np + 1j * cy_np).reshape(-1)  # Reshape to (100,)
-        modulation_exponent = p.modulation_exponent[:, i].reshape(
-            -1
-        )  # Reshape to (100,)
-        modulated_waveform = np.multiply(c, modulation_exponent)
-        cx = modulated_waveform.real
-        cy = modulated_waveform.imag
-        Ix, Iy = qubit_ctrl_ops[i]
-        pulse_params.append((cx, cy, Ix, Iy))
-        amps.append(amp_np)
-        phis.append(phi_np)
-        cxs.append(cx)
-        cys.append(cy)
+    Args:
+        waveform_spec: representation *x* was optimised in; defaults to the
+            one recorded by the most recent run on *p*.
+    """
+    _amps, cxs, cys = _plotter_waveforms(x, p, waveform_spec)
     H0 = get_H0_for_plotter(p, num_points)
-
-    dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
-    collapse_operators = getattr(p, "collapse_operators", None)
-
-    rho_end = []
-    for h0 in H0:
-        if dissipation_mode == "dissipative" and collapse_operators is not None:
-            rho_end.append(
-                apply_multi_pulse_multi_qubits_lindblad(
-                    h0,
-                    pulse_params,
-                    duration,
-                    peak_amplitudes,
-                    rho_0,
-                    collapse_operators,
-                )
-            )
-        elif space == "hilbert":
-            rho_end.append(
-                apply_multi_pulse_multi_qubits_hilbert(
-                    h0, pulse_params, duration, peak_amplitudes, rho_0
-                )
-            )
-        elif space == "liouville":
-            rho_end.append(
-                apply_multi_pulse_multi_qubits_liouville(
-                    h0, pulse_params, duration, peak_amplitudes, rho_0
-                )
-            )
-        else:
-            raise ValueError("Invalid space type. Choose 'liouville' or 'hilbert'.")
-    return rho_end
+    final = _plotter_propagate(
+        p, H0, _plotter_rabi(p, nominal=True), cxs, cys, rho_0, record=False
+    )
+    return [state.detach().cpu().numpy() for state in final]
 
 
 def calculate_observable(state, operator, n_qubits, space_type="hilbert"):
@@ -1439,151 +1424,284 @@ def calculate_observable(state, operator, n_qubits, space_type="hilbert"):
         raise ValueError("Invalid space type. Choose 'liouville' or 'hilbert'.")
 
 
-def _get_control_ops_for_plotter(p):
-    """Return per-qubit (Ix, Iy) operators for the plotter.
+def _leakage_is_visible(leakage):
+    """True when any leakage trace is non-zero.
 
-    When a ``hamiltonian_model`` is available, uses its ``build_control_ops``
-    (which may return 3×3 or higher-dim operators).  Otherwise falls back to
-    the legacy ``p.op`` dictionary of 2×2 Pauli operators.
+    Both the nominal trajectory and the snapshot maxima are inspected: a run
+    whose sampled snapshots barely leak can still leak measurably at the
+    nominal operating point, and hiding the plot would conceal that.  Only
+    two identically zero traces stay hidden.
     """
-    model = getattr(p, "hamiltonian_model", None)
-    if model is not None:
-        ctrl_ops = model.build_control_ops()
-        # First 2 ops per qubit are X-drive and Y-drive
-        qubit_ops = []
-        for i in range(p.n_qubits):
-            qubit_ops.append((ctrl_ops[2 * i], ctrl_ops[2 * i + 1]))
-        return qubit_ops
-
-    # Legacy path: use p.op Pauli dictionary
-    qubit_ops = []
-    for i in range(p.n_qubits):
-        qubit_ops.append((p.op[f"X_{i + 1}"], p.op[f"Y_{i + 1}"]))
-    return qubit_ops
+    nominal = np.asarray(leakage["nominal"])
+    snapshots = np.asarray(leakage["snapshots"])
+    peak = 0.0
+    if nominal.size:
+        peak = max(peak, float(np.max(np.abs(nominal))))
+    if snapshots.size:
+        peak = max(peak, float(np.max(np.abs(snapshots))))
+    return peak > 0.0
 
 
-def compute_and_store_evolution(x, p, rho_0):
+@plot_style()
+def plot_leakage(leakage, time_vector, label_scale=1e9):
+    r"""Plot total leakage ``L(t) = 1 - Tr(Pi_comp rho(t))`` over the pulse.
+
+    Shows the nominal trajectory and the min/max envelope over the sampled
+    ensemble.  ``L`` is a single total for the whole register, not a sum of
+    per-qubit leakages.
     """
-    Visualize the time evolution of each element of the density matrix during pulse application in a compact manner.
+    t = np.asarray(time_vector) * label_scale
+    nominal = np.asarray(leakage["nominal"]).real
+    snapshots = np.asarray(leakage["snapshots"]).real
+
+    fig, ax = plt.subplots()
+    if snapshots.size:
+        ax.fill_between(
+            t,
+            snapshots.min(axis=1),
+            snapshots.max(axis=1),
+            alpha=0.25,
+            linewidth=0,
+            label="snapshot min/max",
+        )
+    ax.plot(t, nominal, linewidth=1, label="nominal")
+    ax.set_xlabel(r"$t$ (ns)")
+    ax.set_ylabel(r"leakage $1-\mathrm{Tr}(\Pi_{\mathrm{comp}}\rho)$")
+    ax.legend(frameon=False)
+    return fig
+
+
+# ======================================================================
+# Shared analysis replay
+#
+# Analysis must replay the *same* physics the optimizer ran: the same control
+# operator / amplitude mapping (including extra channels such as AC Stark),
+# the same propagator, and the same dissipative channel.  These helpers call
+# the optimizer's own kernels rather than reimplementing them, so the two
+# cannot drift apart again.
+# ======================================================================
+
+
+def _plotter_waveforms(x, p, waveform_spec=None):
+    """Regenerate the optimizer's modulated I/Q waveforms from a solution.
+
+    The parameter counts, basis matrices and modes come from the solution's own
+    :class:`~ctrl_freeq.make_pulse.waveform_gen_torch.WaveformSpec`, not from
+    the configured basis attributes.  A piecewise solution is one value per
+    pulse segment against an identity basis; splitting it with the basis
+    parameter counts either raises a split-size error or, when the counts
+    coincide, silently reconstructs a different waveform.
 
     Args:
-    - H_0 (np.array): Initial Hamiltonian.
-    - rho_0 (np.array): Initial density matrix.
-    - pulse_params (list of tuples): Each tuple contains (f, g, Ix, Iy) for a specific spin channel.
-    - dt (float): time step.
+        waveform_spec: the representation *x* was optimised in.  When omitted,
+            the one recorded on *p* by the most recent run is used, which is
+            only correct for that run's solution.  Pass it explicitly to
+            analyse a solution from an earlier run, or whenever more than one
+            optimizer shares a parameters object.
+
+    Returns ``(amps, cxs, cys)`` torch tensors of shape
+    ``(n_pulse, n_qubits)``.
     """
 
-    H_0 = p.H0
-    t = p.t
-    wf_mode = p.wf_mode
-    mat = p.mat
-    n_qubits = p.n_qubits
-    n_para = p.n_para_updated
-    peak_amplitudes = p.Omega_R_max
-    H0_mean = _get_mean_H0(p)
+    x = x.detach().clone()
+    spec = waveform_spec if waveform_spec is not None else p.waveform_spec()
 
-    dt = t[1] - t[0]
+    expected = int(sum(spec.n_para))
+    if x.numel() != expected:
+        raise ValueError(
+            f"Solution has {x.numel()} parameters but the waveform "
+            f"representation expects {expected}. The solution came from a "
+            f"different optimizer than the one that produced this "
+            f"representation; pass that run's waveform_spec explicitly, or "
+            f"analyse each solution right after the run that produced it. "
+            f"Representations with equal parameter counts cannot be told "
+            f"apart here."
+        )
 
-    # Get per-qubit control operators (model-aware or legacy)
-    qubit_ctrl_ops = _get_control_ops_for_plotter(p)
+    parameters = torch.split(x, list(spec.n_para))
 
-    wf_fun = []
-
-    for mode in wf_mode:
-        if mode == "polar_phase":
-            wf_fun.append(waveform_gen_polar_phase)
-        elif mode == "polar":
-            wf_fun.append(waveform_gen_polar)
-        elif mode == "cart":
-            wf_fun.append(waveform_gen_cart)
-
-    # Sample list of parameters
-    parameters = torch.split(x.detach().clone(), list(n_para))
-
-    # Lists to store the results
-    amps = []
-    phis = []
-    cxs = []
-    cys = []
-    pulse_params = []
-
-    # Loop through each parameter and call waveform_gen
-    for i in range(n_qubits):
-        # Ensure the waveform‐gen mats have the same dtype as x
+    mats = []
+    for per_qubit in spec.mat:
         mat_i = []
-        for m in mat[i]:
-            if isinstance(m, np.ndarray):
-                mat_i.append(torch.tensor(m, dtype=x.dtype))
+        for m in per_qubit:
+            if isinstance(m, torch.Tensor):
+                mat_i.append(m.detach().to(dtype=x.dtype))
             else:
-                mat_i.append(m.to(dtype=x.dtype))
-        amp, phi, cx, cy = wf_fun[i](parameters[i], mat_i)
-        # Convert PyTorch tensors to NumPy arrays
-        amp_np = amp.detach().cpu().numpy()
-        phi_np = phi.detach().cpu().numpy()
-        cx_np = cx.detach().cpu().numpy()
-        cy_np = cy.detach().cpu().numpy()
-        c = (cx_np + 1j * cy_np).reshape(-1)  # Reshape to (100,)
-        modulation_exponent = p.modulation_exponent[:, i].reshape(
-            -1
-        )  # Reshape to (100,)
-        modulated_waveform = np.multiply(c, modulation_exponent)
-        cx = modulated_waveform.real
-        cy = modulated_waveform.imag
-        Ix, Iy = qubit_ctrl_ops[i]
-        pulse_params.append((cx, cy, Ix, Iy))
-        amps.append(amp_np)
-        phis.append(phi_np)
-        cxs.append(cx)
-        cys.append(cy)
+                mat_i.append(torch.as_tensor(np.asarray(m), dtype=x.dtype))
+        mats.append(mat_i)
 
-    # Use model dimension when available (e.g. 3^n for Duffing), else 2^n
+    me = torch.as_tensor(np.asarray(p.modulation_exponent))
+    return pulse_para(p.n_qubits, parameters, mats, spec.functions, me)
+
+
+def _plotter_pulse_hamiltonian(p, cxs, cys, rabi_freq, n_h0):
+    """Build Hp with the model's full control mapping (or the legacy path).
+
+    Indexing the control operators in pairs assumes exactly two channels per
+    qubit, which is wrong as soon as a model adds a channel (e.g. the Stark
+    Z channel makes the operator list ``[X0, Y0, Z0, X1, Y1, Z1]``, so qubit 1
+    would be driven with ``Z0`` and ``X1``).  Going through
+    ``control_amplitudes`` keeps every channel, including the quadratic Stark
+    power term.
+    """
+    n_pulse = cxs.shape[0]
+    n_rabi = rabi_freq.shape[0]
     model = getattr(p, "hamiltonian_model", None)
-    n = model.dim if model is not None else 2**n_qubits
-    instances = len(H_0)
-    time_steps = len(pulse_params[0][0])
+    if model is not None:
+        u = model.control_amplitudes(cxs, cys, rabi_freq, n_h0)
+        return pulse_hamiltonian_generic(u, model.control_ops_tensor())
+
+    op = create_hamiltonian_basis_torch(p.n_qubits)
+    return pulse_hamiltonian(cxs, cys, rabi_freq, op, n_pulse, n_h0, n_rabi, p.n_qubits)
+
+
+def _plotter_evolution_functions(p):
+    """Return ``(u_fun, state_fun, collapse_ops)`` matching the optimizer."""
+    model = getattr(p, "hamiltonian_model", None)
+    D = model.dim if model is not None else 2**p.n_qubits
+    u_fun = exp_mat_exact if D == 2 else exp_mat_torch
+
+    dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
+    collapse_operators = getattr(p, "collapse_operators", None)
+    if dissipation_mode == "dissipative" and collapse_operators is not None:
+        return (
+            u_fun,
+            state_lindblad,
+            torch.as_tensor(np.asarray(collapse_operators), dtype=torch.complex128),
+        )
     if p.space == "hilbert":
-        history = np.zeros((n, time_steps, instances), dtype=complex)
-        history_mean = np.zeros((n, time_steps), dtype=complex)
-    elif p.space == "liouville":
-        history = np.zeros((n, n, time_steps, instances), dtype=complex)
-        history_mean = np.zeros((n, n, time_steps), dtype=complex)
+        return u_fun, state_hilbert, None
+    return u_fun, state_liouville, None
 
-    rho_t_mean = rho_0
-    H_t_mean = H0_mean.copy()
-    for i in range(len(pulse_params[0][0])):  # Assumes all f have the same length
-        H1_t = np.zeros_like(H0_mean)  # To store the added term for this iteration
 
-        for (f, g, Ix, Iy), amplitude in zip(pulse_params, peak_amplitudes):
-            H1_t += amplitude * (f[i] * Ix + g[i] * Iy)
+def _as_state_batch(state, batch, space):
+    """Broadcast one initial state across a batch of ensemble members."""
+    tensor = torch.as_tensor(np.asarray(state), dtype=torch.complex128)
+    if space == "hilbert":
+        return tensor.reshape(1, -1).expand(batch, -1).contiguous()
+    return tensor.reshape(1, *tensor.shape).expand(batch, -1, -1).contiguous()
 
-        H_t_curr = H_t_mean + H1_t
 
-        U_t = expm(-1j * H_t_curr * dt)  # Time evolution operator for this slice
+def _plotter_propagate(p, H0_list, rabi_freq, cxs, cys, state, record=False):
+    """Propagate *state* over the ensemble ``H0_list x rabi_freq``.
 
-        if p.space == "hilbert":
-            rho_t_mean = U_t @ rho_t_mean
-            history_mean[:, i] = rho_t_mean
-        elif p.space == "liouville":
-            rho_t_mean = U_t @ rho_t_mean @ U_t.conj().T
-            history_mean[:, :, i] = rho_t_mean
+    Returns the final states ``(batch, ...)`` when ``record`` is false, or the
+    full ``(n_pulse + 1, batch, ...)`` trajectory when it is true.
+    """
+    H0 = torch.as_tensor(np.asarray(H0_list), dtype=torch.complex128)
+    n_h0, D, _ = H0.shape
+    n_rabi = rabi_freq.shape[0]
 
-    H_t = H_0.copy()
-    for j in range(len(H_0)):
-        rho_t = rho_0
-        for i in range(len(pulse_params[0][0])):  # Assumes all f have the same length
-            H1_t = np.zeros_like(H0_mean)  # To store the added term for this iteration
+    # Batch layout must match the optimizer's: index = h0 * n_rabi + rabi.
+    H0_batch = H0.unsqueeze(1).expand(n_h0, n_rabi, D, D).reshape(n_h0 * n_rabi, D, D)
+    Hp = _plotter_pulse_hamiltonian(p, cxs, cys, rabi_freq, n_h0)
 
-            for (f, g, Ix, Iy), amplitude in zip(pulse_params, peak_amplitudes):
-                H1_t += amplitude * (f[i] * Ix + g[i] * Iy)
+    u_fun, state_fun, collapse_ops = _plotter_evolution_functions(p)
 
-            H_t_curr = H_t[j] + H1_t
-            U_t = expm(-1j * H_t_curr * dt)  # Time evolution operator for this slice
+    # float64: torch.as_tensor on a Python float defaults to float32, which
+    # would make the replay's time step differ from the optimizer's.
+    dt = torch.as_tensor(float(p.pulse_duration) / int(p.np_pulse), dtype=torch.float64)
+    initial = _as_state_batch(state, n_h0 * n_rabi, p.space)
 
-            if p.space == "hilbert":
-                rho_t = U_t @ rho_t
-                history[:, i, j] = rho_t
-            elif p.space == "liouville":
-                rho_t = U_t @ rho_t @ U_t.conj().T
-                history[:, :, i, j] = rho_t
+    trajectory = simulate_trajectory(
+        H0_batch, Hp, dt, initial, u_fun, state_fun, collapse_ops=collapse_ops
+    )
+    return trajectory if record else trajectory[-1]
 
-    return cxs, cys, history, history_mean
+
+def _plotter_rabi(p, nominal=False):
+    """Rabi snapshots for analysis: the full ensemble, or the nominal value."""
+    if nominal:
+        return torch.as_tensor(np.asarray(p.Omega_R_max, dtype=float)).reshape(
+            1, p.n_qubits
+        )
+    return torch.as_tensor(np.asarray(p.Omega_R, dtype=float)).reshape(-1, p.n_qubits)
+
+
+def _leakage_series(p, trajectory):
+    """Total leakage ``1 - Tr(Pi_comp rho)`` at every recorded boundary.
+
+    One total per register: per-qubit leakages must not be summed, which would
+    count a state with two leaked qubits twice.  Returns ``(n_times, batch)``.
+    """
+    model = getattr(p, "hamiltonian_model", None)
+    if model is None or model.dim == 2**p.n_qubits:
+        return np.zeros(trajectory.shape[:2])
+
+    V = torch.as_tensor(model.computational_projector(), dtype=trajectory.dtype)
+    if p.space == "hilbert":
+        comp = torch.einsum("tbi,ia->tba", trajectory, V.conj())
+        pop = (comp.conj() * comp).real.sum(-1)
+    else:
+        pop = torch.einsum("ai,tbij,ja->tb", V.conj().T, trajectory, V).real
+    return (1.0 - pop).detach().cpu().numpy()
+
+
+def compute_and_store_evolution(x, p, rho_0, waveform_spec=None):
+    """Replay the optimised pulse and record the full state trajectory.
+
+    The replay uses the optimizer's own control mapping, propagator and
+    dissipative channel, so a dissipative run decays in the plots exactly as
+    it did in the objective instead of evolving unitarily.
+
+    Two provenances are returned:
+
+    * ``history_mean`` — the *nominal* trajectory: mean drift, nominal Rabi
+      amplitude.  This is one trajectory, not an average over the ensemble.
+    * ``history`` — the *sampled* ensemble: every drift snapshot crossed with
+      every Rabi snapshot, i.e. the same batch the objective was evaluated on.
+
+    Both carry ``n_pulse + 1`` entries, one per state boundary ``k * dt``
+    starting with the initial state; plot them against
+    ``p.state_boundary_times()``.
+
+
+    Args:
+        waveform_spec: representation *x* was optimised in; defaults to the
+            one recorded by the most recent run on *p*.
+
+    Returns:
+        ``(cxs, cys, history, history_mean, leakage)`` where ``leakage`` is a
+        dict with the nominal and per-snapshot total-leakage series.
+    """
+    _amps, cxs_t, cys_t = _plotter_waveforms(x, p, waveform_spec)
+    cxs = [cxs_t[:, i].detach().cpu().numpy() for i in range(p.n_qubits)]
+    cys = [cys_t[:, i].detach().cpu().numpy() for i in range(p.n_qubits)]
+
+    # Sampled ensemble: the distinct drift snapshots (p.H0 repeats them once
+    # per objective row) crossed with the Rabi snapshots.
+    n_snapshots = p.n_drift_snapshots()
+    H0_ensemble = np.asarray(p.H0)[:n_snapshots]
+    traj = _plotter_propagate(
+        p, H0_ensemble, _plotter_rabi(p), cxs_t, cys_t, rho_0, record=True
+    )
+
+    # Nominal trajectory: mean drift, nominal Rabi amplitude.
+    traj_mean = _plotter_propagate(
+        p,
+        [_get_mean_H0(p)],
+        _plotter_rabi(p, nominal=True),
+        cxs_t,
+        cys_t,
+        rho_0,
+        record=True,
+    )
+
+    leakage = {
+        "nominal": _leakage_series(p, traj_mean)[:, 0],
+        "snapshots": _leakage_series(p, traj),
+    }
+
+    traj_np = traj.detach().cpu().numpy()
+    traj_mean_np = traj_mean.detach().cpu().numpy()[:, 0]
+
+    if p.space == "hilbert":
+        # (T, instances, D) -> (D, T, instances);  (T, D) -> (D, T)
+        history = np.transpose(traj_np, (2, 0, 1))
+        history_mean = np.transpose(traj_mean_np, (1, 0))
+    else:
+        # (T, instances, D, D) -> (D, D, T, instances)
+        history = np.transpose(traj_np, (2, 3, 0, 1))
+        history_mean = np.transpose(traj_mean_np, (1, 2, 0))
+
+    return cxs, cys, history, history_mean, leakage

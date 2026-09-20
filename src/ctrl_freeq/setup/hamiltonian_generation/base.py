@@ -224,9 +224,53 @@ class HamiltonianModel(ABC):
             gate: ``(2**n, 2**n)`` unitary matrix.
 
         Returns:
+
             ``(D, D)`` unitary matrix in the model's Hilbert space.
         """
         return gate
+
+    def embed_computational_operator(self, op: np.ndarray) -> np.ndarray:
+        r"""Embed an observable or density matrix as :math:`V O V^\dagger`.
+
+        This is deliberately *not* :meth:`embed_computational_gate`: a gate
+        must act as the identity on the leakage subspace to stay unitary,
+        while an observable or a density matrix must be zero there.  Using
+        the gate embedding for an observable makes a fully leaked state
+        report :math:`\langle Z\rangle = +1` instead of 0, and corrupts
+        :math:`\langle X\rangle` and :math:`\langle Y\rangle` the same way.
+
+
+        For 2-level models the isometry is the identity, so this is a no-op.
+        """
+        P = self.computational_projector()
+        return P @ np.asarray(op) @ P.conj().T
+
+    def computational_projector(self) -> np.ndarray:
+        r"""Return the isometry :math:`V` of shape ``(D, 2**n)``.
+
+        ``V`` maps a computational state into the model's Hilbert space;
+        :math:`V V^\dagger` projects onto the computational subspace and
+        :math:`V^\dagger V = I_{2^n}`.  For 2-level models it is the identity.
+        """
+        return np.eye(self.dim, dtype=complex)
+
+    def computational_leakage(self, state: np.ndarray) -> float:
+        r"""Population outside the computational subspace.
+
+        Accepts a state vector (``L = 1 - \|V^\dagger\psi\|^2``) or a density
+        matrix (``L = 1 - \mathrm{Tr}(V V^\dagger \rho)``).  This is a single
+        total over the whole register: per-qubit leakages must not be summed,
+        which would double-count a state with more than one leaked qubit.
+        """
+        P = self.computational_projector()
+        state = np.asarray(state)
+        if state.ndim == 1:
+            return float(1.0 - np.sum(np.abs(P.conj().T @ state) ** 2))
+        if state.ndim == 2:
+            return float(1.0 - np.real(np.trace(P.conj().T @ state @ P)))
+        raise ValueError(
+            f"Leakage needs a state vector or density matrix, got rank {state.ndim}."
+        )
 
     # ------------------------------------------------------------------
     # Convenience helpers (shared by all models)

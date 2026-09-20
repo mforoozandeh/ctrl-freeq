@@ -1,3 +1,4 @@
+import torch
 from torchmin import minimize
 
 from ctrl_freeq.conditions.stopping_conds import OptimizationInterrupted
@@ -12,15 +13,21 @@ from ctrl_freeq.make_pulse.waveform_gen_torch import (
     waveform_gen_cart,
 )
 
+
 from ctrl_freeq.ctrlfreeq.ctrl_freeq import (
     fidelity_hilbert,
     exp_mat_exact,
     exp_mat_torch,
     fidelity_liouville,
+    fidelity_gate_hilbert,
+    fidelity_gate_liouville,
     state_hilbert,
     state_liouville,
     state_lindblad,
     CtrlFreeQ,
+    amplitude_limit_report,
+    format_amplitude_limit_report,
+    _as_float,
 )
 from ctrl_freeq.setup.iterator_generation.generate_iterator import (
     h0_omega_1_iterator_torch,
@@ -34,6 +41,36 @@ from ctrl_freeq.utils.utility_functions import (
     set_cores,
 )
 from ctrl_freeq.utils.device import select_device, resolve_cpu_cores
+
+
+def build_fidelity_function(p, space, device):
+    """Select the objective metric for this configuration.
+
+    A gate objective scores the whole computational subspace (average gate
+    fidelity in Hilbert space, the Pauli-transfer channel metric in Liouville
+    space).  Everything else is state transfer on the configured inputs.
+    """
+    if getattr(p, "objective_mode", "state_transfer") != "gate":
+        return fidelity_hilbert if space == "hilbert" else fidelity_liouville
+
+    d = int(p.computational_dim)
+    n_rows = int(p.n_objective_rows)
+
+    if space == "hilbert":
+        model = getattr(p, "hamiltonian_model", None)
+        projector = None
+        if model is not None and model.dim != d:
+            projector = array_to_tensor(model.computational_projector(), device=device)
+
+        def fid_fun(states, targets):
+            return fidelity_gate_hilbert(states, targets, n_rows, d, projector)
+
+    else:
+
+        def fid_fun(states, targets):
+            return fidelity_gate_liouville(states, targets, n_rows, d)
+
+    return fid_fun
 
 
 def run_ctrl(p):
@@ -93,17 +130,16 @@ def run_ctrl(p):
     dissipation_mode = getattr(p, "dissipation_mode", "non-dissipative")
 
     if dissipation_mode == "dissipative":
-        fid_fun = fidelity_liouville
         state_fun = state_lindblad
         collapse_ops = array_to_tensor(p.collapse_operators, device=device)
     elif space == "hilbert":
-        fid_fun = fidelity_hilbert
         state_fun = state_hilbert
         collapse_ops = None
     elif space == "liouville":
-        fid_fun = fidelity_liouville
         state_fun = state_liouville
         collapse_ops = None
+
+    fid_fun = build_fidelity_function(p, space, device)
 
     wf_fun = []
 
@@ -121,7 +157,15 @@ def run_ctrl(p):
         op = None  # Not needed for generic path
     else:
         control_ops = None
+
         op = create_hamiltonian_basis_torch(n_qubits, device=device)
+
+    # This run's solution is a vector of basis coefficients.  Clearing any
+    # representation recorded by a previous optimizer (e.g. a piecewise run on
+    # the same parameters object) keeps analysis in step with the solution
+    # this call returns; ``waveform_spec()`` then falls back to the configured
+    # basis.
+    p._waveform_spec = None
 
     ctrlfreeq_instance = CtrlFreeQ(
         n_para,
@@ -214,13 +258,33 @@ def run_ctrl(p):
                 f"Algorithm '{algorithm}' not supported. Supported algorithms: {', '.join(supported_algorithms)}"
             )
 
-    # Store optimization tracking information in parameters object
+    # Store optimization tracking information in parameters object.
+    # The final metrics are evaluated on the solution that is actually
+    # returned: the optimiser's last objective evaluation is generally a
+    # rejected trial point, not the solution.
+    sol_tensor = sol if isinstance(sol, torch.Tensor) else array_to_tensor(sol)
+    with torch.no_grad():
+        ctrlfreeq_instance.objective_function(sol_tensor.detach())
+
     p.iterations = ctrlfreeq_instance.iter
     p.fidelity_history = ctrlfreeq_instance.fidelity_history
-    p.final_fidelity = (
-        ctrlfreeq_instance.fid.item()
-        if hasattr(ctrlfreeq_instance.fid, "item")
-        else float(ctrlfreeq_instance.fid)
+    p.penalty_history = ctrlfreeq_instance.penalty_history
+    p.score_history = ctrlfreeq_instance.score_history
+
+    p.final_fidelity = _as_float(ctrlfreeq_instance.fid)
+    p.final_penalty = _as_float(ctrlfreeq_instance.pen)
+    p.final_score = p.final_fidelity - p.final_penalty
+
+    p.amplitude_report = amplitude_limit_report(
+        ctrlfreeq_instance.last_cx,
+        ctrlfreeq_instance.last_cy,
+        p.Omega_R_max,
+        rabi_samples=rabi_freq,
     )
+    report_text = format_amplitude_limit_report(p.amplitude_report)
+    if any(not entry["within_limit"] for entry in p.amplitude_report):
+        logger.warning("Amplitude limit exceeded:\n%s", report_text)
+    else:
+        logger.info("Amplitude limit check:\n%s", report_text)
 
     return sol

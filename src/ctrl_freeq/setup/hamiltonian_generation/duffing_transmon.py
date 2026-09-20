@@ -12,10 +12,12 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+
 from ctrl_freeq.setup.hamiltonian_generation.base import (
     HamiltonianModel,
     register_hamiltonian,
 )
+from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import _symmetrise_coupling
 
 
 def _annihilation_3() -> np.ndarray:
@@ -166,8 +168,9 @@ class DuffingTransmonModel(HamiltonianModel):
                 )
 
             # Coupling: g_{ij} (a†_i a_j + a_i a†_j)
+
             if coupling_instances is not None and self.n_qubits > 1:
-                g = (
+                g = _symmetrise_coupling(
                     coupling_instances[idx]
                     if idx < len(coupling_instances)
                     else coupling_instances[-1]
@@ -251,6 +254,10 @@ class DuffingTransmonModel(HamiltonianModel):
                     full_idx += 3**bit
             P[full_idx, comp_idx] = 1.0
         return P
+
+    def computational_projector(self) -> np.ndarray:
+        """Public accessor for the ``(3^n, 2^n)`` computational isometry."""
+        return self._computational_projector()
 
     def embed_computational_state(self, state: np.ndarray) -> np.ndarray:
         r"""Embed a 2^n state vector into the 3^n Hilbert space.
