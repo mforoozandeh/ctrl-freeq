@@ -150,7 +150,7 @@ When the **Dissipation** dropdown is set to `dissipative`, the interface enables
 
 - The **Space** setting is automatically forced to `liouville` (density matrix mode)
 - Per-qubit **T1** and **T2** entry fields are revealed in the qubit configuration panel
-- The optimizer employs an Euler operator-splitting scheme, applying a unitary step followed by a Lindblad dissipative step at each time increment
+- The optimizer employs Strang operator splitting: a half dissipative channel, the unitary step, then a second half channel. The dissipative channel is the exact matrix exponential \(\exp(\mathrm{d}t\,\mathcal{D})\) of the Lindblad dissipator, so every intermediate state remains a physical density matrix regardless of step size, and the splitting is second-order accurate in \(\mathrm{d}t\)
 
 | Control | Description | Units |
 |---------|-------------|-------|

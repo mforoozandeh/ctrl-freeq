@@ -67,7 +67,7 @@ The following parameters control the termination criteria of the optimization:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `max_iter` | Maximum optimization iterations | 1000 |
-| `targ_fid` | Target fidelity threshold (stops when reached) | 0.999 |
+| `targ_fid` | Target **penalized score** (fidelity − penalty); stops when reached | 0.999 |
 
 ---
 

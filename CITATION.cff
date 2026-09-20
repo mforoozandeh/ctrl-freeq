@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "Ctrl-FreeQ"
 version: 0.3.0
-date-released: 2026-02-08
+date-released: 2026-09-21
 authors:
   - family-names: "Foroozandeh"
     given-names: "Mohammadali"

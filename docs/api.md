@@ -106,9 +106,18 @@ Upon completion of the optimization, the following attributes are stored on `api
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `final_fidelity` | `float` | Final achieved fidelity |
+| `final_fidelity` | `float` | Physical fidelity of the returned solution |
+| `final_penalty` | `float` | Amplitude penalty of the returned solution |
+| `final_score` | `float` | Penalized score, `final_fidelity - final_penalty` |
 | `iterations` | `int` | Number of iterations performed |
-| `fidelity_history` | `list[float]` | Fidelity at each iteration |
+| `fidelity_history` | `list[float]` | Physical fidelity at each iteration |
+| `penalty_history` | `list[float]` | Amplitude penalty at each iteration |
+| `score_history` | `list[float]` | Penalized score at each iteration |
+| `objective_mode` | `str` | `"gate"` or `"state_transfer"` — see [Objectives and Fidelity](optimization/objectives.md) |
+| `amplitude_report` | `list[dict]` | Per-qubit peak amplitude against `Omega_R_max` |
+
+Final metrics are evaluated on the solution that is returned, not on the
+optimizer's last trial point.
 
 **Example:**
 
@@ -120,9 +129,15 @@ solution = api.run_optimization()
 
 # Access results from the parameters object
 print(f"Final fidelity: {api.parameters.final_fidelity}")
+print(f"Penalty: {api.parameters.final_penalty}")
+print(f"Penalized score: {api.parameters.final_score}")
 print(f"Iterations: {api.parameters.iterations}")
 print(f"Fidelity history: {api.parameters.fidelity_history}")
 ```
+
+!!! warning "`fidelity_history` semantics changed in 0.4.0"
+    It previously stored `fidelity - penalty`. It now stores the physical
+    fidelity; the penalized series is `score_history`.
 
 ---
 
@@ -201,7 +216,7 @@ solution = api.run_optimization()
 | `hamiltonian_type` | `spin_chain` or `superconducting` |
 | `optimization.algorithm` | Optimization algorithm |
 | `optimization.max_iter` | Maximum iterations |
-| `optimization.targ_fid` | Target fidelity |
+| `optimization.targ_fid` | Target penalized score (fidelity − penalty) at which to stop |
 | `optimization.space` | `hilbert` or `liouville` |
 | `optimization.dissipation_mode` | `non-dissipative` or `dissipative` |
 | `parameters.Delta` | Detuning / qubit frequency (Hz) |
@@ -630,14 +645,14 @@ H0_list = model.build_drift(frequency_instances=[omega], coupling_instances=[g])
 | `coupling_type` | `"XY"` (exchange), `"ZZ"` (static ZZ), or `"XY+ZZ"` (both) |
 | `anharmonicities` | Per-qubit anharmonicities \(\alpha_i\) (rad/s), used for perturbative ZZ computation |
 | `zz_crosstalk` | Calibrated static ZZ coupling matrix (rad/s). Overrides the perturbative formula when provided |
-| `stark_shift_coeffs` | Per-qubit AC Stark shift coefficients \(s_i\). Adds a Z control channel per qubit with amplitude \(s_i (I^2+Q^2) \Omega_d^2\) |
+| `stark_shift_coeffs` | Per-qubit AC Stark shift coefficients \(s_i\). Adds a Z control channel per qubit with amplitude \(-s_i (I^2+Q^2) \Omega_d^2\) — \(s_i\) shifts the qubit *frequency*, so it enters the drift with the same minus sign as the detuning |
 
 !!! info "ZZ coupling priority chain"
     When `coupling_type` includes `"ZZ"`, the ZZ interaction is determined by the first available source:
 
     1. Runtime `zz_instances` kwarg to `build_drift` (per-snapshot, highest priority)
     2. Constructor `zz_crosstalk` (calibrated, fixed across snapshots)
-    3. Perturbative formula: \(\zeta_{ij} \approx 2\,g_{ij}^2 (1/\alpha_i + 1/\alpha_j)\)
+    3. Perturbative formula \(\zeta_{ij} = 2 g_{ij}^2 (\alpha_i + \alpha_j) / \bigl[(\Delta + \alpha_i)(\Delta - \alpha_j)\bigr]\) with \(\Delta = \delta_i - \delta_j\), evaluated per snapshot. Refused when the \(|11\rangle\)-\(|20\rangle\)/\(|02\rangle\) mixing \(\sqrt{2}|g| / \min(|\Delta+\alpha_i|, |\Delta-\alpha_j|)\) exceeds `0.1`
     4. Zero matrix
 
 ### DuffingTransmonModel
@@ -818,11 +833,87 @@ Two workflows are available:
 
 ---
 
+## Analysis and Plotting
+
+`process_and_plot(solution, parameters)` replays an optimised pulse and draws
+the waveforms, trajectories, observables, leakage and excitation profiles. The
+replay uses the optimizer's own control mapping, propagator and dissipative
+channel, so plotted final states match the objective's.
+
+### Time grids
+
+Waveform samples sit at the **midpoints** of the propagation intervals,
+\((k + \tfrac{1}{2})\,T/N\), while propagated states exist at the \(N+1\)
+interval **boundaries** \(k\,T/N\), starting with the initial state. Plot
+trajectories against `parameters.state_boundary_times()`, not
+`parameters.t`:
+
+```python
+p = api.parameters
+p.t                        # N waveform sample times  (midpoints)
+p.state_boundary_times()   # N+1 state times, ending exactly at T
+p.dt                       # T / N
+```
+
+### Leakage
+
+For models with a local dimension above 2 (e.g. `duffing_transmon`),
+`compute_and_store_evolution` also returns the total leakage
+\(L(t) = 1 - \mathrm{Tr}(\Pi_{\text{comp}}\,\rho(t))\) at every state boundary,
+as a nominal trace plus the snapshot minimum/maximum envelope. This is a single
+total for the whole register — per-qubit leakages are not summed.
+
+```python
+cxs, cys, history, history_mean, leakage = compute_and_store_evolution(
+    solution, p, p.init[0]
+)
+leakage["nominal"]     # (N+1,)
+leakage["snapshots"]   # (N+1, n_snapshots)
+```
+
+### Waveform representation
+
+A solution vector is meaningless without the representation it was optimised
+in: a basis-mode solution holds basis coefficients, a piecewise solution holds
+one value per pulse segment against an identity basis. Each optimizer records
+its representation on the parameters object, and analysis uses it
+automatically.
+
+When two optimizers share one parameters object, the recorded representation
+tracks the **most recent run only**. Pass the owning run's representation
+explicitly:
+
+```python
+basis_spec = api.waveform_spec()              # stays valid across later runs
+piecewise = PiecewiseAPI(api)
+pw_solution = piecewise.run_optimization()
+pw_spec = piecewise.waveform_spec()
+
+process_and_plot(basis_solution, api.parameters, waveform_spec=basis_spec)
+process_and_plot(pw_solution, piecewise.parameters, waveform_spec=pw_spec)
+```
+
+`waveform_spec=` is accepted by `process_and_plot`,
+`compute_and_store_evolution`, `get_final_rho_for_excitation_profile` and
+`plot_excitation_profiles`. Omitting it keeps the implicit behaviour.
+
+!!! warning "Equal parameter counts are indistinguishable"
+    Analysing a solution whose parameter count disagrees with the recorded
+    representation raises a named error. Representations of the *same* size
+    cannot be told apart — for example a two-point basis solution and a
+    two-point piecewise `cart` solution, both 4 parameters — and will replay
+    with the latest run's representation. Optimisation metrics such as
+    `final_fidelity` live on the same shared object and are overwritten the
+    same way.
+
+---
+
 ## Configuration Schema
 
 For a detailed treatment of all configuration parameters, the reader is referred to:
 
 - [Optimization Parameters](optimization/parameters.md) — Full parameter reference
+- [Objectives and Fidelity](optimization/objectives.md) — What is optimised, and which number is reported
 - [Algorithms](optimization/algorithms.md) — Available optimization algorithms
 - [Compute (CPU/GPU)](optimization/compute.md) — CPU and GPU configuration
 

@@ -60,6 +60,7 @@ nav:
   - Optimization:
     - Overview: optimization/index.md
     - Algorithms: optimization/algorithms.md
+    - Objectives and Fidelity: optimization/objectives.md
     - Parameters: optimization/parameters.md
     - Compute (CPU/GPU): optimization/compute.md
   - Dashboard: dashboard.md

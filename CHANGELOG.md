@@ -3,7 +3,7 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.4.0] — 2026-09-21
 
 Several fixes change numerical results on purpose; see **Breaking behaviour**.
 
@@ -164,8 +164,6 @@ Several fixes change numerical results on purpose; see **Breaking behaviour**.
 
 ### Added
 
-
-
 - `WaveformSpec` in `make_pulse.waveform_gen_torch`, describing the parameter
   counts, basis matrices and modes a solution vector is expressed in, together
   with `waveform_function()` / `waveform_functions()`. Analysis reads it via
@@ -205,13 +203,19 @@ Several fixes change numerical results on purpose; see **Breaking behaviour**.
   and a sampled peak is not a bound on an independently interpolated continuous
   waveform. Hard hardware enforcement is deferred, not implemented.
 
-
+- Documentation: a new **Objectives and Fidelity** page defining the cost
+  function, the two objective modes, the average-gate-fidelity and channel
+  metrics, the coverage interaction and the reported quantities; an
+  **Analysis and Plotting** section in the API reference covering the time
+  grids, leakage series and waveform representation. The dissipative
+  splitting, AC Stark, perturbative ZZ and two-level drift conventions were
+  corrected to match the implementation, along with the `targ_fid`,
+  `pulse_bandwidth` and `amplitude_envelope` descriptions.
 - 196 regression tests covering the fixes above, using independent analytical
   references (exact Duffing spectra, an exact single-qubit 2-design,
   full-Liouvillian matrix exponentials, explicit nested-loop propagation) and
   finite-difference checks of both gradients and Hessian-vector products in
   float64/complex128.
-
 
 ### Known limitations
 

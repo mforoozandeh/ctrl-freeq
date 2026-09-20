@@ -68,7 +68,7 @@ The pulse parameters control the temporal characteristics of the control wavefor
 | `point_in_pulse` | Point in Pulse | Time discretization points | 100 | — |
 | `sw` | Sweep Rate (Hz) | Frequency sweep rate | 5 MHz | Hz |
 | `pulse_offset` | Pulse Offset (Hz) | Frequency offset | 0 | Hz |
-| `pulse_bandwidth` | Pulse Bandwidth (Hz) | Pulse frequency bandwidth | 500 kHz | Hz |
+| `pulse_bandwidth` | Pulse Bandwidth (Hz) | Selective band width — FWHM of the target rotation-angle profile | 500 kHz | Hz |
 
 ---
 
@@ -80,7 +80,7 @@ The waveform settings determine the basis functions and envelope used to paramet
 |-----|-----------|---------|---------|-------------|
 | `wf_type` | Waveform Type | See below | `cheb` | Basis function type |
 | `wf_mode` | Waveform Mode | `cart`, `polar`, `polar_phase` | `cart` | Cartesian or polar representation |
-| `amplitude_envelope` | Amplitude Envelope | `gn`, `rect`, `sinc` | `gn` | Pulse envelope shape |
+| `amplitude_envelope` | Amplitude Envelope | `gn`, `hs`, `quad` | `gn` | Pulse envelope shape (super-Gaussian, hyperbolic secant, quadratic) |
 | `amplitude_order` | Amplitude Order | Integer | 1 | Envelope order parameter |
 | `coverage` | Coverage | `single`, `broadband`, `selective`, `band_selective` | `single` | Frequency coverage mode |
 | `profile_order` | Profile Order | Integer | 2 | Supergaussian order for selectivity profile (1 = Gaussian, higher values → more rectangular) |
@@ -103,6 +103,35 @@ The waveform settings determine the basis functions and envelope used to paramet
     - **cart** — Cartesian mode, in which the in-phase (I) and quadrature (Q) components are optimized independently
     - **polar** — Polar mode, in which the amplitude and phase are optimized directly
     - **polar_phase** — Polar phase mode, in which only the phase is optimized while the amplitude profile remains fixed
+
+!!! info "Coverage Modes"
+    - **single** — one nominal offset per qubit, optionally with Gaussian uncertainty
+    - **broadband** — offsets drawn uniformly across the sweep width `sw`
+    - **selective** — a hard in-band / out-of-band split. Qubits inside their
+      band are driven to the target; qubits outside it must be left where they
+      started. Each qubit's samples are drawn independently, so the ensemble
+      contains mixed in-band/out-of-band combinations.
+    - **band_selective** — a smooth target rotation-angle profile,
+
+      \[
+      p(\Delta) = \exp\!\left[-\ln 2
+        \left(\frac{2\,|\Delta - \Delta_0|}{\text{bw}}\right)^{2p}\right]
+      \]
+
+      where `bw` is `pulse_bandwidth` and \(p\) is `profile_order`.
+
+    `pulse_bandwidth` is the **FWHM of this target profile**: it equals 1 at the
+    band centre and exactly 1/2 at \(\Delta_0 \pm \text{bw}/2\), for every
+    order. It is not a guarantee that the achieved excitation curve of the
+    optimised pulse has that width.
+
+!!! warning "`band_selective` requires a rotation-angle target"
+    `band_selective` coverage is rejected with `Axis` or `Gate` targets: a
+    smooth profile has no all-or-nothing interpretation for a discrete target,
+    and nearly every drawn offset would silently be handed the identity. Use
+    `selective` coverage for hard in-band/out-of-band targets, or a `Phi`/`Beta`
+    target, which scales smoothly with the profile. See
+    [Objectives and Fidelity](objectives.md#coverage-interaction).
 
 ---
 
@@ -188,17 +217,44 @@ For systems comprising two or more qubits, the inter-qubit coupling parameters m
 
     1. Runtime `zz_instances` kwarg (per-snapshot)
     2. Calibrated `zz_crosstalk` matrix (fixed, from constructor / config)
-    3. Perturbative formula: \(\zeta_{ij} \approx 2\,g_{ij}^2 \left(\frac{1}{\alpha_i} + \frac{1}{\alpha_j}\right)\)
+    3. Perturbative formula (see below)
     4. Zero matrix
+
+    The perturbative estimate is evaluated with **each snapshot's** detunings and couplings:
+
+    \[
+    \zeta_{ij} = \frac{2\,g_{ij}^2\,(\alpha_i + \alpha_j)}{(\Delta + \alpha_i)(\Delta - \alpha_j)},
+    \qquad \Delta = \delta_i - \delta_j
+    \]
+
+    It comes from second-order perturbation theory in the \(|11\rangle \leftrightarrow |20\rangle\) and \(|11\rangle \leftrightarrow |02\rangle\) couplings, so it is only meaningful away from those avoided crossings. The estimate is **refused** when the mixing \(\sqrt{2}\,|g| / \min(|\Delta + \alpha_i|, |\Delta - \alpha_j|)\) exceeds `0.1`; supply a calibrated `zz_crosstalk` matrix or use the 3-level `duffing_transmon` model instead.
+
+    `0.1` is a small-mixing heuristic, not a uniform error bound. At equal detunings with \(\alpha/2\pi = -300\) MHz and \(g/2\pi = 21\) MHz the mixing is just under the limit while the estimate is still ~1.9% off the exact value.
 
 !!! info "AC Stark Shift"
     When `stark_shift_coeffs` is provided, an additional Z control channel per qubit is added, modelling the drive-dependent frequency shift (light shift):
 
     \[
-    H_{\text{Stark}}(t) = \sum_i \frac{s_i}{2}\,(I_i^2 + Q_i^2)\,\Omega_{d,i}^2\;\sigma_z^{(i)}
+    H_{\text{Stark}}(t) = -\sum_i s_i\,(I_i^2 + Q_i^2)\,\Omega_{d,i}^2\;Z_i,
+    \qquad Z_i = \tfrac{1}{2}\sigma_z^{(i)}
     \]
 
-    This increases `n_controls` from \(2N\) to \(3N\) qubits. The `stark_shift_coeffs` are dimensionless and specified as-is in the configuration (no Hz-to-rad/s conversion).
+    \(s_i\) is defined as a shift of the qubit **frequency**, so it enters the drift with the same minus sign as the detuning (see the two-level drift convention below).
+
+    This increases `n_controls` from \(2N\) to \(3N\) qubits. The `stark_shift_coeffs` are specified as-is in the configuration (no Hz-to-rad/s conversion). They are nominally dimensionless but multiply \(\Omega_d^2\), so their effective units are inverse frequency and useful values are far below 1.
+
+!!! info "Two-Level Drift Convention"
+    With \(X, Y, Z = \tfrac{1}{2}\sigma_{x,y,z}\), the two-level superconducting drift is
+
+    \[
+    H_{\text{drift}} = -\sum_i \delta_i\,Z_i
+        + \sum_{i<j} 2 g_{ij}\bigl(X_iX_j + Y_iY_j\bigr)
+        + \sum_{i<j} \zeta_{ij}\,Z_iZ_j
+    \]
+
+    The detuning sign and the exchange factor of 2 are fixed by requiring this to equal the projection of the [Duffing drift](#duffing-transmon-3-level) onto the computational subspace, up to a scalar identity: projecting \(\delta_i \hat{n}_i\) gives \(\delta_i(I/2 - Z_i)\), and projecting \(g(a_i^\dagger a_j + \text{h.c.})\) gives \(2g(X_iX_j + Y_iY_j)\).
+
+    This is **not** the spin-chain / NMR convention, which is unchanged and documented under [Spin Chain Coupling](#spin-chain-coupling).
 
 !!! note "Shared JSON Keys"
     Both platforms use the `J` and `sigma_J` keys in the JSON configuration for cross-platform compatibility. The GUI relabels these as g_ij / σg for superconducting qubits.
@@ -374,7 +430,7 @@ The following fields control the behaviour of the optimization procedure:
 | `Omega_R_snapshots` | Ω_R Snapshots | Time steps for control Hamiltonian | 1 |
 | `algorithm` | Algorithm | Optimization algorithm (see [Algorithms](algorithms.md)) | varies by config |
 | `max_iter` | Max Iterations | Maximum optimization iterations | 1000 |
-| `targ_fid` | Target Fidelity | Stop when fidelity reaches this value | 0.999 |
+| `targ_fid` | Target Fidelity | Stop when the penalized score (fidelity − penalty) reaches this value | 0.999 |
 
 ---
 
