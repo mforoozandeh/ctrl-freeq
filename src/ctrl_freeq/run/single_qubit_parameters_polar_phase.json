@@ -1,0 +1,84 @@
+{
+    "hamiltonian_type": "spin_chain",
+    "qubits": [
+        "q1"
+    ],
+    "compute_resource": "cpu",
+    "parameters": {
+        "Delta": [
+            0.0
+        ],
+        "sigma_Delta": [
+            0.0
+        ],
+        "Omega_R_max": [
+            17000000.0
+        ],
+        "pulse_duration": [
+            4e-07
+        ],
+        "point_in_pulse": [
+            400
+        ],
+        "wf_type": [
+            "cheb"
+        ],
+        "wf_mode": [
+            "cart"
+        ],
+        "amplitude_envelope": [
+            "gn"
+        ],
+        "amplitude_order": [
+            8
+        ],
+        "coverage": [
+            "single"
+        ],
+        "sw": [
+            30000000.0
+        ],
+        "pulse_offset": [
+            0.0
+        ],
+        "pulse_bandwidth": [
+            500000.0
+        ],
+        "ratio_factor": [
+            0.5
+        ],
+        "sigma_Omega_R_max": [
+            0.0
+        ],
+        "profile_order": [
+            2
+        ],
+        "n_para": [
+            32
+        ],
+        "J": [
+            [
+                0.0
+            ]
+        ]
+    },
+    "initial_states": [
+        [
+            "Z"
+        ]
+    ],
+    "target_states": {
+        "Gate": [
+            "H"
+        ]
+    },
+    "optimization": {
+        "space": "hilbert",
+        "dissipation_mode": "non-dissipative",
+        "H0_snapshots": 100,
+        "Omega_R_snapshots": 1,
+        "algorithm": "newton-cg",
+        "max_iter": 1000,
+        "targ_fid": 0.999
+    }
+}

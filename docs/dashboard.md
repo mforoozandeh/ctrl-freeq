@@ -68,7 +68,7 @@ An example of the dashboard generated from a single-qubit optimization run is sh
 
 [View Example Dashboard](assets/example_dashboard.html){ .md-button .md-button--primary target="_blank" }
 
-The dashboard opens in a new tab as a standalone interactive page; Plotly figures may be zoomed, panned, and inspected via hover tooltips.
+The dashboard opens in a new tab as a standalone page; the Bloch-sphere card plays the nutate video of the optimised pulse across the band it was optimised for (`Δ ± sw/2`).
 
 ---
 
@@ -80,7 +80,7 @@ The dashboard typically includes visualizations from the following categories:
 |----------|----------------|
 | **Pulse Waveforms** | IQ plots, amplitude/phase evolution |
 | **State Evolution** | History plots, observable dynamics |
-| **Quantum State** | Bloch sphere (single qubit), population dynamics |
+| **Quantum State** | Bloch-sphere video (single qubit, needs `ctrl-freeq[video]`), population dynamics |
 | **Analysis** | Excitation profiles, fidelity convergence |
 
 ---

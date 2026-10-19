@@ -363,8 +363,9 @@ class TestIntegrationScenarios:
                 "name": "sphere",
             },
             {
-                "func": lambda x: torch.sum(x**2)
-                + 0.1 * torch.sum(torch.sin(5 * x)),  # Noisy quadratic
+                "func": lambda x: (
+                    torch.sum(x**2) + 0.1 * torch.sum(torch.sin(5 * x))
+                ),  # Noisy quadratic
                 "x0": torch.tensor([2.0, -1.0]),
                 "target": torch.tensor([0.0, 0.0]),
                 "name": "noisy_quadratic",

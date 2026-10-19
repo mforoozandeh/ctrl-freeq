@@ -57,6 +57,11 @@ tools = [
 [project.scripts]
 freeq-gui = "ctrl_freeq.cli:main"
 
+[project.optional-dependencies]
+video = [
+    "nutate>=0.1.0",
+]
+
 [tool.tbump]
 
 [tool.tbump.version]

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import EngFormatter
 
 
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
@@ -26,9 +27,9 @@ from ctrl_freeq.setup.operator_generation.generate_operators import (
 )
 import torch
 
-import plotly.graph_objects as go
+import importlib.util
 
-from ctrl_freeq.visualisation.plot_settings import plot_style, plotly_style
+from ctrl_freeq.visualisation.plot_settings import plot_style
 
 
 # from tikzplotlib import save as tikz_save
@@ -622,11 +623,7 @@ def plot_excitation_profiles(x, p, rho_0, num_points, waveform_spec=None):
     # Prepare the frequency ranges for each qubit
     frequencies = []
     for i in range(p.n_qubits):
-        sw = p.sw[i] / 1e6
-        om = p.Delta[i] / 1e6
-        frequencies.append(
-            linear_distribution(om / (2 * np.pi), 1.5 * sw / (2 * np.pi), num_points)
-        )
+        frequencies.append(_offset_sweep(p, i, num_points) / (2 * np.pi * 1e6))
 
     # Initialize the plot with 3 rows (for X, Y, Z) and columns equal to the number of qubits
     fig, axs = plt.subplots(3, max(p.n_qubits, 1), sharex="col")
@@ -693,346 +690,82 @@ def plot_excitation_profiles(x, p, rho_0, num_points, waveform_spec=None):
     return fig
 
 
-@plotly_style(show=True)
-def plot_bloch_sphere_dynamics_hilbert(
-    history,
-    history_mean,
-    ops,
-    n_qubits,
-    show=True,
-):
+# Frames in nutate's MP4 (10 s at 30 fps): the Bloch trajectory gets at least
+# one state per frame, so the video never repeats frames.
+_BLOCH_VIDEO_FRAMES = 300
+
+
+def bloch_trajectory(x, p, rho_0, num_points=31, waveform_spec=None):
+    """Replay a single-qubit pulse over an offset sweep as a nutate trajectory.
+
+    The states come from the optimizer's own replay (control mapping,
+    dissipation, model), so the video shows the physics that was optimised;
+    nutate only draws it.  The sweep is the band the pulse was optimised
+    for: nominal Rabi amplitude, offsets ``Delta ± sw / 2``.  Short
+    pulses are replayed in substeps so there is a state for every frame.
+
+    Args:
+        waveform_spec: representation *x* was optimised in; defaults to the
+            one recorded by the most recent run on *p*.
+
+    Returns:
+        nutate.Trajectory: Bloch vectors over time (s) and offset (Hz) from
+        ``Delta``, which the pulse name states.
     """
-    Plot the dynamics of qubit states on a Bloch sphere using Plotly for interactivity.
+    import nutate as nt
 
-    Parameters:
-    history (np.ndarray): The history data with shape (n, k, l).
-    history_mean (np.ndarray): The mean history data with shape (n, k).
-    ops (dict): Dictionary of operators.
-    n_qubits (int): Number of qubits.
-    show (bool): Whether to display the plot (default: True).
-    """
-    fig = go.Figure()
+    _amps, cxs, cys = _plotter_waveforms(x, p, waveform_spec)
+    H0 = get_H0_for_plotter(p, num_points, span=1.0)
+    substeps = -(-_BLOCH_VIDEO_FRAMES // int(p.np_pulse))
+    states = _plotter_propagate(
+        p,
+        H0,
+        _plotter_rabi(p, nominal=True),
+        cxs,
+        cys,
+        rho_0,
+        record=True,
+        substeps=substeps,
+    )
+    states = states.detach().cpu().numpy()
 
-    # Draw the Bloch sphere surface
-    theta = np.linspace(0.0, np.pi, 50)
-    phi = np.linspace(0.0, 2 * np.pi, 50)
-    theta, phi = np.meshgrid(theta, phi)
+    ops = np.stack([p.obs_op[key] for key in ("X_1", "Y_1", "Z_1")])
+    if p.space == "hilbert":
+        m = np.einsum("tbi,kij,tbj->tbk", states.conj(), ops, states).real
+    else:
+        m = np.einsum("tbij,kji->tbk", states, ops).real
 
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
+    # nutate takes a waveform normalised to 1 (peak at most 1.5), but the
+    # amplitude limit is only a soft penalty: normalise to the peak and fold
+    # it into the Rabi frequency so the drive is unchanged.
+    c = np.repeat((cxs[:, 0] + 1j * cys[:, 0]).detach().cpu().numpy(), substeps)
+    peak = np.abs(c).max() or 1.0
 
-    fig.add_trace(
-        go.Surface(
-            x=x,
-            y=y,
-            z=z,
-            colorscale=[[0, "lightgray"], [1, "lightgray"]],
-            opacity=0.1,
-            showscale=False,
-            hoverinfo="skip",
-        )
+    # nutate's colour bar is symmetric about zero, so offsets are given from
+    # Delta to use all of it; the pulse name says what they are relative to.
+    centre = p.Delta[0] / (2 * np.pi)
+    pulse = nt.waveform(
+        np.abs(c) / peak,
+        np.angle(c),
+        duration=float(p.pulse_duration),
+        rabi=p.Omega_R_max[0] / (2 * np.pi) * peak,
+        name=f"optimised pulse, offsets relative to {EngFormatter(unit='Hz')(centre)}",
+    )
+    offsets = _offset_sweep(p, 0, num_points, span=1.0) / (2 * np.pi) - centre
+    return nt.Trajectory(
+        np.arange(pulse.n_steps + 1) * pulse.dt,
+        offsets,
+        m,
+        [(pulse.name, 0, pulse.n_steps)],
+        [pulse],
     )
 
-    # Get the operators for this qubit
-    X_op = ops["X_1"]
-    Y_op = ops["Y_1"]
-    Z_op = ops["Z_1"]
 
-    num_samples = history.shape[2]
+def render_bloch_video(trajectory, path):
+    """Write the dashboard's Bloch-sphere video (720p MP4, dark theme)."""
+    import nutate as nt
 
-    # Plot individual trajectories
-    for sample_idx in range(num_samples):
-        bloch_vectors = []
-
-        for t_idx in range(history.shape[1]):
-            state_vector = history[:, t_idx, sample_idx]
-
-            X_exp = calculate_observable(
-                state_vector, X_op, n_qubits, space_type="hilbert"
-            )
-            Y_exp = calculate_observable(
-                state_vector, Y_op, n_qubits, space_type="hilbert"
-            )
-            Z_exp = calculate_observable(
-                state_vector, Z_op, n_qubits, space_type="hilbert"
-            )
-
-            bloch_vectors.append([X_exp, Y_exp, Z_exp])
-
-        bloch_vectors = np.array(bloch_vectors)
-
-        fig.add_trace(
-            go.Scatter3d(
-                x=bloch_vectors[:, 0],
-                y=bloch_vectors[:, 1],
-                z=bloch_vectors[:, 2],
-                mode="lines",
-                line=dict(color="lightblue", width=1),
-                opacity=0.5,
-                showlegend=False,
-            )
-        )
-
-    # Plot the mean trajectory
-    bloch_vectors_mean = []
-
-    for t_idx in range(history_mean.shape[1]):
-        state_vector = history_mean[:, t_idx]
-
-        X_exp = calculate_observable(state_vector, X_op, n_qubits, space_type="hilbert")
-        Y_exp = calculate_observable(state_vector, Y_op, n_qubits, space_type="hilbert")
-        Z_exp = calculate_observable(state_vector, Z_op, n_qubits, space_type="hilbert")
-
-        bloch_vectors_mean.append([X_exp, Y_exp, Z_exp])
-
-    bloch_vectors_mean = np.array(bloch_vectors_mean)
-
-    fig.add_trace(
-        go.Scatter3d(
-            x=bloch_vectors_mean[:, 0],
-            y=bloch_vectors_mean[:, 1],
-            z=bloch_vectors_mean[:, 2],
-            mode="lines",
-            line=dict(color="blue", width=4),
-            name="Mean Trajectory",
-        )
-    )
-
-    # Starting point
-    fig.add_trace(
-        go.Scatter3d(
-            x=[bloch_vectors_mean[0, 0]],
-            y=[bloch_vectors_mean[0, 1]],
-            z=[bloch_vectors_mean[0, 2]],
-            mode="markers",
-            marker=dict(color="green", size=5),
-            name="Start (Mean)",
-        )
-    )
-
-    # Ending point
-    fig.add_trace(
-        go.Scatter3d(
-            x=[bloch_vectors_mean[-1, 0]],
-            y=[bloch_vectors_mean[-1, 1]],
-            z=[bloch_vectors_mean[-1, 2]],
-            mode="markers",
-            marker=dict(color="red", size=5),
-            name="End (Mean)",
-        )
-    )
-
-    # Update layout
-    fig.update_layout(
-        scene=dict(
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Z",
-            aspectmode="cube",
-            xaxis=dict(range=[-1, 1], autorange=False),
-            yaxis=dict(range=[-1, 1], autorange=False),
-            zaxis=dict(range=[-1, 1], autorange=False),
-            camera=dict(
-                eye=dict(
-                    x=1.5, y=1.5, z=1.5
-                ),  # Adjust eye position for better centering
-                center=dict(x=0, y=0, z=0),  # Ensure camera centers on origin
-                up=dict(x=0, y=0, z=1),  # Define the up direction
-            ),
-        ),
-        showlegend=True,
-        legend=dict(
-            x=0.5,  # Horizontal position (0: left, 1: right)
-            y=0.95,  # Vertical position (0: bottom, 1: top)
-            xanchor="center",  # Anchors the legend's x position ('left', 'center', 'right')
-            yanchor="top",  # Anchors the legend's y position ('top', 'middle', 'bottom')
-            bgcolor="rgba(255, 255, 255, 0.5)",  # Semi-transparent white background
-            bordercolor="black",  # Black border color
-            borderwidth=1,  # Border width in pixels
-            font=dict(
-                size=10,  # Font size of legend text
-                color="black",  # Font color of legend text
-            ),
-        ),
-    )
-    return fig
-
-
-@plotly_style
-def plot_bloch_sphere_dynamics_liouville(
-    history,
-    history_mean,
-    ops,
-    n_qubits,
-):
-    """
-    Plot the dynamics of qubit states on a Bloch sphere using Plotly for interactivity,
-    adapted for states represented in Liouville space.
-
-    Parameters:
-    history (np.ndarray): The history data with shape (4, 4, k, l).
-    history_mean (np.ndarray): The mean history data with shape (4, 4, k).
-    ops (dict): Dictionary of operators.
-    n_qubits (int): Number of qubits.
-    show (bool): Whether to display the plot (default: True).
-    """
-    fig = go.Figure()
-
-    # Draw the Bloch sphere surface
-    theta = np.linspace(0.0, np.pi, 50)
-    phi = np.linspace(0.0, 2 * np.pi, 50)
-    theta, phi = np.meshgrid(theta, phi)
-
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
-
-    fig.add_trace(
-        go.Surface(
-            x=x,
-            y=y,
-            z=z,
-            colorscale=[[0, "lightgray"], [1, "lightgray"]],
-            opacity=0.1,
-            showscale=False,
-            hoverinfo="skip",
-        )
-    )
-
-    # Get the operators for this qubit
-    X_op = ops["X_1"]
-    Y_op = ops["Y_1"]
-    Z_op = ops["Z_1"]
-
-    num_samples = history.shape[3]  # Updated index for Liouville space
-
-    # Plot individual trajectories
-    for sample_idx in range(num_samples):
-        bloch_vectors = []
-
-        for t_idx in range(history.shape[2]):  # Updated index for Liouville space
-            # Extract the density matrix at this time step for this sample
-            density_matrix = history[:, :, t_idx, sample_idx]
-
-            # Calculate the expectation values
-            X_exp = calculate_observable(
-                density_matrix, X_op, n_qubits, space_type="liouville"
-            )
-            Y_exp = calculate_observable(
-                density_matrix, Y_op, n_qubits, space_type="liouville"
-            )
-            Z_exp = calculate_observable(
-                density_matrix, Z_op, n_qubits, space_type="liouville"
-            )
-
-            bloch_vectors.append([X_exp, Y_exp, Z_exp])
-
-        bloch_vectors = np.array(bloch_vectors)
-
-        fig.add_trace(
-            go.Scatter3d(
-                x=bloch_vectors[:, 0],
-                y=bloch_vectors[:, 1],
-                z=bloch_vectors[:, 2],
-                mode="lines",
-                line=dict(color="lightblue", width=1),
-                opacity=0.5,
-                showlegend=False,
-            )
-        )
-
-    # Plot the mean trajectory
-    bloch_vectors_mean = []
-
-    for t_idx in range(history_mean.shape[2]):  # Updated index for Liouville space
-        # Extract the mean density matrix at this time step
-        density_matrix_mean = history_mean[:, :, t_idx]
-
-        # Calculate the expectation values
-        X_exp = calculate_observable(
-            density_matrix_mean, X_op, n_qubits, space_type="liouville"
-        )
-        Y_exp = calculate_observable(
-            density_matrix_mean, Y_op, n_qubits, space_type="liouville"
-        )
-        Z_exp = calculate_observable(
-            density_matrix_mean, Z_op, n_qubits, space_type="liouville"
-        )
-
-        bloch_vectors_mean.append([X_exp, Y_exp, Z_exp])
-
-    bloch_vectors_mean = np.array(bloch_vectors_mean)
-
-    fig.add_trace(
-        go.Scatter3d(
-            x=bloch_vectors_mean[:, 0],
-            y=bloch_vectors_mean[:, 1],
-            z=bloch_vectors_mean[:, 2],
-            mode="lines",
-            line=dict(color="blue", width=4),
-            name="Mean Trajectory",
-        )
-    )
-
-    # Starting point
-    fig.add_trace(
-        go.Scatter3d(
-            x=[bloch_vectors_mean[0, 0]],
-            y=[bloch_vectors_mean[0, 1]],
-            z=[bloch_vectors_mean[0, 2]],
-            mode="markers",
-            marker=dict(color="green", size=5),
-            name="Start (Mean)",
-        )
-    )
-
-    # Ending point
-    fig.add_trace(
-        go.Scatter3d(
-            x=[bloch_vectors_mean[-1, 0]],
-            y=[bloch_vectors_mean[-1, 1]],
-            z=[bloch_vectors_mean[-1, 2]],
-            mode="markers",
-            marker=dict(color="red", size=5),
-            name="End (Mean)",
-        )
-    )
-
-    # Update layout
-    fig.update_layout(
-        scene=dict(
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Z",
-            aspectmode="cube",
-            xaxis=dict(range=[-1, 1], autorange=False),
-            yaxis=dict(range=[-1, 1], autorange=False),
-            zaxis=dict(range=[-1, 1], autorange=False),
-            camera=dict(
-                eye=dict(
-                    x=1.5, y=1.5, z=1.5
-                ),  # Adjust eye position for better centering
-                center=dict(x=0, y=0, z=0),  # Ensure camera centers on origin
-                up=dict(x=0, y=0, z=1),  # Define the up direction
-            ),
-        ),
-        showlegend=True,
-        legend=dict(
-            x=0.5,  # Horizontal position (0: left, 1: right)
-            y=0.95,  # Vertical position (0: bottom, 1: top)
-            xanchor="center",  # Anchors the legend's x position ('left', 'center', 'right')
-            yanchor="top",  # Anchors the legend's y position ('top', 'middle', 'bottom')
-            bgcolor="rgba(255, 255, 255, 0.5)",  # Semi-transparent white background
-            bordercolor="black",  # Black border color
-            borderwidth=1,  # Border width in pixels
-            font=dict(
-                size=10,  # Font size of legend text
-                color="black",  # Font color of legend text
-            ),
-        ),
-    )
-    return fig
+    return nt.render(trajectory, path, size=(1280, 720), theme="dark")
 
 
 def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=None):
@@ -1118,6 +851,11 @@ def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=Non
                 dpi=300,
                 bbox_inches="tight",
             )
+
+    # The single-qubit Bloch sphere is rendered by nutate, an optional extra.
+    bloch_video = p.n_qubits == 1 and importlib.util.find_spec("nutate") is not None
+    if p.n_qubits == 1 and not bloch_video:
+        print("Bloch-sphere video skipped: install ctrl-freeq[video] to enable it.")
 
     for rho_idx, rho_0 in enumerate(p.init):
         # Compute evolution for this specific initial state (needed for other plots)
@@ -1222,38 +960,22 @@ def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=Non
                     bbox_inches="tight",
                 )
 
-        if p.n_qubits == 1:
-            if p.space == "liouville":
-                # Plot Bloch sphere dynamics (liouville)
-                fig_bloch = plot_bloch_sphere_dynamics_liouville(
-                    history,
-                    history_mean,
-                    p.obs_op,
-                    p.n_qubits,
-                    show=show_plots,
-                )
-                figures.append(fig_bloch)
-                if save_plots:
-                    # Save Plotly figure as HTML
-                    fig_bloch.write_html(
-                        f"{plots_dir}/bloch_sphere_liouville_{timestamp}_rho{rho_idx}.html"
-                    )
+        if bloch_video:
+            # Bloch sphere: a nutate video over the excitation-profile sweep
+            trajectory = bloch_trajectory(x, p, rho_0, waveform_spec=waveform_spec)
+            if show_plots:
+                import nutate as nt
 
-            elif p.space == "hilbert":
-                # Plot Bloch sphere dynamics (hilbert)
-                fig_bloch = plot_bloch_sphere_dynamics_hilbert(
-                    history,
-                    history_mean,
-                    p.obs_op,
-                    p.n_qubits,
-                    show=show_plots,
-                )
-                figures.append(fig_bloch)
-                if save_plots:
-                    # Save Plotly figure as HTML
-                    fig_bloch.write_html(
-                        f"{plots_dir}/bloch_sphere_hilbert_{timestamp}_rho{rho_idx}.html"
+                nt.show(trajectory)
+            if save_plots:
+                figures.append(
+                    render_bloch_video(
+                        trajectory,
+                        f"{plots_dir}/bloch_sphere_{timestamp}_rho{rho_idx}.mp4",
                     )
+                )
+            else:
+                figures.append(trajectory)
 
         # Plot excitation profiles
 
@@ -1301,10 +1023,14 @@ def _get_mean_H0(p):
     return create_H_total(p)
 
 
-def get_H0_for_plotter(p, num_points):
+# Excitation profiles sweep 1.5 * sw, a little beyond the optimised band.
+_PROFILE_SPAN = 1.5
+
+
+def get_H0_for_plotter(p, num_points, span=_PROFILE_SPAN):
     Omegas = []
     for i in range(p.n_qubits):
-        Omegas.append(linear_distribution(p.Delta[i], 1.5 * p.sw[i], num_points))
+        Omegas.append(_offset_sweep(p, i, num_points, span))
 
     Om = [list(group) for group in zip(*Omegas)]
 
@@ -1368,6 +1094,13 @@ def get_Jmat_for_plotter(p, num_points):
         instance[iu] = drawn
         Jmat_instances.append(instance + instance.T)
     return Jmat_instances
+
+
+def _offset_sweep(p, qubit, num_points, span=_PROFILE_SPAN):
+    """Offsets (rad/s) for *qubit*: ``span * sw`` centred on ``Delta``."""
+    return np.asarray(
+        linear_distribution(p.Delta[qubit], span * p.sw[qubit], num_points)
+    )
 
 
 def linear_distribution(center, band, num_points):
@@ -1582,12 +1315,18 @@ def _as_state_batch(state, batch, space):
     return tensor.reshape(1, *tensor.shape).expand(batch, -1, -1).contiguous()
 
 
-def _plotter_propagate(p, H0_list, rabi_freq, cxs, cys, state, record=False):
+def _plotter_propagate(
+    p, H0_list, rabi_freq, cxs, cys, state, record=False, substeps=1
+):
     """Propagate *state* over the ensemble ``H0_list x rabi_freq``.
 
     Returns the final states ``(batch, ...)`` when ``record`` is false, or the
-    full ``(n_pulse + 1, batch, ...)`` trajectory when it is true.
+    full ``(n_pulse * substeps + 1, batch, ...)`` trajectory when it is true.
+    ``substeps`` splits every waveform sample into equal steps, which is exact
+    for the unitary part of a piecewise-constant pulse.
     """
+    cxs = cxs.repeat_interleave(substeps, dim=0)
+    cys = cys.repeat_interleave(substeps, dim=0)
     H0 = torch.as_tensor(np.asarray(H0_list), dtype=torch.complex128)
     n_h0, D, _ = H0.shape
     n_rabi = rabi_freq.shape[0]
@@ -1600,7 +1339,9 @@ def _plotter_propagate(p, H0_list, rabi_freq, cxs, cys, state, record=False):
 
     # float64: torch.as_tensor on a Python float defaults to float32, which
     # would make the replay's time step differ from the optimizer's.
-    dt = torch.as_tensor(float(p.pulse_duration) / int(p.np_pulse), dtype=torch.float64)
+    dt = torch.as_tensor(
+        float(p.pulse_duration) / (int(p.np_pulse) * substeps), dtype=torch.float64
+    )
     initial = _as_state_batch(state, n_h0 * n_rabi, p.space)
 
     trajectory = simulate_trajectory(

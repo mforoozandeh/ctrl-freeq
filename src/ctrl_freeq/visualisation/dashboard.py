@@ -8,7 +8,13 @@ figures (both Matplotlib and Plotly) in a presentable two-column card grid.
 import panel as pn
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 from typing import List, Any
+
+
+def _is_bloch_video(fig: Any) -> bool:
+    """Bloch-sphere entries: an MP4 path, or a nutate Trajectory still to render."""
+    return isinstance(fig, Path) or hasattr(fig, "segments")
 
 
 def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str:
@@ -16,7 +22,9 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
     Create an interactive dashboard from a list of figures.
 
     Args:
-        figures: List of matplotlib.figure.Figure and/or plotly.graph_objects.Figure
+        figures: List of matplotlib.figure.Figure and/or plotly.graph_objects.Figure,
+            plus Bloch-sphere videos (MP4 paths or nutate Trajectories, which
+            are rendered next to the dashboard)
         timestamp: Timestamp string for the dashboard filename
         parameters: Optional Initialise object containing simulation parameters
 
@@ -35,7 +43,7 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
         2. Pulse Waveforms - Amplitude/Phase Plot
         3+. State Evolution - History
         4+. Observable Dynamics
-        5+. Bloch Sphere (if single qubit, Plotly)
+        5+. Bloch Sphere (if single qubit, nutate video)
         6+. Excitation Profiles
         """
         # First two figures are always waveforms
@@ -48,20 +56,14 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
         # Pattern repeats: History, Observable, [Bloch Sphere if single qubit], Excitation
         remaining_idx = index - 2
 
-        # Detect Bloch sphere (it's the only Plotly figure after waveforms)
-        is_plotly = hasattr(fig, "to_plotly_json")
-
-        if is_plotly:
+        if _is_bloch_video(fig):
             return "Bloch Sphere"
 
         # For matplotlib figures after the first two, determine type by position pattern
         # The pattern is: History -> Observable -> Excitation (or History -> Observable -> Bloch -> Excitation)
         # We can use modulo to determine position in the pattern
 
-        # Check if we have Bloch spheres by looking for Plotly figures
-        has_bloch = any(
-            hasattr(figures[i], "to_plotly_json") for i in range(2, len(figures))
-        )
+        has_bloch = any(_is_bloch_video(f) for f in figures[2:])
 
         if has_bloch:
             # Pattern: History, Observable, Bloch, Excitation (length 4)
@@ -72,7 +74,7 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
                 return "State Time Evolution"
             elif pos_in_pattern == 1:
                 return "Observable Dynamics"
-            # pos 2 is Bloch (Plotly, handled above)
+            # pos 2 is Bloch (video, handled above)
             else:  # pos_in_pattern == 3
                 return "Excitation Profiles (Frequency Response)"
         else:
@@ -87,11 +89,30 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
             else:  # pos_in_pattern == 2
                 return "Excitation Profiles (Frequency Response)"
 
+    project_root = Path(__file__).parent.parent.parent.parent
+    results_dir = project_root / "results" / "dashboards"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
     # Create cards for each figure
     cards = []
     for i, fig in enumerate(figures):
         # Determine figure type and create appropriate pane
-        if hasattr(fig, "to_plotly_json"):  # Plotly figure
+        if _is_bloch_video(fig):
+            if not isinstance(fig, Path):
+                from ctrl_freeq.visualisation.plotter import render_bloch_video
+
+                fig = render_bloch_video(
+                    fig, results_dir / f"bloch_{timestamp}_{i}.mp4"
+                )
+            # Embedded in the HTML as base64, so the dashboard stays one file
+            pane = pn.pane.Video(
+                str(fig),
+                loop=True,
+                autoplay=True,
+                muted=True,
+                sizing_mode="stretch_width",
+            )
+        elif hasattr(fig, "to_plotly_json"):  # Plotly figure
             pane = pn.pane.Plotly(
                 fig,
                 config={"displaylogo": False, "responsive": True},
@@ -263,12 +284,6 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
     )
 
     # Save the dashboard to an HTML file
-    from pathlib import Path
-
-    project_root = Path(__file__).parent.parent.parent.parent
-    results_dir = project_root / "results" / "dashboards"
-    results_dir.mkdir(parents=True, exist_ok=True)
-
     dashboard_path = str(results_dir / f"dashboard_{timestamp}.html")
     # Use CDN resources to avoid embedding ~5-10 MB of JS/CSS inline.
     # Dashboards require an internet connection to load Panel/Bokeh/Plotly
@@ -277,7 +292,7 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
 
     # Close matplotlib figures to free memory now that they're saved to disk
     for fig in figures:
-        if not hasattr(fig, "to_plotly_json"):  # matplotlib figure
+        if isinstance(fig, plt.Figure):
             plt.close(fig)
 
     return dashboard_path

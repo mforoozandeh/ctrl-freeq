@@ -186,6 +186,18 @@ A detailed treatment of GPU configuration is provided in [Compute (CPU/GPU)](opt
 
 ---
 
+## Bloch-Sphere Video (Optional)
+
+For single-qubit runs, the dashboard shows the Bloch-sphere dynamics as a video rendered by [nutate](https://github.com/mforoozandeh/nutate). It is installed with the `video` extra:
+
+```bash
+pip install "ctrl-freeq[video]"
+```
+
+The extra adds PyVista and VTK. Without it, the dashboard omits the Bloch-sphere card. Videos are rendered off-screen; on a server without a display, VTK needs an off-screen OpenGL context (OSMesa/EGL or a virtual display).
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
