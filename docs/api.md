@@ -476,7 +476,7 @@ The following example demonstrates a complete optimization workflow for an open 
     print(f"Iterations: {api.parameters.iterations}")
 
     # Generate plots
-    waveforms = process_and_plot(solution, api.parameters, show_plots=True)
+    waveforms, figures = process_and_plot(solution, api.parameters, show_plots=True)
     ```
 
 === "From dictionary"
@@ -836,7 +836,8 @@ Two workflows are available:
 ## Analysis and Plotting
 
 `process_and_plot(solution, parameters)` replays an optimised pulse and draws
-the waveforms, trajectories, observables, leakage and excitation profiles. The
+the waveforms, trajectories, observables, leakage, excitation profiles and,
+for a single qubit, the [Bloch-sphere video](#bloch-sphere-video). The
 replay uses the optimizer's own control mapping, propagator and dissipative
 channel, so plotted final states match the objective's.
 
@@ -870,6 +871,33 @@ cxs, cys, history, history_mean, leakage = compute_and_store_evolution(
 leakage["nominal"]     # (N+1,)
 leakage["snapshots"]   # (N+1, n_snapshots)
 ```
+
+### Bloch-sphere video
+
+For a single qubit, with the `video` extra installed (`pip install
+"ctrl-freeq[video]"`), `process_and_plot` adds the Bloch-sphere dynamics to
+`figures` as a `nutate.Trajectory`, and `create_dashboard` renders it into the
+dashboard. With `save_plots=True` the video is rendered straight away to
+`results/plots/` and its MP4 path takes the trajectory's place; with
+`show_plots=True` nutate's interactive viewer opens in its own window. The two
+steps are also available on their own:
+
+```python
+from ctrl_freeq.visualisation.plotter import bloch_trajectory, render_bloch_video
+
+p = api.parameters
+traj = bloch_trajectory(solution, p, p.init[0])  # 31 offsets across Delta ± sw/2
+video = render_bloch_video(traj, "bloch.mp4")    # Path, or None if rendering failed
+```
+
+`bloch_trajectory` replays the pulse with the optimizer's physics (including
+dissipation) at the nominal Rabi amplitude, and takes `num_points=` and
+`waveform_spec=` like the other analysis functions. Times are in seconds and
+offsets in Hz. `render_bloch_video` writes a 720p MP4 in a separate process, so
+a crash in VTK (for example without a display) cannot take your session down.
+The trajectory is plain nutate data, so nutate's own functions accept it too,
+e.g. `nutate.snapshot(traj, "bloch.png")` for a still; those run in your
+process.
 
 ### Waveform representation
 

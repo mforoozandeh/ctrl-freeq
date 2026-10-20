@@ -207,8 +207,8 @@ Saves the current configuration to a JSON file. The exported file may subsequent
 
 Upon completion of an optimization run, this button performs the following actions:
 
-1. All generated plots are saved to `results/plots/`
-2. An interactive dashboard HTML file is created in `results/dashboards/`
+1. All generated plots are saved to `results/plots/`, including, for single-qubit runs with the `video` extra, the Bloch-sphere video `bloch_sphere_<timestamp>_rho<i>.mp4`
+2. A dashboard HTML file, with the video embedded, is created in `results/dashboards/`
 
 A detailed description of the dashboard is provided in [Dashboard](dashboard.md).
 

@@ -192,7 +192,7 @@ For single-qubit runs, the dashboard shows the Bloch-sphere dynamics as a video 
 pip install "ctrl-freeq[video]"
 ```
 
-The extra adds PyVista and VTK. Without it, the dashboard omits the Bloch-sphere card.
+The extra adds PyVista and VTK. Without it, the dashboard omits the Bloch-sphere card. What the video shows is described in [Dashboard → Bloch-Sphere Video](dashboard.md#bloch-sphere-video).
 
 Videos are rendered off-screen, in a separate process. On a machine without a display (a server, a cluster, a container), VTK crashes when it cannot open an OpenGL context; ctrl-freeq then skips the Bloch-sphere card, prints why, and saves everything else. To render there on Debian or Ubuntu, install OSMesa and select VTK's off-screen window:
 

@@ -1,6 +1,6 @@
 # Dashboard
 
-Ctrl-freeq includes an interactive dashboard facility that consolidates all analysis figures from an optimization run into a single, self-contained HTML file. The dashboard is constructed using [Panel](https://panel.holoviz.org/) and presents the figures in a responsive card grid with a dark theme. Matplotlib figures and Bloch-sphere videos are accepted without conversion.
+Ctrl-freeq includes a dashboard facility that consolidates all analysis figures from an optimization run into a single, self-contained HTML file. The dashboard is constructed using [Panel](https://panel.holoviz.org/) and presents the figures in a responsive card grid with a dark theme. Matplotlib figures and Bloch-sphere videos are accepted without conversion; for single-qubit runs the Bloch sphere is a [video rendered by nutate](#bloch-sphere-video).
 
 ---
 
@@ -68,7 +68,25 @@ An example of the dashboard generated from a single-qubit optimization run is sh
 
 [View Example Dashboard](assets/example_dashboard.html){ .md-button .md-button--primary target="_blank" }
 
-The dashboard opens in a new tab as a standalone page; the Bloch-sphere card plays the nutate video of the optimised pulse across the band it was optimised for (`Δ ± sw/2`).
+The dashboard opens in a new tab as a standalone page. The run is a Hadamard gate from `Z` with the built-in single-qubit configuration (`Δ = 10 MHz`, `sw = 5 MHz`, `newton-cg`).
+
+---
+
+## Bloch-Sphere Video
+
+For single-qubit runs, the Bloch-sphere card is a video rendered by [nutate](https://github.com/mforoozandeh/nutate). This is the one in the example dashboard:
+
+<video controls loop muted autoplay playsinline width="100%">
+  <source src="../assets/bloch_sphere.mp4" type="video/mp4">
+</video>
+
+- **What it shows.** The optimised pulse replayed for 31 offsets evenly spaced across the band it was optimised for, `Δ ± sw/2`, at the nominal Rabi amplitude. Each arrow is one offset, coloured by its frequency (the colour bar is in Hz with an SI prefix); the inset traces the drive amplitude with a moving cursor.
+- **The optimizer's physics.** The states come from ctrl-freeq's own replay (control mapping, propagator and, for dissipative runs, the Lindblad channel), so relaxation shortens the arrows exactly as it did in the objective. nutate only draws them.
+- **Installation.** The video needs the `video` extra, `pip install "ctrl-freeq[video]"`; without it the card is omitted. See [Installation → Bloch-Sphere Video](installation.md#bloch-sphere-video-optional).
+- **Files.** **Save Results** writes `results/plots/bloch_sphere_<timestamp>_rho<i>.mp4`, one per initial state. When `create_dashboard` receives a trajectory instead (the API path with `save_plots=False`), it renders `results/dashboards/bloch_<timestamp>_<i>.mp4`. Either way the dashboard embeds the MP4 (720p, dark theme).
+- **Rendering failures.** nutate renders off-screen in a separate process. If that fails, for example on a machine without a display, the card is skipped with a message and everything else is still saved.
+
+To make or view the video from Python, see [API → Bloch-sphere video](api.md#bloch-sphere-video).
 
 ---
 
@@ -78,10 +96,10 @@ The dashboard typically includes visualizations from the following categories:
 
 | Category | Visualizations |
 |----------|----------------|
-| **Pulse Waveforms** | IQ plots, amplitude/phase evolution |
-| **State Evolution** | History plots, observable dynamics |
-| **Quantum State** | Bloch-sphere video (single qubit, needs `ctrl-freeq[video]`), population dynamics |
-| **Analysis** | Excitation profiles, fidelity convergence |
+| **Pulse Waveforms** | IQ components, amplitude and phase |
+| **State Evolution** | State history, observable dynamics, leakage (models with levels above the qubit) |
+| **Quantum State** | Bloch-sphere video (single qubit, needs `ctrl-freeq[video]`) |
+| **Analysis** | Excitation profiles (frequency response over `1.5 × sw`) |
 
 ---
 
@@ -94,9 +112,11 @@ ctrl-freeq/
 │       └── visualisation/
 │           ├── __init__.py
 │           ├── dashboard.py          # Dashboard creation module
-│           ├── plotter.py            # Plotting functions
-│           └── plot_settings.py      # Plot configuration
+│           ├── plotter.py            # Plotting functions, Bloch-sphere trajectory
+│           ├── plot_settings.py      # Plot configuration
+│           └── _nutate_child.py      # Runs nutate in a separate process
 └── results/
+    ├── plots/                        # Save Results: PNGs and bloch_sphere_*.mp4
     └── dashboards/                   # Generated dashboard HTML files
         └── dashboard_YYYYMMDD_HHMMSS.html
 ```
@@ -113,7 +133,10 @@ ctrl-freeq/
     ```
 
 !!! tip "Dashboard File Size"
-    The HTML file includes all resources inline to ensure portability. Should the file size become prohibitively large, the number of figures or the figure resolution may be reduced accordingly.
+    Figures and the Bloch-sphere video are embedded in the HTML file, so a single-qubit dashboard is typically 2–3 MB. The Panel and Bokeh libraries are loaded from a CDN rather than embedded, so viewing a dashboard needs an internet connection.
+
+!!! tip "Bloch-Sphere Card Missing"
+    For a single-qubit run, check the console. "install ctrl-freeq[video]" means nutate is not installed; "nutate failed" means rendering failed, usually because the machine has no display. See [Installation → Bloch-Sphere Video](installation.md#bloch-sphere-video-optional) for the off-screen setup.
 
 !!! tip "Figure Rendering Issues"
     For Matplotlib figures, it is recommended to ensure that the `tight=True` parameter is used.

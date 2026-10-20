@@ -34,7 +34,7 @@ print(f"Final fidelity: {api.parameters.final_fidelity}")
 - Run from Python: [`API`](api.md)
 - Configure runs interactively: [`GUI`](gui.md)
 - Learn about algorithms, parameters, and CPU/GPU support: [`Optimization`](optimization/index.md)
-- View and export analysis dashboards: [`Dashboard`](dashboard.md)
+- View and export analysis dashboards, including the Bloch-sphere video: [`Dashboard`](dashboard.md)
 
 ## License
 
