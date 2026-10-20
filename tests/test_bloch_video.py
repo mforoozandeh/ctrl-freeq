@@ -44,33 +44,22 @@ def test_bloch_trajectory_matches_nutate_simulation(space, initial):
 
     axis = {"Z": [0, 0, 1], "X": [1, 0, 0], "-Y": [0, -1, 0]}[initial]
     np.testing.assert_allclose(traj.m[0], np.tile(axis, (11, 1)), atol=1e-12)
-    offsets = traj.offsets + p.Delta[0] / (2 * np.pi)  # traj is relative to Delta
-    ref = nt.simulate(traj.sequence, offsets, m0=axis)
+    ref = nt.simulate(traj.sequence, traj.offsets, m0=axis)
     np.testing.assert_allclose(traj.m, ref.m, atol=1e-10)
 
 
 def test_bloch_trajectory_sweeps_the_optimised_band_in_hz():
-    """Only Delta ± sw/2, the offsets the pulse was optimised for.
-
-    The offsets are relative to Delta: nutate's colour bar is symmetric about
-    zero, so absolute offsets (Delta = 10 MHz) would use only half of it.
-    """
+    """Only Delta ± sw/2, the offsets the pulse was optimised for."""
     pytest.importorskip("nutate")
     from ctrl_freeq.visualisation.plotter import bloch_trajectory
 
     api = load_single_qubit_config()
     p = api.parameters
     delta, sw = api.config["parameters"]["Delta"][0], api.config["parameters"]["sw"][0]
-    assert (delta, sw) == (10e6, 5e6)
     traj = bloch_trajectory(_random_solution(p), p, p.init[0], num_points=11)
 
     np.testing.assert_allclose(
-        traj.offsets, np.linspace(-sw / 2, sw / 2, 11), atol=1e-6
-    )
-    ((name, _, _),) = traj.segments
-    # Plain text: nutate's video font has no Greek glyphs
-    assert (
-        name == traj.sequence[0].name == "optimised pulse, offsets relative to 10 MHz"
+        traj.offsets, np.linspace(delta - sw / 2, delta + sw / 2, 11), rtol=1e-12
     )
 
 

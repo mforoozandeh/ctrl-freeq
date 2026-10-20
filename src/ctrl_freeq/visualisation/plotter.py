@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import EngFormatter
 
 
 from ctrl_freeq.setup.hamiltonian_generation.hamiltonians import (
@@ -709,8 +708,7 @@ def bloch_trajectory(x, p, rho_0, num_points=31, waveform_spec=None):
             one recorded by the most recent run on *p*.
 
     Returns:
-        nutate.Trajectory: Bloch vectors over time (s) and offset (Hz) from
-        ``Delta``, which the pulse name states.
+        nutate.Trajectory: Bloch vectors over time (s) and offset (Hz).
     """
     import nutate as nt
 
@@ -740,18 +738,14 @@ def bloch_trajectory(x, p, rho_0, num_points=31, waveform_spec=None):
     # it into the Rabi frequency so the drive is unchanged.
     c = np.repeat((cxs[:, 0] + 1j * cys[:, 0]).detach().cpu().numpy(), substeps)
     peak = np.abs(c).max() or 1.0
-
-    # nutate's colour bar is symmetric about zero, so offsets are given from
-    # Delta to use all of it; the pulse name says what they are relative to.
-    centre = p.Delta[0] / (2 * np.pi)
     pulse = nt.waveform(
         np.abs(c) / peak,
         np.angle(c),
         duration=float(p.pulse_duration),
         rabi=p.Omega_R_max[0] / (2 * np.pi) * peak,
-        name=f"optimised pulse, offsets relative to {EngFormatter(unit='Hz')(centre)}",
+        name="optimised pulse",
     )
-    offsets = _offset_sweep(p, 0, num_points, span=1.0) / (2 * np.pi) - centre
+    offsets = _offset_sweep(p, 0, num_points, span=1.0) / (2 * np.pi)
     return nt.Trajectory(
         np.arange(pulse.n_steps + 1) * pulse.dt,
         offsets,

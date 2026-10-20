@@ -462,7 +462,7 @@ requires-dist = [
     { name = "kaleido", specifier = "==1.2.0" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "numpy", specifier = ">=2.3.4" },
-    { name = "nutate", marker = "extra == 'video'", specifier = ">=0.1.0" },
+    { name = "nutate", marker = "extra == 'video'", specifier = ">=0.1.1" },
     { name = "panel", specifier = ">=1.8.2" },
     { name = "plotly", specifier = "==6.6.0" },
     { name = "pytorch-minimize", specifier = ">=0.0.2" },
@@ -1697,7 +1697,7 @@ wheels = [
 
 [[package]]
 name = "nutate"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "imageio" },
@@ -1706,9 +1706,9 @@ dependencies = [
     { name = "numpy" },
     { name = "pyvista" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a0/c7/351b470a6fd54b3c6b603fa2df5d10f6542669e5ffb364cefee50ee67aa9/nutate-0.1.0.tar.gz", hash = "sha256:e5be6bd14a87720c02c7cc7aa7bc498856bbdcfe988125a5fe42c396de551263", size = 135100, upload-time = "2026-10-19T20:41:31.614Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/69/9d139240d5cacc86a509a77f59fb90910e998d908bc13dece67fe7e999fa/nutate-0.1.1.tar.gz", hash = "sha256:3cfccf8bbbbe0035dc8a6e1e61bb00d0c18a91ce08c2f075e1fc011f7ac2cfcb", size = 135834, upload-time = "2026-10-20T22:05:18.475Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/94/8a7179f92b71068b3b6752f6b18018e0aedf8556b4e6dfde23e900035656/nutate-0.1.0-py3-none-any.whl", hash = "sha256:f847da0db28327667df45138c1957342c18de145ea52b1be3b531239ef8fee43", size = 36306, upload-time = "2026-10-19T20:41:30.421Z" },
+    { url = "https://files.pythonhosted.org/packages/94/2f/22cadde1021a3e4b75c168575148e9212030c30f7d2ebe3da2c5989cf601/nutate-0.1.1-py3-none-any.whl", hash = "sha256:df37035a0153ff930425b7a99e949699f97d36a75d35380ee7cba9e64316b835", size = 36401, upload-time = "2026-10-20T22:05:16.986Z" },
 ]
 
 [[package]]

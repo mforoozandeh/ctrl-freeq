@@ -59,7 +59,7 @@ freeq-gui = "ctrl_freeq.cli:main"
 
 [project.optional-dependencies]
 video = [
-    "nutate>=0.1.0",
+    "nutate>=0.1.1",
 ]
 
 [tool.tbump]

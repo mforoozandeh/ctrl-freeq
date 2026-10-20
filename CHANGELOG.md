@@ -12,11 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   interactive Plotly figure. It replays the optimised pulse over the band it
   was optimised for (offsets `Delta ± sw/2`, nominal Rabi amplitude) with the
   optimizer's own physics, including dissipation, and shows the drive in an
-  inset. Offsets are coloured relative to `Delta` (the colour bar spans
-  `±sw/2`), and the video names the `Delta` they are relative to. The dashboard embeds it as an MP4; **Save Results** also writes it to
+  inset. The dashboard embeds it as an MP4; **Save Results** also writes it to
   `results/plots/bloch_sphere_<timestamp>_rho<i>.mp4`, and
   `process_and_plot(show_plots=True)` opens nutate's interactive viewer.
-  Install it with `pip install "ctrl-freeq[video]"`; without the extra the
+  Install it with `pip install "ctrl-freeq[video]"` (nutate ≥ 0.1.1, whose
+  colour bar spans an off-resonance band's own range); without the extra the
   Bloch-sphere card is omitted. `plot_bloch_sphere_dynamics_hilbert`,
   `plot_bloch_sphere_dynamics_liouville` and `plotly_style` are removed; the
   new entry points are `bloch_trajectory` and `render_bloch_video` in
