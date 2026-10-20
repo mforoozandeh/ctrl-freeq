@@ -9,11 +9,11 @@ Ctrl-freeq is a numerical framework for the design of quantum gates and pulses v
 
 ## Features
 
-The framework supports two physical platforms—spin chains and superconducting (transmon) qubits—through a Hamiltonian model abstraction layer. The optimizer works with the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k, which is platform-agnostic. Gate optimization problems are defined through JSON configuration files, and a high-level Python API is provided for loading configurations, executing the optimizer, and post-processing results. A Tkinter-based GUI (launched via `freeq-gui`) offers an interactive alternative with dynamic field relabelling and platform-aware gate selection. Optimization results may be visualized through interactive Plotly dashboards exported as standalone HTML files. CPU thread management is handled automatically, and optional GPU acceleration is available via CUDA.
+The framework supports two physical platforms—spin chains and superconducting (transmon) qubits—through a Hamiltonian model abstraction layer. The optimizer works with the standard bilinear control formulation H(t) = H_drift + Σ_k u_k(t) · H_ctrl_k, which is platform-agnostic. Gate optimization problems are defined through JSON configuration files, and a high-level Python API is provided for loading configurations, executing the optimizer, and post-processing results. A Tkinter-based GUI (launched via `freeq-gui`) offers an interactive alternative with dynamic field relabelling and platform-aware gate selection. Optimization results may be visualized through Panel dashboards exported as standalone HTML files, with a Bloch-sphere video of single-qubit pulses rendered by [nutate](https://github.com/mforoozandeh/nutate) (optional `video` extra). CPU thread management is handled automatically, and optional GPU acceleration is available via CUDA.
 
 ## Installation
 
-Ctrl-freeq depends on NumPy, PyTorch, Qiskit, pytorch-minimize, Plotly, and other scientific packages.
+Ctrl-freeq depends on NumPy, PyTorch, Qiskit, pytorch-minimize, Panel, and other scientific packages.
 
 ```bash
 # Install from source

@@ -2,7 +2,8 @@
 Dashboard generation using Panel for combining all analysis figures.
 
 This module creates an interactive HTML dashboard that displays all generated
-figures (both Matplotlib and Plotly) in a presentable two-column card grid.
+figures (Matplotlib figures and Bloch-sphere videos) in a presentable
+two-column card grid.
 """
 
 import panel as pn
@@ -22,17 +23,26 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
     Create an interactive dashboard from a list of figures.
 
     Args:
-        figures: List of matplotlib.figure.Figure and/or plotly.graph_objects.Figure,
-            plus Bloch-sphere videos (MP4 paths or nutate Trajectories, which
-            are rendered next to the dashboard)
+        figures: List of matplotlib.figure.Figure, plus Bloch-sphere videos
+            (MP4 paths or nutate Trajectories, which are rendered next to the
+            dashboard)
         timestamp: Timestamp string for the dashboard filename
         parameters: Optional Initialise object containing simulation parameters
 
     Returns:
         str: Path to the saved dashboard HTML file
+
+    Raises:
+        TypeError: for anything else, e.g. a Plotly figure
     """
-    # Initialize Panel with Plotly extension and dark theme
-    pn.extension("plotly", notifications=True, sizing_mode="stretch_width")
+    for fig in figures:
+        if not (isinstance(fig, plt.Figure) or _is_bloch_video(fig)):
+            raise TypeError(
+                f"Unsupported figure type {type(fig).__name__}: the dashboard "
+                "shows Matplotlib figures and Bloch-sphere videos"
+            )
+
+    pn.extension(notifications=True, sizing_mode="stretch_width")
 
     def get_figure_title(index: int, fig: Any, total_figures: int) -> str:
         """
@@ -104,18 +114,14 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
                 fig = render_bloch_video(
                     fig, results_dir / f"bloch_{timestamp}_{i}.mp4"
                 )
+                if fig is None:  # rendering failed: no Bloch card
+                    continue
             # Embedded in the HTML as base64, so the dashboard stays one file
             pane = pn.pane.Video(
                 str(fig),
                 loop=True,
                 autoplay=True,
                 muted=True,
-                sizing_mode="stretch_width",
-            )
-        elif hasattr(fig, "to_plotly_json"):  # Plotly figure
-            pane = pn.pane.Plotly(
-                fig,
-                config={"displaylogo": False, "responsive": True},
                 sizing_mode="stretch_width",
             )
         else:  # Matplotlib figure
@@ -286,7 +292,7 @@ def create_dashboard(figures: List[Any], timestamp: str, parameters=None) -> str
     # Save the dashboard to an HTML file
     dashboard_path = str(results_dir / f"dashboard_{timestamp}.html")
     # Use CDN resources to avoid embedding ~5-10 MB of JS/CSS inline.
-    # Dashboards require an internet connection to load Panel/Bokeh/Plotly
+    # Dashboards require an internet connection to load Panel/Bokeh
     # libraries, but the file size drops from ~8-50 MB to ~1-2 MB.
     template.save(dashboard_path, resources="cdn")
 
@@ -304,7 +310,6 @@ def create_demo_dashboard():
     This is useful for development and testing purposes.
     """
     import matplotlib.pyplot as plt
-    import plotly.graph_objects as go
     import numpy as np
     from datetime import datetime
 
@@ -326,18 +331,8 @@ def create_demo_dashboard():
     ax2.legend()
     ax2.grid(True)
 
-    # Create a sample Plotly figure
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=x, y=np.tan(x), mode="lines", name="tan(x)"))
-    fig3.update_layout(
-        title="Sample Plotly Plot",
-        xaxis_title="x",
-        yaxis_title="y",
-        template="plotly_dark",
-    )
-
     # Create dashboard
-    figures = [fig1, fig2, fig3]
+    figures = [fig1, fig2]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     dashboard_path = create_dashboard(figures, timestamp)

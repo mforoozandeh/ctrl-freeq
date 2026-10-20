@@ -1,6 +1,6 @@
 # Dashboard
 
-Ctrl-freeq includes an interactive dashboard facility that consolidates all analysis figures from an optimization run into a single, self-contained HTML file. The dashboard is constructed using [Panel](https://panel.holoviz.org/) and presents the figures in a responsive card grid with a dark theme. Both Matplotlib and Plotly figures are accepted without conversion, and Plotly figures retain their full interactivity in the exported file.
+Ctrl-freeq includes an interactive dashboard facility that consolidates all analysis figures from an optimization run into a single, self-contained HTML file. The dashboard is constructed using [Panel](https://panel.holoviz.org/) and presents the figures in a responsive card grid with a dark theme. Matplotlib figures and Bloch-sphere videos are accepted without conversion.
 
 ---
 
@@ -45,7 +45,7 @@ create_dashboard(figures, timestamp, parameters=None)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `figures` | `list` | List of Matplotlib and/or Plotly figure objects |
+| `figures` | `list` | Matplotlib figures and Bloch-sphere videos (MP4 paths or nutate trajectories); anything else raises `TypeError` |
 | `timestamp` | `str` | Timestamp string for the dashboard filename |
 | `parameters` | `Initialise`, optional | Parameters object from the optimization run. When provided, the dashboard sidebar displays algorithm, fidelity target, pulse parameters, and state information. |
 
@@ -116,7 +116,7 @@ ctrl-freeq/
     The HTML file includes all resources inline to ensure portability. Should the file size become prohibitively large, the number of figures or the figure resolution may be reduced accordingly.
 
 !!! tip "Figure Rendering Issues"
-    For Matplotlib figures, it is recommended to ensure that the `tight=True` parameter is used. For Plotly figures, the `plotly` extension should be loaded via `pn.extension('plotly')`.
+    For Matplotlib figures, it is recommended to ensure that the `tight=True` parameter is used.
 
 ---
 

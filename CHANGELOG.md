@@ -17,10 +17,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `process_and_plot(show_plots=True)` opens nutate's interactive viewer.
   Install it with `pip install "ctrl-freeq[video]"` (nutate ≥ 0.1.1, whose
   colour bar spans an off-resonance band's own range); without the extra the
-  Bloch-sphere card is omitted. `plot_bloch_sphere_dynamics_hilbert`,
+  Bloch-sphere card is omitted. nutate runs in a child process, so a failed
+  render, including VTK's segfault on a machine without a display, skips the
+  card with a message and **Save Results** still saves everything else
+  (`render_bloch_video` then returns `None`). `plot_bloch_sphere_dynamics_hilbert`,
   `plot_bloch_sphere_dynamics_liouville` and `plotly_style` are removed; the
   new entry points are `bloch_trajectory` and `render_bloch_video` in
   `ctrl_freeq.visualisation.plotter`.
+- **Plotly support is removed; `plotly` and `kaleido` are no longer
+  dependencies.** ctrl-freeq's own figures are Matplotlib and the
+  Bloch-sphere video, and nothing used `kaleido`. `create_dashboard` now
+  accepts only Matplotlib figures and Bloch-sphere videos and raises
+  `TypeError` for anything else, such as a Plotly figure; dashboards no
+  longer download plotly.js.
 
 ## [0.4.0] — 2026-09-21
 

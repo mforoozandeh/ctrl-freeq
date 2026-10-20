@@ -27,6 +27,11 @@ from ctrl_freeq.setup.operator_generation.generate_operators import (
 import torch
 
 import importlib.util
+import pickle
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 
 from ctrl_freeq.visualisation.plot_settings import plot_style
 
@@ -755,11 +760,39 @@ def bloch_trajectory(x, p, rho_0, num_points=31, waveform_spec=None):
     )
 
 
-def render_bloch_video(trajectory, path):
-    """Write the dashboard's Bloch-sphere video (720p MP4, dark theme)."""
-    import nutate as nt
+_BLOCH_VIDEO_FAILED = (
+    "Bloch-sphere video skipped: nutate failed (see the error above). On a "
+    "machine without a display, VTK needs off-screen OpenGL; see "
+    "'Bloch-Sphere Video' in the installation docs."
+)
 
-    return nt.render(trajectory, path, size=(1280, 720), theme="dark")
+
+def _run_nutate(name, *args, **kwargs):
+    """Call ``nutate.<name>(*args, **kwargs)`` in a child Python process.
+
+    Without a display VTK segfaults instead of raising, which would take the
+    whole process (GUI, notebook kernel) down with it; in a child only the
+    call is lost.  Returns whether it succeeded; errors go to stderr.
+    """
+    child = Path(__file__).with_name("_nutate_child.py")
+    with tempfile.TemporaryDirectory() as tmp:
+        call = Path(tmp) / "call.pkl"
+        call.write_bytes(pickle.dumps((name, args, kwargs)))
+        # -P: keep this package's directory off the child's sys.path
+        result = subprocess.run([sys.executable, "-P", str(child), str(call)])
+    return result.returncode == 0
+
+
+def render_bloch_video(trajectory, path):
+    """Write the dashboard's Bloch-sphere video (720p MP4, dark theme).
+
+    Rendering runs in a child process.  Returns the video's path, or
+    ``None`` when rendering failed, e.g. on a machine without a display.
+    """
+    if _run_nutate("render", trajectory, path, size=(1280, 720), theme="dark"):
+        return Path(path)
+    print(_BLOCH_VIDEO_FAILED)
+    return None
 
 
 def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=None):
@@ -955,19 +988,17 @@ def process_and_plot(x, p, save_plots=False, show_plots=False, waveform_spec=Non
                 )
 
         if bloch_video:
-            # Bloch sphere: a nutate video over the excitation-profile sweep
+            # Bloch sphere: a nutate video over the optimised band
             trajectory = bloch_trajectory(x, p, rho_0, waveform_spec=waveform_spec)
-            if show_plots:
-                import nutate as nt
-
-                nt.show(trajectory)
+            if show_plots and not _run_nutate("show", trajectory):
+                print(_BLOCH_VIDEO_FAILED)
             if save_plots:
-                figures.append(
-                    render_bloch_video(
-                        trajectory,
-                        f"{plots_dir}/bloch_sphere_{timestamp}_rho{rho_idx}.mp4",
-                    )
+                video = render_bloch_video(
+                    trajectory,
+                    f"{plots_dir}/bloch_sphere_{timestamp}_rho{rho_idx}.mp4",
                 )
+                if video is not None:
+                    figures.append(video)
             else:
                 figures.append(trajectory)
 

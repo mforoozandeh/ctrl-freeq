@@ -1,7 +1,6 @@
 """Bloch-sphere video of single-qubit runs, rendered with nutate."""
 
 import sys
-import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -133,19 +132,42 @@ def test_bloch_trajectory_shows_dissipative_decay():
     np.testing.assert_allclose(traj.m[-1, :, :2], 0.0, atol=1e-12)
 
 
-def test_render_bloch_video_writes_mp4(tmp_path):
+def test_render_bloch_video_writes_mp4(tmp_path, capfd):
     pytest.importorskip("nutate")
     from ctrl_freeq.visualisation.plotter import bloch_trajectory, render_bloch_video
 
     p = _single_qubit()
     traj = bloch_trajectory(_random_solution(p), p, p.init[0], num_points=5)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)  # e.g. "frames repeat"
-        path = render_bloch_video(traj, tmp_path / "bloch.mp4")
+    path = render_bloch_video(traj, tmp_path / "bloch.mp4")
 
     assert path == tmp_path / "bloch.mp4"
     assert path.read_bytes()[4:8] == b"ftyp"
+    assert "frames repeat" not in capfd.readouterr().err  # nutate's warning
+
+
+@pytest.fixture
+def crashing_python(tmp_path, monkeypatch):
+    """Child processes die of SIGSEGV, as VTK does without a display."""
+    script = tmp_path / "python"
+    script.write_text("#!/bin/sh\nkill -SEGV $$\n")
+    script.chmod(0o755)
+    monkeypatch.setattr(sys, "executable", str(script))
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX signal")
+def test_render_bloch_video_survives_a_crashing_renderer(
+    tmp_path, crashing_python, capsys
+):
+    pytest.importorskip("nutate")
+    from ctrl_freeq.visualisation.plotter import bloch_trajectory, render_bloch_video
+
+    p = _single_qubit()
+    traj = bloch_trajectory(_random_solution(p), p, p.init[0], num_points=5)
+
+    assert render_bloch_video(traj, tmp_path / "bloch.mp4") is None
+    assert not (tmp_path / "bloch.mp4").exists()
+    assert "Bloch-sphere video skipped" in capsys.readouterr().out
 
 
 def test_process_and_plot_gives_one_bloch_trajectory_per_initial_state():
@@ -156,7 +178,7 @@ def test_process_and_plot_gives_one_bloch_trajectory_per_initial_state():
 
     bloch = [f for f in figures if isinstance(f, nt.Trajectory)]
     assert len(bloch) == len(p.init)
-    assert not any(hasattr(f, "to_plotly_json") for f in figures)
+    assert all(isinstance(f, (plt.Figure, nt.Trajectory)) for f in figures)
 
 
 def test_process_and_plot_skips_bloch_video_without_nutate(monkeypatch):
@@ -206,6 +228,27 @@ def test_dashboard_embeds_bloch_video_file(tmp_path, dashboard_files):
     assert "Excitation Profiles (Frequency Response)" in text
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX signal")
+def test_dashboard_skips_bloch_card_when_rendering_crashes(
+    crashing_python, dashboard_files
+):
+    pytest.importorskip("nutate")
+    from ctrl_freeq.visualisation.dashboard import create_dashboard
+
+    p = _single_qubit()
+    _, figures = process_and_plot(_random_solution(p), p)
+
+    html = create_dashboard(figures, "pytest_bloch_crash", p)
+    dashboard_files.extend(
+        [html, *Path(html).parent.glob("bloch_pytest_bloch_crash_*")]
+    )
+
+    text = Path(html).read_text()
+    assert "data:video/mp4" not in text
+    assert "Bloch Sphere" not in text
+    assert "Excitation Profiles (Frequency Response)" in text
+
+
 def test_dashboard_renders_bloch_trajectory(monkeypatch, dashboard_files):
     pytest.importorskip("nutate")
     import ctrl_freeq.visualisation.plotter as plotter
@@ -221,3 +264,34 @@ def test_dashboard_renders_bloch_trajectory(monkeypatch, dashboard_files):
 
     assert len(videos) == 1
     assert "data:video/mp4;base64," in Path(html).read_text()
+
+
+def test_dashboard_needs_no_plotly(monkeypatch, dashboard_files):
+    """plotly is not a dependency: ctrl-freeq's own figures are matplotlib and video."""
+    from ctrl_freeq.visualisation.dashboard import create_dashboard
+
+    for name in [m for m in sys.modules if m == "plotly" or m.startswith("plotly.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, "plotly", None)
+    monkeypatch.setitem(sys.modules, "nutate", None)
+    p = _single_qubit()
+    _, figures = process_and_plot(_random_solution(p), p)
+
+    html = create_dashboard(figures, "pytest_no_plotly", p)
+    dashboard_files.append(html)
+
+    text = Path(html).read_text()
+    assert "Excitation Profiles (Frequency Response)" in text
+    assert "plotlyplot/" not in text  # no plotly.js download
+
+
+def test_dashboard_rejects_plotly_figures():
+    """Plotly support is gone: say so instead of failing inside Panel."""
+    from ctrl_freeq.visualisation.dashboard import create_dashboard
+
+    class PlotlyLike:
+        def to_plotly_json(self):
+            return {"data": [], "layout": {}}
+
+    with pytest.raises(TypeError, match="PlotlyLike"):
+        create_dashboard([PlotlyLike()], "pytest_rejects_plotly")
