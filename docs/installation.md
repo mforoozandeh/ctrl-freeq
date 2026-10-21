@@ -4,7 +4,7 @@ In this section, the installation procedure for ctrl-freeq is described. The pac
 
 ## Requirements
 
-- **Python 3.11–3.13** (required)
+- **Python 3.11–3.14** (required)
 - A working installation of `pip` or `uv`
 
 ### Core Dependencies

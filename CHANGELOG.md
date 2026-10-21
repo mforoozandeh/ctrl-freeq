@@ -30,6 +30,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   accepts only Matplotlib figures and Bloch-sphere videos and raises
   `TypeError` for anything else, such as a Plotly figure; dashboards no
   longer download plotly.js.
+- **Python 3.14 is supported**, and the CI test matrix now covers it.
+  `qiskit` is widened from `>=1.4,<1.5` to `>=1.4,<3`: Qiskit 1.4 requires
+  `symengine<0.14`, which has no Python 3.14 wheels, so ctrl-freeq could not
+  be installed on 3.14. Qiskit 2.x drops `symengine`; ctrl-freeq only uses the
+  classical optimizers from `qiskit-algorithms`, which work with both.
+  `requires-python` no longer has an upper bound (was `<3.14`), so a new
+  Python release no longer blocks installation outright.
 
 ## [0.4.0] — 2026-09-21
 

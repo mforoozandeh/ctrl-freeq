@@ -4,7 +4,7 @@ Ctrl-freeq is a numerical framework for the design of quantum gates and pulses v
 
 - **PyPI package**: `ctrl-freeq`
 - **Import path**: `ctrl_freeq`
-- **Python**: 3.11–3.13
+- **Python**: 3.11–3.14
 - **CLI entry point**: `freeq-gui`
 
 ## Features
