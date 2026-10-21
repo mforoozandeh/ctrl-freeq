@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ctrl-freeq"
-version = "0.5.0"
+version = "0.5.1"
 description = "Quantum gate and pulse design with optimal control"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -71,7 +71,7 @@ video = [
 [tool.tbump]
 
 [tool.tbump.version]
-current = "0.5.0"
+current = "0.5.1"
 regex = '''
 ^
  (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
