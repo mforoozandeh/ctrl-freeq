@@ -53,6 +53,13 @@ tools = [
     "pre-commit>=4.5.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/mforoozandeh/ctrl-freeq"
+Documentation = "https://mforoozandeh.github.io/ctrl-freeq/"
+Repository = "https://github.com/mforoozandeh/ctrl-freeq"
+Changelog = "https://mforoozandeh.github.io/ctrl-freeq/release-notes/"
+Issues = "https://github.com/mforoozandeh/ctrl-freeq/issues"
+
 [project.scripts]
 freeq-gui = "ctrl_freeq.cli:main"
 

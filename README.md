@@ -31,7 +31,7 @@ For pip users:
 pip install .
 ```
 
-A detailed treatment of all installation methods is provided in the [Installation](https://ctrl-freeq.readthedocs.io/) documentation.
+A detailed treatment of all installation methods is provided in the [Installation](https://mforoozandeh.github.io/ctrl-freeq/installation/) documentation.
 
 ## Quick Start
 

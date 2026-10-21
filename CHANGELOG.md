@@ -3,6 +3,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- The PyPI page now links to the documentation, changelog, repository and
+  issue tracker, and the README's installation link points to the
+  documentation site instead of a nonexistent Read the Docs page.
+- The documentation site is redeployed when `CHANGELOG.md` changes, so its
+  release notes no longer lag behind a release.
+
 ## [0.5.0] — 2026-10-21
 
 Plotly support is removed, which breaks code that calls
