@@ -3,7 +3,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.5.0] — 2026-10-21
+
+Plotly support is removed, which breaks code that calls
+`plot_bloch_sphere_dynamics_hilbert`, `plot_bloch_sphere_dynamics_liouville`
+or `plotly_style`, or passes a Plotly figure to `create_dashboard`; see
+**Changed**.
 
 ### Changed
 
