@@ -3,6 +3,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **Python 3.15 is supported**, and the CI test matrix now covers it.
+  `scipy` is widened from `==1.17.1` to `>=1.17.1`: SciPy 1.18.1 is the first
+  release with Python 3.15 wheels. On 3.15, pip installs torch 2.15.0 or
+  newer, the first PyTorch release with Python 3.15 wheels on PyPI. The
+  `video` extra cannot be installed on 3.15 yet, because nutate depends on
+  VTK (through PyVista), which has no Python 3.15 wheels; without the extra
+  the Bloch-sphere card is omitted.
+
 ## [0.5.1] — 2026-10-21
 
 ### Fixed
