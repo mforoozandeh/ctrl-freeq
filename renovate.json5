@@ -4,7 +4,6 @@
     'config:recommended',
     ':semanticCommitsDisabled'
   ],
-  gitAuthor: 'Renovate Bot <bot@renovateapp.com>',
   dependencyDashboard: true,
   rebaseWhen: 'conflicted',
   timezone: 'Europe/Zurich',
