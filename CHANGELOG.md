@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **Python 3.15 is supported**, and the CI test matrix now covers it.
+  `scipy` is widened from `==1.17.1` to `>=1.17.1`: SciPy 1.18.1 is the first
+  release with Python 3.15 wheels. On 3.15, pip installs torch 2.15.0 or
+  newer, the first PyTorch release with Python 3.15 wheels on PyPI, and the
+  `video` extra installs VTK 9.7.2 or newer (through nutate and PyVista), the
+  first VTK release with Python 3.15 wheels.
+
 ## [0.5.1] — 2026-10-21
 
 ### Fixed
