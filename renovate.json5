@@ -12,7 +12,7 @@
   ],
   recreateWhen: 'always',
   constraints: {
-    python: '3.13.7'
+    python: '3.15.2'
   },
   lockFileMaintenance: {
     enabled: true,
